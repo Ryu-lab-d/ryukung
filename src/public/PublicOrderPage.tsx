@@ -30,6 +30,16 @@ const WORK_STAGES = [
   { key: 'delivered', label: 'ส่งมอบแล้ว' },
 ] as const
 
+/**
+ * เทียบชื่อแบบทนต่อสิ่งที่คีย์บอร์ดมือถือทำโดยที่ผู้ใช้ไม่รู้ตัว — ตัวพิมพ์ใหญ่/เล็กที่ iOS/Android
+ * auto-capitalize ให้อัตโนมัติ, ช่องว่างซ้อนที่ระบบคำแนะนำคำแทรกให้, หรืออักขระ Unicode ที่ต่างรูปแบบ
+ * แต่หน้าตาเหมือนกันทุกประการ (NFC normalize) — ยังคงเข้มงวดเรื่องตัวสะกดจริงเหมือนเดิม แค่ไม่ให้พฤติกรรม
+ * ของแป้นพิมพ์แต่ละเครื่องมาตัดสินผลแทนตัวสะกดจริงของผู้ใช้
+ */
+function normalizeName(value: string): string {
+  return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean }> = {
   unpaid: { label: 'ยังไม่ชำระเงิน', icon: '!', color: 'bg-red-500', done: false },
   partial: { label: 'มัดจำแล้ว', icon: '½', color: 'bg-amber-500', done: false },
@@ -126,8 +136,10 @@ export function PublicOrderPage() {
       return
     }
 
-    // ต้องพิมพ์ให้ตรงเป๊ะกับชื่อลูกค้าจริงที่บันทึกไว้ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
-    if (typed !== order.customer_name.trim()) {
+    // ต้องสะกดตรงกับชื่อลูกค้าจริงที่บันทึกไว้ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
+    // เทียบแบบ normalize แล้ว (ดูฟังก์ชัน normalizeName ด้านบน) ไม่ใช่เทียบสตริงดิบ เพราะแป้นพิมพ์มือถือ
+    // มักแก้ตัวอักษรแรกเป็นตัวใหญ่หรือแทรกช่องว่างเกินให้เองโดยผู้ใช้ไม่รู้ตัว ถ้าเทียบดิบๆ จะพังเฉพาะบนมือถือ
+    if (normalizeName(typed) !== normalizeName(order.customer_name)) {
       setShake(true)
       setTimeout(() => setShake(false), 400)
       setNameError(true)
@@ -169,6 +181,10 @@ export function PublicOrderPage() {
             value={nameInput}
             onChange={(e) => setNameInput(e.target.value)}
             placeholder="ชื่อผู้สั่งซื้อ"
+            autoCapitalize="off"
+            autoCorrect="off"
+            autoComplete="off"
+            spellCheck={false}
             className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-center"
           />
           <button
