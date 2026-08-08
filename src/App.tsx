@@ -3,6 +3,13 @@ import { AuthProvider } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
 import { AppLayout } from './layout/AppLayout'
 import { SettingsPage } from './settings/SettingsPage'
+import { ProductsPage } from './products/ProductsPage'
+import { ProductForm } from './products/ProductForm'
+import { CategoriesPage } from './products/CategoriesPage'
+import { CustomersPage } from './customers/CustomersPage'
+import { CustomerDetailPage } from './customers/CustomerDetailPage'
+import { CustomerForm } from './customers/CustomerForm'
+import { AddressForm } from './customers/AddressForm'
 
 function Placeholder({ title }: { title: string }) {
   return (
@@ -21,8 +28,16 @@ export default function App() {
           <AppLayout>
             <Routes>
               <Route path="/" element={<Placeholder title="กระดานออเดอร์" />} />
-              <Route path="/products" element={<Placeholder title="สินค้า" />} />
-              <Route path="/customers" element={<Placeholder title="ลูกค้า" />} />
+              <Route path="/products" element={<ProductsPage />} />
+              <Route path="/products/new" element={<ProductForm />} />
+              <Route path="/products/:id" element={<ProductForm />} />
+              <Route path="/categories" element={<CategoriesPage />} />
+              <Route path="/customers" element={<CustomersPage />} />
+              <Route path="/customers/new" element={<CustomerForm />} />
+              <Route path="/customers/:id" element={<CustomerDetailPage />} />
+              <Route path="/customers/:id/edit" element={<CustomerForm />} />
+              <Route path="/customers/:id/addresses/new" element={<AddressForm />} />
+              <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
               <Route path="/summary" element={<Placeholder title="สรุปยอด" />} />
               <Route path="/settings" element={<SettingsPage />} />
             </Routes>
