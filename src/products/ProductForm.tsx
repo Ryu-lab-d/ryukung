@@ -4,6 +4,7 @@ import { useProducts } from './useProducts'
 import { useCategories } from './useCategories'
 import { uploadToBucket } from '../lib/imageUpload'
 import { productImageUrl } from './ProductCard'
+import { ConfirmDialog } from '../lib/ConfirmDialog'
 
 export function ProductForm() {
   const { id } = useParams()
@@ -24,6 +25,7 @@ export function ProductForm() {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (existing) {
@@ -68,7 +70,7 @@ export function ProductForm() {
 
   async function handleDelete() {
     if (!id) return
-    if (!window.confirm('ยืนยันการลบสินค้านี้?')) return
+    setShowDeleteConfirm(false)
     const { error } = await remove(id)
     if (error) { setError(error.message); return }
     navigate('/products')
@@ -176,11 +178,21 @@ export function ProductForm() {
           {busy ? 'กำลังบันทึก...' : 'บันทึก'}
         </button>
         {isEdit && (
-          <button type="button" onClick={handleDelete} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50">
+          <button type="button" onClick={() => setShowDeleteConfirm(true)} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50">
             ลบสินค้า
           </button>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title="ลบสินค้านี้ถาวร?"
+          confirmLabel="ลบถาวร"
+          cancelLabel="ไม่ลบ"
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </form>
   )
 }

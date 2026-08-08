@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
+import { ConfirmDialog } from '../lib/ConfirmDialog'
 
 const CHANNELS = [
   { value: '', label: 'ไม่ระบุ' },
@@ -24,6 +25,7 @@ export function CustomerForm() {
   const [note, setNote] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
     if (existing) {
@@ -53,7 +55,7 @@ export function CustomerForm() {
 
   async function handleDelete() {
     if (!id) return
-    if (!window.confirm(`ลบลูกค้า "${existing?.name}" ถาวร? ออเดอร์เก่าจะยังอยู่ครบ แค่ไม่ผูกกับลูกค้าคนนี้แล้ว`)) return
+    setShowDeleteConfirm(false)
     setBusy(true)
     const { error } = await remove(id)
     setBusy(false)
@@ -100,11 +102,23 @@ export function CustomerForm() {
           {busy ? 'กำลังบันทึก...' : 'บันทึก'}
         </button>
         {id && (
-          <button type="button" onClick={handleDelete} disabled={busy} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50">
+          <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={busy} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50">
             ลบลูกค้า
           </button>
         )}
       </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title={`ลบลูกค้า "${existing?.name}" ถาวร?`}
+          message="ออเดอร์เก่าจะยังอยู่ครบ แค่ไม่ผูกกับลูกค้าคนนี้แล้ว"
+          confirmLabel="ลบถาวร"
+          cancelLabel="ไม่ลบ"
+          busy={busy}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </form>
   )
 }

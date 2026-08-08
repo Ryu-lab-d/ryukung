@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { Link, useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
 import { useOrder } from '../orders/useOrder'
 import { useSettings } from '../settings/useSettings'
@@ -77,6 +77,10 @@ export function ReceiptPage() {
 
   return (
     <div className="p-4 space-y-4 max-w-md mx-auto">
+      <Link to={`/orders/${id}`} className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+        ← กลับหน้าออเดอร์นี้
+      </Link>
+
       {!activeReceipt && (
         <div className="flex flex-wrap gap-3 text-sm">
           <label className="flex items-center gap-1"><input type="checkbox" checked={showLogo} onChange={(e) => setShowLogo(e.target.checked)} /> โลโก้</label>
