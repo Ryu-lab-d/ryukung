@@ -12,17 +12,23 @@ export function SalesSummaryPage() {
   const { from, to } = useMemo(() => rangeToDates(rangeKey, customFrom, customTo), [rangeKey, customFrom, customTo])
   const { orders, loading, sales, cost, profit, profitPercent, avgOrder } = useSalesSummary(from, to)
 
+  const profitIsPositive = profit >= 0
+
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-4 space-y-5 max-w-2xl mx-auto">
       <h1 className="text-lg font-semibold">สรุปยอด</h1>
 
-      <div className="flex flex-wrap gap-2">
+      {/* ตัวเลือกช่วงเวลาแบบแท็บกลุ่มเดียว ให้เห็นชัดว่าอันไหนถูกเลือกอยู่ */}
+      <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">
         {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (
           <button
             key={key}
             type="button"
             onClick={() => setRangeKey(key)}
-            className={'rounded-full px-3 py-1.5 text-sm ' + (rangeKey === key ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+            className={
+              'rounded-full px-3 py-1.5 text-sm font-medium ' +
+              (rangeKey === key ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-600')
+            }
           >
             {RANGE_LABELS[key]}
           </button>
@@ -40,25 +46,65 @@ export function SalesSummaryPage() {
         <p className="text-stone-500">กำลังโหลด...</p>
       ) : (
         <>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">ยอดขาย</p><p className="text-lg font-semibold">{formatBaht(sales)}</p></div>
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">จำนวนออเดอร์</p><p className="text-lg font-semibold">{orders.length}</p></div>
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">ยอดเฉลี่ยต่อออเดอร์</p><p className="text-lg font-semibold">{formatBaht(avgOrder)}</p></div>
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">ต้นทุนโดยประมาณ</p><p className="text-lg font-semibold">{formatBaht(cost)}</p></div>
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">กำไรโดยประมาณ</p><p className="text-lg font-semibold">{formatBaht(profit)}</p></div>
-            <div className="rounded-lg bg-stone-50 p-3"><p className="text-xs text-stone-500">% กำไร</p><p className="text-lg font-semibold">{profitPercent.toFixed(1)}%</p></div>
+          {/* ตัวเลขหลัก — ยอดขายคือสิ่งที่ร้านอยากเห็นก่อนสุดตอนเปิดหน้านี้ */}
+          <div className="rounded-2xl bg-stone-900 text-white p-5 space-y-1">
+            <p className="text-xs uppercase tracking-wide text-stone-300">ยอดขาย</p>
+            <p className="text-5xl font-bold [font-variant-numeric:normal]">{formatBaht(sales)}</p>
+            <p className="text-sm text-stone-300">{orders.length} ออเดอร์ · เฉลี่ย {formatBaht(avgOrder)} บาท/ออเดอร์</p>
           </div>
 
-          <p className="text-xs text-stone-500 bg-amber-50 border border-amber-200 rounded-lg p-2">
+          {/* กำไรแยกการ์ดต่างหาก ใช้สีเขียว/แดงบอกสถานะ (บวก/ลบ) ให้ต่างจากตัวเลขทั่วไปชัดเจน */}
+          <div
+            className={
+              'rounded-2xl p-4 flex items-center justify-between border ' +
+              (profitIsPositive ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200')
+            }
+          >
+            <div>
+              <p className={'text-xs uppercase tracking-wide ' + (profitIsPositive ? 'text-green-700' : 'text-red-700')}>
+                กำไรโดยประมาณ
+              </p>
+              <p className={'text-3xl font-bold ' + (profitIsPositive ? 'text-green-800' : 'text-red-800')}>
+                {formatBaht(profit)}
+              </p>
+            </div>
+            <span
+              className={
+                'text-sm font-semibold rounded-full px-3 py-1 ' +
+                (profitIsPositive ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800')
+              }
+            >
+              {profitPercent.toFixed(1)}%
+            </span>
+          </div>
+
+          {/* สถิติรอง — เป็นพื้นเรียบกลางๆ ไม่แย่งสายตาจากสองก้อนบน */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-xl border border-stone-200 bg-white p-3">
+              <p className="text-xs text-stone-500">จำนวนออเดอร์</p>
+              <p className="text-xl font-semibold tabular-nums">{orders.length}</p>
+            </div>
+            <div className="rounded-xl border border-stone-200 bg-white p-3">
+              <p className="text-xs text-stone-500">ต้นทุนโดยประมาณ</p>
+              <p className="text-xl font-semibold">{formatBaht(cost)}</p>
+            </div>
+          </div>
+
+          <p className="text-xs text-stone-600 bg-stone-100 border border-stone-200 rounded-lg p-2.5">
             กำไรนี้คำนวณจากต้นทุนที่กรอกเองต่อสินค้า ยังไม่ใช่ต้นทุนจริงจากสูตรและราคาวัตถุดิบ
           </p>
 
           <div className="space-y-1">
-            {orders.map((o) => (
-              <div key={o.id} className="flex justify-between text-sm border-b border-stone-100 py-1.5">
-                <span>{o.order_no}</span><span>{formatBaht(o.grand_total)}</span>
-              </div>
-            ))}
+            <h2 className="text-sm font-semibold text-stone-500">รายการออเดอร์ในช่วงนี้</h2>
+            {orders.length === 0 && <p className="text-sm text-stone-400">ไม่มีออเดอร์ในช่วงที่เลือก</p>}
+            <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
+              {orders.map((o) => (
+                <div key={o.id} className="flex justify-between items-center text-sm px-3 py-2.5 hover:bg-stone-50">
+                  <span className="text-stone-700">{o.order_no}</span>
+                  <span className="font-medium tabular-nums">{formatBaht(o.grand_total)}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </>
       )}

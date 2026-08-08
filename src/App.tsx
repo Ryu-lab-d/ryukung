@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
 import { AppLayout } from './layout/AppLayout'
@@ -18,28 +18,32 @@ import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 
 function AuthenticatedApp() {
+  const location = useLocation()
   return (
     <RequireAuth>
       <AppLayout>
-        <Routes>
-          <Route path="/" element={<OrderBoardPage />} />
-          <Route path="/orders/new" element={<OrderFormPage />} />
-          <Route path="/orders/:id" element={<OrderDetailPage />} />
-          <Route path="/orders/:id/edit" element={<OrderFormPage />} />
-          <Route path="/orders/:id/receipt" element={<ReceiptPage />} />
-          <Route path="/products" element={<ProductsPage />} />
-          <Route path="/products/new" element={<ProductForm />} />
-          <Route path="/products/:id" element={<ProductForm />} />
-          <Route path="/categories" element={<CategoriesPage />} />
-          <Route path="/customers" element={<CustomersPage />} />
-          <Route path="/customers/new" element={<CustomerForm />} />
-          <Route path="/customers/:id" element={<CustomerDetailPage />} />
-          <Route path="/customers/:id/edit" element={<CustomerForm />} />
-          <Route path="/customers/:id/addresses/new" element={<AddressForm />} />
-          <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
-          <Route path="/summary" element={<SalesSummaryPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-        </Routes>
+        {/* key={pathname} บังคับให้ React ถอด-สร้างใหม่ทุกครั้งที่เปลี่ยนหน้า ทำให้ CSS animation เล่นซ้ำทุกครั้ง */}
+        <div key={location.pathname} className="animate-page-in">
+          <Routes>
+            <Route path="/" element={<OrderBoardPage />} />
+            <Route path="/orders/new" element={<OrderFormPage />} />
+            <Route path="/orders/:id" element={<OrderDetailPage />} />
+            <Route path="/orders/:id/edit" element={<OrderFormPage />} />
+            <Route path="/orders/:id/receipt" element={<ReceiptPage />} />
+            <Route path="/products" element={<ProductsPage />} />
+            <Route path="/products/new" element={<ProductForm />} />
+            <Route path="/products/:id" element={<ProductForm />} />
+            <Route path="/categories" element={<CategoriesPage />} />
+            <Route path="/customers" element={<CustomersPage />} />
+            <Route path="/customers/new" element={<CustomerForm />} />
+            <Route path="/customers/:id" element={<CustomerDetailPage />} />
+            <Route path="/customers/:id/edit" element={<CustomerForm />} />
+            <Route path="/customers/:id/addresses/new" element={<AddressForm />} />
+            <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
+            <Route path="/summary" element={<SalesSummaryPage />} />
+            <Route path="/settings" element={<SettingsPage />} />
+          </Routes>
+        </div>
       </AppLayout>
     </RequireAuth>
   )
