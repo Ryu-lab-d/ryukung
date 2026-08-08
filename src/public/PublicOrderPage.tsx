@@ -97,6 +97,7 @@ export function PublicOrderPage() {
   const [revealing, setRevealing] = useState(false)
   const [shake, setShake] = useState(false)
   const [nameError, setNameError] = useState(false)
+  const [noNameOnFile, setNoNameOnFile] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -110,9 +111,23 @@ export function PublicOrderPage() {
     const typed = nameInput.trim()
     if (!typed || order === undefined) return
 
-    // ถ้ามีชื่อลูกค้าจริงผูกกับออเดอร์นี้ ต้องพิมพ์ให้ตรงเป๊ะ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
-    const realName = order?.customer_name?.trim()
-    if (realName && typed !== realName) {
+    if (order === null) {
+      // token ผิดตั้งแต่ต้น ไม่มีออเดอร์ให้เทียบชื่อเลย ปล่อยผ่านไปโชว์หน้า "ไม่พบออเดอร์" ตามจริง
+      // ไม่มีข้อมูลอะไรให้หลุดอยู่แล้วเพราะ order เป็น null
+      setCustomerName(typed)
+      setRevealing(true)
+      setTimeout(() => setRevealing(false), 700)
+      return
+    }
+
+    if (!order.customer_name) {
+      // มีออเดอร์จริง แต่ไม่มีชื่อลูกค้าผูกไว้เลย — ไม่มีอะไรให้เทียบ ต้องกันไว้ ห้ามปล่อยผ่านให้ใครพิมพ์อะไรก็เข้าได้
+      setNoNameOnFile(true)
+      return
+    }
+
+    // ต้องพิมพ์ให้ตรงเป๊ะกับชื่อลูกค้าจริงที่บันทึกไว้ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
+    if (typed !== order.customer_name.trim()) {
       setShake(true)
       setTimeout(() => setShake(false), 400)
       setNameError(true)
@@ -123,6 +138,19 @@ export function PublicOrderPage() {
     setRevealing(true)
     // หน่วงสั้นๆ ให้รู้สึกเหมือนระบบกำลังเปิดออเดอร์ให้ ข้อมูลจริงโหลดเสร็จรอไว้อยู่แล้วเบื้องหลัง
     setTimeout(() => setRevealing(false), 700)
+  }
+
+  // ออเดอร์นี้มีจริง แต่ไม่มีชื่อลูกค้าผูกไว้ในระบบเลย ไม่มีทางตรวจสอบตัวตนได้ ต้องหยุดตรงนี้เสมอ ไม่ปล่อยให้ใครพิมพ์อะไรก็เข้าได้
+  if (noNameOnFile) {
+    return (
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
+        <div className="max-w-sm">
+          <p className="text-4xl mb-2">🔒</p>
+          <p className="text-stone-700 font-medium">ออเดอร์นี้ไม่มีชื่อลูกค้าผูกไว้ในระบบ</p>
+          <p className="text-sm text-stone-500 mt-1">ไม่สามารถยืนยันตัวตนอัตโนมัติได้ กรุณาติดต่อร้านโดยตรงเพื่อตรวจสอบออเดอร์</p>
+        </div>
+      </div>
+    )
   }
 
   // ขั้นที่ 1: ยืนยันชื่อก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อคืออะไร
