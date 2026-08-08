@@ -2,11 +2,13 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
+import { Toast } from '../lib/Toast'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
   order_no: string
+  customer_name: string | null
   needed_date: string | null
   fulfillment_type: string
   work_status: string
@@ -21,20 +23,40 @@ type PublicOrderView = {
   items: { product_name: string; unit_price: number; qty: number; line_total: number; note: string | null }[]
 }
 
-const PAYMENT_LABEL: Record<string, string> = { unpaid: 'ยังไม่ชำระ', partial: 'มัดจำแล้ว', paid: 'ชำระครบแล้ว' }
-
-const STAGES = [
+const WORK_STAGES = [
   { key: 'to_bake', label: 'รับออเดอร์แล้ว' },
   { key: 'baking', label: 'กำลังทำ' },
   { key: 'ready', label: 'แพ็คของแล้ว' },
   { key: 'delivered', label: 'ส่งมอบแล้ว' },
 ] as const
 
-function StatusTimeline({ status }: { status: string }) {
-  const currentIndex = STAGES.findIndex((s) => s.key === status)
+const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean }> = {
+  unpaid: { label: 'ยังไม่ชำระเงิน', icon: '!', color: 'bg-red-500', done: false },
+  partial: { label: 'มัดจำแล้ว', icon: '½', color: 'bg-amber-500', done: false },
+  paid: { label: 'ชำระเงินแล้ว', icon: '✓', color: 'bg-green-600', done: true },
+}
+
+/** ไทม์ไลน์เดียวที่รวมทั้งสถานะชำระเงินและสถานะงาน ให้ลูกค้าเห็นภาพรวมในที่เดียว ไม่ต้องแยกอ่านสองที่ */
+function StatusTimeline({ workStatus, paymentStatus }: { workStatus: string; paymentStatus: string }) {
+  const currentIndex = WORK_STAGES.findIndex((s) => s.key === workStatus)
+  const payment = PAYMENT_STAGE[paymentStatus] ?? PAYMENT_STAGE.unpaid
+
   return (
     <div>
-      {STAGES.map((stage, i) => {
+      <div className="flex gap-3">
+        <div className="flex flex-col items-center">
+          <div className={'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 text-white ' + payment.color}>
+            {payment.icon}
+          </div>
+          <div className={'w-0.5 flex-1 min-h-8 ' + (payment.done ? 'bg-stone-900' : 'bg-stone-200')} />
+        </div>
+        <div className="pb-8 -mt-0.5">
+          <p className="font-semibold text-stone-900">{payment.label}</p>
+          <p className="text-xs text-stone-500 mt-0.5">การชำระเงิน</p>
+        </div>
+      </div>
+
+      {WORK_STAGES.map((stage, i) => {
         const isDone = i < currentIndex
         const isCurrent = i === currentIndex
         return (
@@ -52,7 +74,7 @@ function StatusTimeline({ status }: { status: string }) {
               >
                 {isDone ? '✓' : i + 1}
               </div>
-              {i < STAGES.length - 1 && (
+              {i < WORK_STAGES.length - 1 && (
                 <div className={'w-0.5 flex-1 min-h-8 ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')} />
               )}
             </div>
@@ -73,6 +95,8 @@ export function PublicOrderPage() {
   const [customerName, setCustomerName] = useState<string | null>(null)
   const [nameInput, setNameInput] = useState('')
   const [revealing, setRevealing] = useState(false)
+  const [shake, setShake] = useState(false)
+  const [nameError, setNameError] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -83,21 +107,35 @@ export function PublicOrderPage() {
 
   function handleConfirmName(e: FormEvent) {
     e.preventDefault()
-    if (!nameInput.trim()) return
-    setCustomerName(nameInput.trim())
+    const typed = nameInput.trim()
+    if (!typed || order === undefined) return
+
+    // ถ้ามีชื่อลูกค้าจริงผูกกับออเดอร์นี้ ต้องพิมพ์ให้ตรงเป๊ะ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
+    const realName = order?.customer_name?.trim()
+    if (realName && typed !== realName) {
+      setShake(true)
+      setTimeout(() => setShake(false), 400)
+      setNameError(true)
+      return
+    }
+
+    setCustomerName(typed)
     setRevealing(true)
     // หน่วงสั้นๆ ให้รู้สึกเหมือนระบบกำลังเปิดออเดอร์ให้ ข้อมูลจริงโหลดเสร็จรอไว้อยู่แล้วเบื้องหลัง
     setTimeout(() => setRevealing(false), 700)
   }
 
-  // ขั้นที่ 1: ยืนยันชื่อก่อนเสมอ ไม่ว่า token จะถูกหรือผิด เพื่อให้ทุกคนที่เปิดลิงก์เจอหน้าตาเดียวกัน
+  // ขั้นที่ 1: ยืนยันชื่อก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อคืออะไร
   if (customerName === null) {
     return (
       <div className="min-h-screen bg-stone-50 grid place-items-center p-4">
-        <form onSubmit={handleConfirmName} className="w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 space-y-4 text-center">
+        <form
+          onSubmit={handleConfirmName}
+          className={'w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 space-y-4 text-center' + (shake ? ' animate-shake' : '')}
+        >
           <div className="text-4xl">🥐</div>
           <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
-          <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อเพื่อยืนยันและดูรายละเอียดออเดอร์</p>
+          <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
           <input
             autoFocus
             value={nameInput}
@@ -107,12 +145,20 @@ export function PublicOrderPage() {
           />
           <button
             type="submit"
-            disabled={!nameInput.trim()}
+            disabled={!nameInput.trim() || order === undefined}
             className="w-full rounded-lg bg-stone-900 text-white py-2.5 font-semibold disabled:opacity-40"
           >
-            ดูรายละเอียดออเดอร์
+            {order === undefined ? 'กำลังโหลดข้อมูล...' : 'ดูรายละเอียดออเดอร์'}
           </button>
         </form>
+
+        {nameError && (
+          <Toast
+            variant="error"
+            message="ชื่อไม่ตรงกับที่แจ้งไว้ กรุณาสะกดให้ตรงเป๊ะตามที่คุยในแชท"
+            onDone={() => setNameError(false)}
+          />
+        )}
       </div>
     )
   }
@@ -129,16 +175,9 @@ export function PublicOrderPage() {
     )
   }
 
-  // ขั้นที่ 3: ยังโหลดข้อมูลจริงจาก get_public_order ไม่เสร็จ (เคสที่เน็ตช้ากว่า 700ms)
-  if (order === undefined) {
-    return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center">
-        <div className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin" />
-      </div>
-    )
-  }
-
-  if (order === null) {
+  if (order === null || order === undefined) {
+    // order === undefined ในจุดนี้แทบไม่เกิดจริง เพราะปุ่มยืนยันชื่อกดไม่ได้จนกว่าจะโหลดเสร็จ
+    // แต่เขียนดักไว้ให้ TypeScript แน่ใจว่าตั้งแต่บรรทัดนี้ลงไป order ไม่มีทาง undefined อีกแล้ว
     return (
       <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
         <div>
@@ -160,7 +199,7 @@ export function PublicOrderPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
-          <StatusTimeline status={order.work_status} />
+          <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} />
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
@@ -182,7 +221,6 @@ export function PublicOrderPage() {
 
           <div className="border-t border-stone-100 pt-2 space-y-1 text-sm">
             <p>วันที่ต้องได้ของ: {order.needed_date ?? '-'}</p>
-            <p>สถานะการชำระเงิน: {PAYMENT_LABEL[order.payment_status]}</p>
             {order.tracking_no && <p>เลขพัสดุ: {order.tracking_no} ({order.carrier})</p>}
           </div>
         </div>

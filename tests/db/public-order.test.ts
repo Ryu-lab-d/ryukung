@@ -2,13 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { anonClient, signedInClient } from './helpers'
 
 describe('ลิงก์สรุปออเดอร์สำหรับลูกค้า', () => {
-  it('เปิดได้โดยไม่ต้องล็อกอิน และไม่มีต้นทุนหลุดออกไป', async () => {
+  it('เปิดได้โดยไม่ต้องล็อกอิน มีชื่อลูกค้าให้ตรวจสอบ และไม่มีต้นทุนหลุดออกไป', async () => {
     const db = await signedInClient()
+    const customer = await db.from('customers').insert({ name: 'ทดสอบ-ลิงก์สาธารณะ' }).select().single()
     const no = (await db.rpc('next_order_no')).data as string
     const order = (
       await db
         .from('orders')
-        .insert({ is_draft: false, order_no: no, fulfillment_type: 'shipping' })
+        .insert({ is_draft: false, order_no: no, fulfillment_type: 'shipping', customer_id: customer.data!.id })
         .select()
         .single()
     ).data!
@@ -28,6 +29,7 @@ describe('ลิงก์สรุปออเดอร์สำหรับล�
     expect(error).toBeNull()
     expect(data).not.toBeNull()
     expect(data.order_no).toBe(no)
+    expect(data.customer_name).toBe('ทดสอบ-ลิงก์สาธารณะ')
     expect(Number(data.grand_total)).toBe(80)
     expect(data.items).toHaveLength(1)
 
@@ -37,6 +39,7 @@ describe('ลิงก์สรุปออเดอร์สำหรับล�
     expect(raw).not.toContain('18.5')
 
     await db.from('orders').delete().eq('id', order.id)
+    await db.from('customers').delete().eq('id', customer.data!.id)
   })
 
   it('token มั่วคืนค่าว่าง', async () => {
