@@ -22,7 +22,7 @@ export function OrderBoardPage() {
       <BoardMobile orders={orders} filter={mobileFilter} onChangeStatus={changeStatus} />
       <Link
         to="/orders/new"
-        className="fixed bottom-20 md:bottom-6 right-6 rounded-full bg-stone-900 text-white w-14 h-14 grid place-items-center text-2xl shadow-lg"
+        className="fixed bottom-20 lg:bottom-6 right-6 rounded-full bg-stone-900 text-white w-14 h-14 grid place-items-center text-2xl shadow-lg"
       >
         +
       </Link>

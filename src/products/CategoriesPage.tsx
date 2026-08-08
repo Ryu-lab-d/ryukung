@@ -29,12 +29,12 @@ export function CategoriesPage() {
 
       <ul className="space-y-2">
         {categories.map((c, i) => (
-          <li key={c.id} className="flex items-center gap-2 rounded-lg border border-stone-200 px-3 py-2">
+          <li key={c.id} className="flex items-center gap-1 rounded-lg border border-stone-200 pl-3 pr-1 py-1">
             <span className="flex-1 text-sm">{c.name}</span>
             {!c.is_active && <span className="text-xs text-stone-400">ปิดใช้งาน</span>}
-            <button type="button" onClick={() => move(c.id, -1)} disabled={i === 0} className="text-stone-400 disabled:opacity-30">↑</button>
-            <button type="button" onClick={() => move(c.id, 1)} disabled={i === categories.length - 1} className="text-stone-400 disabled:opacity-30">↓</button>
-            <button type="button" onClick={() => save(c.id, { is_active: !c.is_active })} className="text-xs text-stone-500 underline">
+            <button type="button" onClick={() => move(c.id, -1)} disabled={i === 0} className="text-stone-500 disabled:opacity-30 w-11 h-11 grid place-items-center text-lg">↑</button>
+            <button type="button" onClick={() => move(c.id, 1)} disabled={i === categories.length - 1} className="text-stone-500 disabled:opacity-30 w-11 h-11 grid place-items-center text-lg">↓</button>
+            <button type="button" onClick={() => save(c.id, { is_active: !c.is_active })} className="text-xs text-stone-500 underline px-2 py-2">
               {c.is_active ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
             </button>
           </li>

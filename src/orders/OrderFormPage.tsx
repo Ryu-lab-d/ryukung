@@ -97,7 +97,7 @@ export function OrderFormPage() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="fixed bottom-16 md:bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3 flex gap-2 justify-between max-w-2xl mx-auto">
+        <div className="fixed bottom-16 lg:bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3 flex flex-wrap gap-2 justify-between max-w-2xl mx-auto">
           <div className="flex gap-2">
             {step > 1 && (
               <button type="button" onClick={() => setStep((s) => s - 1)} className="rounded-lg px-4 py-2.5 text-stone-600">

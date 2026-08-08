@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useOrder } from './useOrder'
-import { changeWorkStatus } from './api'
+import { changeWorkStatus, deleteOrder } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { PaymentsSection } from './PaymentsSection'
 import { ShippingSection } from './ShippingSection'
@@ -21,8 +21,19 @@ export function OrderDetailPage() {
   const navigate = useNavigate()
   const { order, items, payments, loading, reload } = useOrder(id ?? null)
   const [showCancel, setShowCancel] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   if (loading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+
+  async function handleDelete() {
+    if (!window.confirm('ลบออเดอร์นี้ถาวร? กู้คืนไม่ได้ ถ้าเคยออกใบเสร็จไปแล้วจะลบไม่ได้ (ใช้ "ยกเลิกออเดอร์" แทน)')) return
+    setDeleting(true)
+    const { error } = await deleteOrder(order.id)
+    setDeleting(false)
+    if (error) { setDeleteError(error.message); return }
+    navigate('/')
+  }
 
   const paid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
   const balanceDue = Number(order.grand_total) - paid
@@ -153,6 +164,13 @@ export function OrderDetailPage() {
           ยกเลิกออเดอร์
         </button>
       )}
+
+      <div className="border-t border-stone-100 pt-3">
+        {deleteError && <p className="text-sm text-red-600 mb-2">{deleteError}</p>}
+        <button type="button" onClick={handleDelete} disabled={deleting} className="text-sm text-red-600 underline disabled:opacity-50">
+          {deleting ? 'กำลังลบ...' : 'ลบออเดอร์ถาวร (ประหยัดพื้นที่)'}
+        </button>
+      </div>
 
       {showCancel && (
         <CancelOrderDialog

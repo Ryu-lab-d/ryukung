@@ -76,9 +76,9 @@ export function Step2Products() {
               inputMode="decimal"
               value={items[index]?.qty ?? field.qty}
               onChange={(e) => update(index, { ...field, qty: Number(e.target.value) })}
-              className="w-16 rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-center"
+              className="w-16 rounded-lg border border-stone-300 px-2 py-2.5 text-sm text-center"
             />
-            <button type="button" onClick={() => remove(index)} className="text-red-600 text-sm">ลบ</button>
+            <button type="button" onClick={() => remove(index)} className="text-red-600 text-sm px-2 py-2.5">ลบ</button>
           </div>
         ))}
       </div>

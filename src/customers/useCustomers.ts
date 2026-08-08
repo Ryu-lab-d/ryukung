@@ -48,5 +48,16 @@ export function useCustomers() {
     [load]
   )
 
-  return { customers, loading, save, reload: load }
+  // ที่อยู่ของลูกค้าคนนี้ถูกลบตามอัตโนมัติ (on delete cascade) ส่วนออเดอร์เก่าจะยังอยู่ครบ
+  // แค่ไม่มีลูกค้าผูกอยู่แล้ว (on delete set null) เพราะที่อยู่/ชื่อผู้รับถูก snapshot ไว้ในออเดอร์แล้วตั้งแต่ตอนยืนยัน
+  const remove = useCallback(
+    async (id: string) => {
+      const { error } = await supabase.from('customers').delete().eq('id', id)
+      if (!error) await load()
+      return { error: error ? { message: error.message } : null }
+    },
+    [load]
+  )
+
+  return { customers, loading, save, remove, reload: load }
 }

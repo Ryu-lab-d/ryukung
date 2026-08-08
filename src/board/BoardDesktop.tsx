@@ -51,7 +51,7 @@ export function BoardDesktop({
 
   return (
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-      <div className="hidden md:flex gap-3 p-4 overflow-x-auto">
+      <div className="hidden lg:flex gap-3 p-4 overflow-x-auto">
         {COLUMNS.map((col) => (
           <Column key={col.status} status={col.status} label={col.label} orders={confirmed.filter((o) => o.work_status === col.status)} />
         ))}

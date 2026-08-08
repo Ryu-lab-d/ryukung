@@ -24,7 +24,7 @@ export function BoardMobile({
   )
 
   return (
-    <div className="md:hidden p-4 space-y-3">
+    <div className="lg:hidden p-4 space-y-3">
       <div className="flex gap-2 overflow-x-auto pb-1">
         {Object.entries(STATUS_LABELS).map(([status, label]) => (
           <button

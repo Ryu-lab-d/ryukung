@@ -14,7 +14,7 @@ const CHANNELS = [
 export function CustomerForm() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { customers, save } = useCustomers()
+  const { customers, save, remove } = useCustomers()
   const existing = customers.find((c) => c.id === id)
 
   const [name, setName] = useState('')
@@ -51,6 +51,16 @@ export function CustomerForm() {
     navigate(`/customers/${id ?? data?.id}`)
   }
 
+  async function handleDelete() {
+    if (!id) return
+    if (!window.confirm(`ลบลูกค้า "${existing?.name}" ถาวร? ออเดอร์เก่าจะยังอยู่ครบ แค่ไม่ผูกกับลูกค้าคนนี้แล้ว`)) return
+    setBusy(true)
+    const { error } = await remove(id)
+    setBusy(false)
+    if (error) { setError(error.message); return }
+    navigate('/customers')
+  }
+
   return (
     <form onSubmit={handleSubmit} className="p-4 max-w-lg space-y-4">
       <h1 className="text-lg font-semibold">{id ? 'แก้ไขลูกค้า' : 'เพิ่มลูกค้า'}</h1>
@@ -85,9 +95,16 @@ export function CustomerForm() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <button type="submit" disabled={busy} className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50">
-        {busy ? 'กำลังบันทึก...' : 'บันทึก'}
-      </button>
+      <div className="flex items-center gap-2">
+        <button type="submit" disabled={busy} className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50">
+          {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+        </button>
+        {id && (
+          <button type="button" onClick={handleDelete} disabled={busy} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50">
+            ลบลูกค้า
+          </button>
+        )}
+      </div>
     </form>
   )
 }
