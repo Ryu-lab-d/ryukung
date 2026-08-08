@@ -1,6 +1,27 @@
 @import "tailwindcss";
 @import "./receipts/receipt-print.css";
 
+/* โทนครีม/เบจสำหรับร้านเบเกอรี่ — เขียนทับสเกลสี stone ของ Tailwind ทีเดียว
+   ทุก class ที่ใช้ stone-* ในแอปทั้งหมด (bg-stone-50, text-stone-600, border-stone-200 ฯลฯ)
+   จะเปลี่ยนโทนตามนี้อัตโนมัติ ไม่ต้องไล่แก้ทีละไฟล์ */
+@theme {
+  --color-stone-50: #fbf7f0;
+  --color-stone-100: #f5ebda;
+  --color-stone-200: #ecdcbf;
+  --color-stone-300: #ddc59a;
+  --color-stone-400: #c8a873;
+  --color-stone-500: #ad8a58;
+  --color-stone-600: #8e6f46;
+  --color-stone-700: #705838;
+  --color-stone-800: #52402a;
+  --color-stone-900: #382c1c;
+  --color-stone-950: #241b11;
+}
+
+body {
+  background: var(--color-stone-50);
+}
+
 @media (max-width: 767px) {
   input, select, textarea {
     font-size: 16px;

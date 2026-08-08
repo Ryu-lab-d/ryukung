@@ -12,6 +12,10 @@ const WORK_STATUS_LABELS: Record<string, string> = {
   to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว',
 }
 
+const FULFILLMENT_LABELS: Record<string, string> = {
+  pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
+}
+
 export function OrderDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -34,7 +38,12 @@ export function OrderDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold">{order.order_no ?? 'ร่าง'}</h1>
-          <p className="text-sm text-stone-500">{order.customers?.name ?? 'ไม่มีชื่อลูกค้า'}</p>
+          <p className="text-sm text-stone-500">
+            {order.customers?.name ?? 'ไม่มีชื่อลูกค้า'}
+            {order.customers?.phone && (
+              <> · <a href={`tel:${order.customers.phone}`} className="underline">{order.customers.phone}</a></>
+            )}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Link to={`/orders/${order.id}/receipt`} className="text-sm text-stone-600 underline">ใบเสร็จ</Link>
@@ -43,6 +52,64 @@ export function OrderDetailPage() {
       </div>
 
       {!order.is_draft && <CopyPublicLinkButton token={order.public_token} />}
+
+      <div className="rounded-lg border border-stone-200 p-3 space-y-1.5">
+        <h2 className="text-sm font-semibold">การส่งของ</h2>
+        <div className="flex justify-between text-sm">
+          <span className="text-stone-500">วิธีรับของ</span>
+          <span>{FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-stone-500">วันที่ต้องได้ของ</span>
+          <span>{order.needed_date ?? '-'}</span>
+        </div>
+        <div className="flex justify-between text-sm">
+          <span className="text-stone-500">วันที่ต้องอบ</span>
+          <span>{order.bake_date ?? '-'}</span>
+        </div>
+        {order.fulfillment_type === 'pickup' ? (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-stone-500">จุดนัดรับ</span>
+              <span>{order.pickup_place ?? '-'}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-stone-500">เวลานัดรับ</span>
+              <span>{order.pickup_time ?? '-'}</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-stone-500">ผู้รับ</span>
+              <span>
+                {order.ship_recipient_name ?? '-'}
+                {order.ship_recipient_phone && (
+                  <> · <a href={`tel:${order.ship_recipient_phone}`} className="underline">{order.ship_recipient_phone}</a></>
+                )}
+              </span>
+            </div>
+            {order.ship_address_text && (
+              <div className="text-sm">
+                <span className="text-stone-500">ที่อยู่: </span>
+                <span>{order.ship_address_text}</span>
+              </div>
+            )}
+            {order.tracking_no && (
+              <div className="flex justify-between text-sm">
+                <span className="text-stone-500">เลขพัสดุ</span>
+                <span>{order.tracking_no} {order.carrier && `(${order.carrier})`}</span>
+              </div>
+            )}
+          </>
+        )}
+        {order.note && (
+          <div className="text-sm">
+            <span className="text-stone-500">หมายเหตุออเดอร์: </span>
+            <span>{order.note}</span>
+          </div>
+        )}
+      </div>
 
       <div className="rounded-lg border border-stone-200 p-3 space-y-2">
         <h2 className="text-sm font-semibold">รายการสินค้า</h2>

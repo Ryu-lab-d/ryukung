@@ -78,18 +78,32 @@ export function ProductForm() {
     <form onSubmit={handleSubmit} className="p-4 max-w-lg space-y-4">
       <h1 className="text-lg font-semibold">{isEdit ? 'แก้ไขสินค้า' : 'เพิ่มสินค้า'}</h1>
 
-      <div className="space-y-1">
+      <div className="space-y-2">
         <label htmlFor="image" className="text-sm text-stone-600">รูปสินค้า</label>
-        {imagePath && (
-          <img src={productImageUrl(imagePath)} alt="" className="w-24 h-24 object-cover rounded-lg" />
-        )}
-        <input
-          id="image"
-          type="file"
-          accept="image/*"
-          onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImageChange(f) }}
-        />
-        {uploading && <p className="text-xs text-stone-500">กำลังอัปโหลด...</p>}
+        <div className="flex items-center gap-3">
+          <div className="w-24 h-24 rounded-lg bg-stone-100 border border-stone-200 overflow-hidden grid place-items-center shrink-0">
+            {imagePath ? (
+              <img src={productImageUrl(imagePath)} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-xs text-stone-400">ไม่มีรูป</span>
+            )}
+          </div>
+          <div className="space-y-1">
+            <input
+              id="image"
+              type="file"
+              accept="image/*"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleImageChange(f) }}
+              className="block text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-2 file:text-sm"
+            />
+            {uploading && <p className="text-xs text-stone-500">กำลังอัปโหลด...</p>}
+            {imagePath && !uploading && (
+              <button type="button" onClick={() => setImagePath(null)} className="text-xs text-red-600 underline">
+                ลบรูปนี้
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="space-y-1">

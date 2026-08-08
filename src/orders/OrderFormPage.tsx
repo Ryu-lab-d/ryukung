@@ -73,7 +73,8 @@ export function OrderFormPage() {
     const { orderNo, error } = await confirmOrder(orderId, values)
     if (error) { setError(error.message); return }
     clearDraftFromLocalStorage(orderId)
-    navigate('/')
+    // ยืนยันสำเร็จแล้วพาไปหน้ารายละเอียดออเดอร์ทันที เพื่อให้เห็นที่อยู่/สถานะของออเดอร์ที่เพิ่งสร้างโดยไม่ต้องไปหาเอง
+    navigate(`/orders/${orderId}`)
     return orderNo
   })
 

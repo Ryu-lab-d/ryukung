@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSettings, type Settings } from './useSettings'
+import { productImageUrl } from '../products/ProductCard'
 
 type Draft = Omit<Settings, 'id'>
 
@@ -96,14 +97,27 @@ export function SettingsPage() {
         {text('ที่อยู่ร้าน', 'address')}
         {text('พร้อมเพย์', 'promptpay')}
 
-        <div className="space-y-1">
+        <div className="space-y-2">
           <label htmlFor="logo" className="text-sm text-stone-600">โลโก้ร้าน</label>
-          <input
-            id="logo"
-            type="file"
-            accept="image/*"
-            onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleLogoChange(f) }}
-          />
+          <div className="flex items-center gap-3">
+            <div className="w-20 h-20 rounded-full bg-stone-100 border border-stone-200 overflow-hidden grid place-items-center shrink-0">
+              {values.logo_path ? (
+                <img src={productImageUrl(values.logo_path)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-xs text-stone-400">ไม่มีโลโก้</span>
+              )}
+            </div>
+            <div>
+              <input
+                id="logo"
+                type="file"
+                accept="image/*"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleLogoChange(f) }}
+                className="block text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-2 file:text-sm"
+              />
+              {busy && <p className="text-xs text-stone-500 mt-1">กำลังอัปโหลด...</p>}
+            </div>
+          </div>
         </div>
       </section>
 
