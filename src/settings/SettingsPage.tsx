@@ -1,0 +1,171 @@
+import { useEffect, useState } from 'react'
+import { useSettings, type Settings } from './useSettings'
+
+type Draft = Omit<Settings, 'id'>
+
+export function SettingsPage() {
+  const { settings, loading, save, uploadLogo } = useSettings()
+  const [draft, setDraft] = useState<Draft | null>(null)
+  const [message, setMessage] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    if (settings) {
+      const { id: _id, ...rest } = settings
+      setDraft(rest)
+    }
+  }, [settings])
+
+  if (loading || !draft) {
+    return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  }
+
+  // ผูกไว้เป็นตัวแปรใหม่ที่ TypeScript รู้แน่ชัดว่าไม่ใช่ null เพื่อใช้ใน closure ข้างล่าง
+  // (การ narrow จาก if ด้านบนไม่ไหลเข้าไปในฟังก์ชันซ้อนที่ประกาศทีหลัง)
+  const values: Draft = draft
+
+  function set<K extends keyof Draft>(key: K, value: Draft[K]) {
+    setDraft((d) => (d ? { ...d, [key]: value } : d))
+  }
+
+  async function handleSave() {
+    setBusy(true)
+    const { error } = await save(values)
+    setBusy(false)
+    setMessage(error ? 'บันทึกไม่สำเร็จ: ' + error.message : 'บันทึกแล้ว')
+  }
+
+  async function handleLogoChange(file: File) {
+    setBusy(true)
+    const { error } = await uploadLogo(file)
+    setBusy(false)
+    setMessage(error ? 'อัปโหลดโลโก้ไม่สำเร็จ: ' + error.message : 'อัปโหลดโลโก้แล้ว')
+  }
+
+  function text(
+    label: string,
+    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer'
+  ) {
+    return (
+      <div className="space-y-1">
+        <label htmlFor={key} className="text-sm text-stone-600">{label}</label>
+        {key === 'address' || key === 'receipt_footer' ? (
+          <textarea
+            id={key}
+            value={values[key] ?? ''}
+            onChange={(e) => set(key, e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        ) : (
+          <input
+            id={key}
+            value={values[key] ?? ''}
+            onChange={(e) => set(key, e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        )}
+      </div>
+    )
+  }
+
+  function checkbox(
+    label: string,
+    key: 'receipt_show_logo' | 'receipt_show_address' | 'receipt_show_phone' | 'receipt_show_promptpay' | 'require_full_customer_info'
+  ) {
+    return (
+      <label className="flex items-center gap-2 text-sm">
+        <input
+          id={key}
+          type="checkbox"
+          checked={values[key]}
+          onChange={(e) => set(key, e.target.checked)}
+        />
+        {label}
+      </label>
+    )
+  }
+
+  return (
+    <div className="p-4 max-w-lg space-y-6">
+      <h1 className="text-lg font-semibold">ตั้งค่า</h1>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>
+        {text('ชื่อร้าน', 'shop_name')}
+        {text('เบอร์โทร', 'phone')}
+        {text('ที่อยู่ร้าน', 'address')}
+        {text('พร้อมเพย์', 'promptpay')}
+
+        <div className="space-y-1">
+          <label htmlFor="logo" className="text-sm text-stone-600">โลโก้ร้าน</label>
+          <input
+            id="logo"
+            type="file"
+            accept="image/*"
+            onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleLogoChange(f) }}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-stone-500">ค่าเริ่มต้นใบเสร็จ</h2>
+        {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
+        {checkbox('ใบเสร็จแสดงโลโก้', 'receipt_show_logo')}
+        {checkbox('ใบเสร็จแสดงที่อยู่', 'receipt_show_address')}
+        {checkbox('ใบเสร็จแสดงเบอร์โทร', 'receipt_show_phone')}
+        {checkbox('ใบเสร็จแสดงพร้อมเพย์', 'receipt_show_promptpay')}
+      </section>
+
+      <section className="space-y-4">
+        <h2 className="text-sm font-semibold text-stone-500">เลขที่เอกสารและออเดอร์</h2>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1">
+            <label htmlFor="order_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขออเดอร์</label>
+            <input
+              id="order_no_prefix"
+              value={draft.order_no_prefix}
+              onChange={(e) => set('order_no_prefix', e.target.value)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            />
+          </div>
+          <div className="space-y-1">
+            <label htmlFor="receipt_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขใบเสร็จ</label>
+            <input
+              id="receipt_no_prefix"
+              value={draft.receipt_no_prefix}
+              onChange={(e) => set('receipt_no_prefix', e.target.value)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            />
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <label htmlFor="shipping_lead_days" className="text-sm text-stone-600">
+            จำนวนวันอบล่วงหน้าเมื่อส่งขนส่ง
+          </label>
+          <input
+            id="shipping_lead_days"
+            type="number"
+            min="0"
+            value={draft.shipping_lead_days}
+            onChange={(e) => set('shipping_lead_days', Number(e.target.value))}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        </div>
+
+        {checkbox('บังคับกรอกข้อมูลลูกค้าให้ครบก่อนยืนยันออเดอร์', 'require_full_customer_info')}
+      </section>
+
+      {message && <p className="text-sm text-stone-600">{message}</p>}
+
+      <button
+        type="button"
+        disabled={busy}
+        onClick={handleSave}
+        className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50"
+      >
+        {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+      </button>
+    </div>
+  )
+}
