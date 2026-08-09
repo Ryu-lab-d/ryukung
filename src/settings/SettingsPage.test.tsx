@@ -30,6 +30,17 @@ vi.mock('./useSettings', () => ({
   useSettings: () => ({ settings, loading: false, save, uploadLogo: vi.fn() }),
 }))
 
+vi.mock('../staff/useStaffMembers', () => ({
+  useStaffMembers: () => ({
+    members: [],
+    loading: false,
+    invite: vi.fn(),
+    setStatus: vi.fn(),
+    remove: vi.fn(),
+    reload: vi.fn(),
+  }),
+}))
+
 beforeEach(() => save.mockReset())
 
 describe('หน้าตั้งค่า', () => {

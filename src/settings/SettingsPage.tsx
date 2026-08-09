@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
+import { StaffManagementSection } from '../staff/StaffManagementSection'
 
 type Draft = Omit<Settings, 'id'>
 
@@ -125,6 +126,8 @@ export function SettingsPage() {
           <span className="text-stone-400">→</span>
         </Link>
       </section>
+
+      <StaffManagementSection />
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>

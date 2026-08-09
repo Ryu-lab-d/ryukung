@@ -1,6 +1,8 @@
-import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { AuthProvider } from './auth/AuthProvider'
+import type { ReactNode } from 'react'
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AuthProvider, useAuth } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
+import { StaffJoinPage } from './auth/StaffJoinPage'
 import { AppLayout } from './layout/AppLayout'
 import { SettingsPage } from './settings/SettingsPage'
 import { ProductsPage } from './products/ProductsPage'
@@ -17,6 +19,13 @@ import { ReceiptPage } from './receipts/ReceiptPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { StorageManagementPage } from './storage/StorageManagementPage'
+
+/** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
+function OwnerOnlyRoute({ children }: { children: ReactNode }) {
+  const { staffStatus } = useAuth()
+  if (staffStatus?.role !== 'owner') return <Navigate to="/" replace />
+  return <>{children}</>
+}
 
 function AuthenticatedApp() {
   const location = useLocation()
@@ -42,7 +51,7 @@ function AuthenticatedApp() {
             <Route path="/customers/:id/addresses/new" element={<AddressForm />} />
             <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
             <Route path="/summary" element={<SalesSummaryPage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/settings" element={<OwnerOnlyRoute><SettingsPage /></OwnerOnlyRoute>} />
             <Route path="/storage" element={<StorageManagementPage />} />
           </Routes>
         </div>
@@ -57,6 +66,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/o/:token" element={<PublicOrderPage />} />
+          <Route path="/staff/join" element={<StaffJoinPage />} />
           <Route path="/*" element={<AuthenticatedApp />} />
         </Routes>
       </BrowserRouter>

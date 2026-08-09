@@ -2,9 +2,15 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
+export type StaffRole = 'owner' | 'staff'
+export type StaffState = 'pending' | 'active' | 'revoked'
+export type StaffStatus = { role: StaffRole; state: StaffState } | null
+
 type AuthValue = {
   session: Session | null
   loading: boolean
+  staffStatus: StaffStatus
+  staffLoading: boolean
   signIn: (email: string, password: string) => Promise<{ error: { message: string } | null }>
   signOut: () => Promise<void>
 }
@@ -14,6 +20,8 @@ const AuthContext = createContext<AuthValue | null>(null)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [staffStatus, setStaffStatus] = useState<StaffStatus>(null)
+  const [staffLoading, setStaffLoading] = useState(true)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -26,9 +34,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  useEffect(() => {
+    if (!session) {
+      setStaffStatus(null)
+      setStaffLoading(false)
+      return
+    }
+    let cancelled = false
+    setStaffLoading(true)
+    ;(async () => {
+      const { data } = await supabase
+        .from('staff_members')
+        .select('role, status')
+        .eq('user_id', session.user.id)
+        .maybeSingle()
+      if (cancelled) return
+
+      if (data) {
+        setStaffStatus({ role: data.role, state: data.status })
+      } else {
+        // ล็อกอินสำเร็จ (ยืนยันอีเมลแล้ว) แต่ยังไม่มีแถวสิทธิ์เลย — เพิ่งสมัครพนักงานครั้งแรก ผูกสิทธิ์อัตโนมัติ
+        const displayName = (session.user.user_metadata?.display_name as string | undefined) ?? null
+        const { data: claimed } = await supabase.rpc('claim_staff_invite', { p_display_name: displayName })
+        if (!cancelled) setStaffStatus(claimed ? { role: 'staff', state: claimed as StaffState } : null)
+      }
+      if (!cancelled) setStaffLoading(false)
+    })()
+    return () => { cancelled = true }
+  }, [session])
+
   const value: AuthValue = {
     session,
     loading,
+    staffStatus,
+    staffLoading,
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       return { error: error ? { message: error.message } : null }

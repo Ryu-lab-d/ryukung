@@ -4,7 +4,9 @@ import { NAV_ITEMS } from './navItems'
 import { useAuth } from '../auth/AuthProvider'
 
 export function AppLayout({ children }: { children: ReactNode }) {
-  const { signOut } = useAuth()
+  const { signOut, staffStatus } = useAuth()
+  // พนักงาน (ไม่ใช่เจ้าของร้าน) มองไม่เห็นเมนู "ตั้งค่า" เลย เพราะเป็นส่วนที่แก้ไขไม่ได้อยู่แล้ว (RLS กันไว้)
+  const visibleItems = NAV_ITEMS.filter((item) => !('ownerOnly' in item && item.ownerOnly) || staffStatus?.role === 'owner')
 
   return (
     <div className="min-h-screen bg-stone-50 lg:flex">
@@ -13,7 +15,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <aside className="hidden lg:flex lg:w-56 lg:flex-col border-r border-stone-200 bg-white">
         <div className="px-4 py-5 font-semibold">RYUKUNG BAKERY</div>
         <nav className="flex-1 px-2 space-y-1">
-          {NAV_ITEMS.map((item) => (
+          {visibleItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -38,9 +40,12 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* เนื้อหา เว้นที่ด้านล่างไว้ให้เมนูมือถือ/ไอแพดไม่ทับ */}
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
 
-      {/* เมนูล่าง แสดงบนมือถือและไอแพด */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 grid grid-cols-5 [padding-bottom:env(safe-area-inset-bottom)]">
-        {NAV_ITEMS.map((item) => (
+      {/* เมนูล่าง แสดงบนมือถือและไอแพด — จำนวนช่องปรับตามจำนวนเมนูที่มองเห็นจริง (พนักงานไม่เห็น "ตั้งค่า") */}
+      <nav
+        className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 grid [padding-bottom:env(safe-area-inset-bottom)]"
+        style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
+      >
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
