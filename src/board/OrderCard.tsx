@@ -34,6 +34,9 @@ export function OrderCard({ order }: { order: BoardOrder }) {
           </span>
         )}
       </div>
+      {order.assignee_name && (
+        <p className="text-xs text-stone-500 truncate">👤 {order.assignee_name}</p>
+      )}
     </Link>
   )
 }

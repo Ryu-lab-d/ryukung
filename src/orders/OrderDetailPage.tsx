@@ -1,13 +1,14 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useOrder } from './useOrder'
-import { changeWorkStatus, deleteOrder } from './api'
+import { changeWorkStatus, deleteOrder, assignOrder } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { PaymentsSection } from './PaymentsSection'
 import { ShippingSection } from './ShippingSection'
 import { CopyPublicLinkButton } from './CopyPublicLinkButton'
 import { WorkStatusStepper } from './WorkStatusStepper'
 import { StatusChangeToast } from './StatusChangeToast'
+import { AssigneeSection } from './AssigneeSection'
 import { stageLabel } from './workStatus'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
@@ -43,6 +44,11 @@ export function OrderDetailPage() {
     if (error) { setStatusError(error.message); return }
     await reload()
     setStatusChange({ status: newStatus, label: stageLabel(order.fulfillment_type, newStatus) })
+  }
+
+  async function handleAssign(staffId: string | null) {
+    await assignOrder(order.id, staffId)
+    await reload()
   }
 
   async function handleAcknowledgeAddressEdit() {
@@ -100,6 +106,12 @@ export function OrderDetailPage() {
       </div>
 
       {!order.is_draft && <CopyPublicLinkButton token={order.public_token} />}
+
+      <AssigneeSection
+        assignedTo={order.assigned_to}
+        assigneeName={order.staff_members?.display_name ?? order.staff_members?.email ?? null}
+        onAssign={handleAssign}
+      />
 
       <div className="rounded-lg border border-stone-200 p-3 space-y-1.5">
         <h2 className="text-sm font-semibold">การส่งของ</h2>

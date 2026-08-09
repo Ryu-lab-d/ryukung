@@ -82,6 +82,11 @@ export async function changeWorkStatus(orderId: string, workStatus: string) {
   return { error: error ? { message: error.message } : null }
 }
 
+export async function assignOrder(orderId: string, staffMemberId: string | null) {
+  const { error } = await supabase.from('orders').update({ assigned_to: staffMemberId }).eq('id', orderId)
+  return { error: error ? { message: error.message } : null }
+}
+
 export async function recordPayment(
   orderId: string,
   payment: { amount: number; method: string; paid_at: string; slip_path: string | null; note: string | null }

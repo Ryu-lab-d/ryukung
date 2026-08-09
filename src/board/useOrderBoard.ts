@@ -14,6 +14,7 @@ export type BoardOrder = {
   grand_total: number
   is_draft: boolean
   address_edited_at: string | null
+  assignee_name: string | null
 }
 
 export function useOrderBoard() {
@@ -25,7 +26,7 @@ export function useOrderBoard() {
     const { data } = await supabase
       .from('orders')
       .select(
-        'id, order_no, needed_date, bake_date, fulfillment_type, work_status, payment_status, grand_total, is_draft, updated_at, address_edited_at, customers(name), order_items(product_name, qty)'
+        'id, order_no, needed_date, bake_date, fulfillment_type, work_status, payment_status, grand_total, is_draft, updated_at, address_edited_at, customers(name), order_items(product_name, qty), staff_members(display_name, email)'
       )
       .neq('work_status', 'cancelled')
       .order('bake_date', { ascending: true })
@@ -46,6 +47,7 @@ export function useOrderBoard() {
         grand_total: Number(o.grand_total),
         is_draft: o.is_draft,
         address_edited_at: o.address_edited_at,
+        assignee_name: o.staff_members?.display_name ?? o.staff_members?.email ?? null,
       }))
     setOrders(rows)
     setLoading(false)
