@@ -14,6 +14,9 @@ import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
 import { formatBaht } from '../lib/money'
 import { supabase } from '../lib/supabase'
+import { useSettings } from '../settings/useSettings'
+import { sendCustomerEmail } from '../lib/customerEmail'
+import { paymentReceivedEmail, paymentReminderEmail } from '../lib/emailTemplates'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
@@ -30,12 +33,15 @@ export function OrderDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { order, items, payments, loading, reload } = useOrder(id ?? null)
+  const { settings } = useSettings()
   const [showCancel, setShowCancel] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [statusChange, setStatusChange] = useState<{ status: string; label: string } | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
+  const [sendingReminder, setSendingReminder] = useState(false)
+  const [emailMessage, setEmailMessage] = useState<string | null>(null)
 
   if (loading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
@@ -54,6 +60,38 @@ export function OrderDetailPage() {
   async function handleAcknowledgeAddressEdit() {
     await supabase.from('orders').update({ address_edited_at: null }).eq('id', order.id)
     await reload()
+  }
+
+  async function handlePaymentRecorded(amount: number) {
+    await reload()
+    if (order.customers?.email && settings) {
+      const newBalanceDue = balanceDue - amount
+      const { subject, html } = paymentReceivedEmail({
+        shopName: settings.shop_name,
+        orderNo: order.order_no ?? '-',
+        customerName: order.customers.name,
+        amount,
+        balanceDue: newBalanceDue,
+        publicUrl: `${window.location.origin}/o/${order.public_token}`,
+      })
+      void sendCustomerEmail(order.customers.email, subject, html)
+    }
+  }
+
+  async function handleSendReminder() {
+    if (!order.customers?.email || !settings) return
+    setSendingReminder(true)
+    const { subject, html } = paymentReminderEmail({
+      shopName: settings.shop_name,
+      orderNo: order.order_no ?? '-',
+      customerName: order.customers.name,
+      grandTotal: Number(order.grand_total),
+      paymentInstructions: settings.payment_instructions,
+      publicUrl: `${window.location.origin}/o/${order.public_token}`,
+    })
+    const { error } = await sendCustomerEmail(order.customers.email, subject, html)
+    setSendingReminder(false)
+    setEmailMessage(error ? 'ส่งอีเมลไม่สำเร็จ: ' + error : `ส่งอีเมลเตือนชำระเงินไปที่ ${order.customers.email} แล้ว`)
   }
 
   async function handleDelete() {
@@ -208,7 +246,23 @@ export function OrderDetailPage() {
         <DeliveredCleanupBanner deliveredAt={order.delivered_at} onDeleteNow={() => setShowDeleteConfirm(true)} />
       )}
 
-      <PaymentsSection orderId={order.id} payments={payments} onRecorded={reload} />
+      <PaymentsSection orderId={order.id} payments={payments} onRecorded={handlePaymentRecorded} />
+
+      {order.work_status !== 'cancelled' && order.payment_status !== 'paid' && (
+        order.customers?.email ? (
+          <button
+            type="button"
+            onClick={() => void handleSendReminder()}
+            disabled={sendingReminder}
+            className="w-full rounded-lg border-2 border-amber-300 text-amber-700 font-medium py-2.5 disabled:opacity-50"
+          >
+            {sendingReminder ? 'กำลังส่งอีเมล...' : '📧 ส่งอีเมลเตือนลูกค้าว่ายังไม่ได้ชำระเงิน'}
+          </button>
+        ) : (
+          <p className="text-xs text-stone-400 text-center">ลูกค้าคนนี้ยังไม่มีอีเมล ส่งอีเมลเตือนชำระเงินไม่ได้</p>
+        )
+      )}
+
       <ShippingSection order={order} onSaved={reload} />
 
       {order.work_status === 'cancelled' ? (
@@ -260,6 +314,7 @@ export function OrderDetailPage() {
         <StatusChangeToast status={statusChange.status} label={statusChange.label} onDone={() => setStatusChange(null)} />
       )}
       {statusError && <Toast variant="error" message={statusError} onDone={() => setStatusError(null)} />}
+      {emailMessage && <Toast message={emailMessage} onDone={() => setEmailMessage(null)} />}
     </div>
   )
 }

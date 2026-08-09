@@ -14,7 +14,7 @@ export function useOrder(orderId: string | null) {
     const [{ data: o }, { data: i }, { data: p }] = await Promise.all([
       supabase
         .from('orders')
-        .select('*, customers(name, phone, note), staff_members(id, display_name, email)')
+        .select('*, customers(name, phone, email, note), staff_members(id, display_name, email)')
         .eq('id', orderId)
         .single(),
       supabase.from('order_items').select('*').eq('order_id', orderId).order('created_at'),

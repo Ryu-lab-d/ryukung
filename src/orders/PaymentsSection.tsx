@@ -14,7 +14,7 @@ export function PaymentsSection({
 }: {
   orderId: string
   payments: any[]
-  onRecorded: () => void
+  onRecorded: (amount: number) => void
 }) {
   const [amount, setAmount] = useState('')
   const [method, setMethod] = useState('transfer')
@@ -41,7 +41,7 @@ export function PaymentsSection({
     setBusy(false)
     if (error) { setError(error.message); return }
     setAmount(''); setSlipPath(null); setError(null)
-    onRecorded()
+    onRecorded(n)
   }
 
   return (

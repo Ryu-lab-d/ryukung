@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useCustomers } from '../customers/useCustomers'
 import { useAddresses } from '../customers/useAddresses'
@@ -13,8 +13,15 @@ export function Step1Customer() {
   const [creatingNew, setCreatingNew] = useState(false)
   const [newName, setNewName] = useState('')
   const [newPhone, setNewPhone] = useState('')
+  const [newEmail, setNewEmail] = useState('')
+  const [emailDraft, setEmailDraft] = useState('')
+  const [savingEmail, setSavingEmail] = useState(false)
 
   const selected = customers.find((c) => c.id === customerId)
+
+  useEffect(() => {
+    setEmailDraft(selected?.email ?? '')
+  }, [selected?.id, selected?.email])
 
   // ไม่ต้องพิมพ์อะไรก็เลื่อนดูรายชื่อลูกค้าทั้งหมดได้เลย พิมพ์แล้วค่อยกรองให้แคบลง
   const visible = useMemo(() => {
@@ -33,14 +40,26 @@ export function Step1Customer() {
   }
 
   async function handleCreateCustomer() {
-    if (!newName.trim()) return
-    const { data, error } = await saveCustomer(null, { name: newName.trim(), phone: newPhone.trim() || null })
+    if (!newName.trim() || !newEmail.trim()) return
+    const { data, error } = await saveCustomer(null, {
+      name: newName.trim(),
+      phone: newPhone.trim() || null,
+      email: newEmail.trim(),
+    })
     if (!error && data) {
       setValue('customer_id', data.id)
       setCreatingNew(false)
       setNewName('')
       setNewPhone('')
+      setNewEmail('')
     }
+  }
+
+  async function handleSaveEmail() {
+    if (!selected || !emailDraft.trim()) return
+    setSavingEmail(true)
+    await saveCustomer(selected.id, { email: emailDraft.trim() })
+    setSavingEmail(false)
   }
 
   return (
@@ -111,8 +130,20 @@ export function Step1Customer() {
             onChange={(e) => setNewPhone(e.target.value)}
             className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
           />
+          <input
+            type="email"
+            placeholder="อีเมล (จำเป็น — ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)"
+            value={newEmail}
+            onChange={(e) => setNewEmail(e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+          />
           <div className="flex gap-2 pt-1">
-            <button type="button" onClick={handleCreateCustomer} className="flex-1 rounded-lg bg-stone-900 text-white px-3 py-2.5 text-sm font-medium">
+            <button
+              type="button"
+              onClick={handleCreateCustomer}
+              disabled={!newName.trim() || !newEmail.trim()}
+              className="flex-1 rounded-lg bg-stone-900 text-white px-3 py-2.5 text-sm font-medium disabled:opacity-40"
+            >
               บันทึกลูกค้าใหม่
             </button>
             <button type="button" onClick={() => setCreatingNew(false)} className="rounded-lg border border-stone-300 text-stone-600 px-4 py-2.5 text-sm">
@@ -133,6 +164,31 @@ export function Step1Customer() {
               เปลี่ยนลูกค้า
             </button>
           </div>
+
+          {selected.email ? (
+            <p className="text-xs text-stone-500 px-1">📧 {selected.email}</p>
+          ) : (
+            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-2">
+              <p className="text-sm text-amber-800 font-medium">⚠️ ลูกค้าคนนี้ยังไม่มีอีเมล (จำเป็นสำหรับแจ้งเตือนออเดอร์)</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="กรอกอีเมลลูกค้า"
+                  value={emailDraft}
+                  onChange={(e) => setEmailDraft(e.target.value)}
+                  className="flex-1 rounded-lg border border-amber-300 px-3 py-2 text-sm"
+                />
+                <button
+                  type="button"
+                  onClick={() => void handleSaveEmail()}
+                  disabled={!emailDraft.trim() || savingEmail}
+                  className="rounded-lg bg-amber-600 text-white px-3 py-2 text-sm font-medium disabled:opacity-40"
+                >
+                  {savingEmail ? 'กำลังบันทึก...' : 'บันทึก'}
+                </button>
+              </div>
+            </div>
+          )}
 
           {selected.note && (
             <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">

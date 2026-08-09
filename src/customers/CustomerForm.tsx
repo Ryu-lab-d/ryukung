@@ -20,6 +20,7 @@ export function CustomerForm() {
 
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [channel, setChannel] = useState('')
   const [channelHandle, setChannelHandle] = useState('')
   const [note, setNote] = useState('')
@@ -31,6 +32,7 @@ export function CustomerForm() {
     if (existing) {
       setName(existing.name)
       setPhone(existing.phone ?? '')
+      setEmail(existing.email ?? '')
       setChannel(existing.channel ?? '')
       setChannelHandle(existing.channel_handle ?? '')
       setNote(existing.note ?? '')
@@ -44,6 +46,7 @@ export function CustomerForm() {
     const { data, error } = await save(id ?? null, {
       name: name.trim(),
       phone: phone.trim() || null,
+      email: email.trim() || null,
       channel: channel || null,
       channel_handle: channelHandle.trim() || null,
       note: note.trim() || null,
@@ -75,6 +78,11 @@ export function CustomerForm() {
       <div className="space-y-1">
         <label htmlFor="phone" className="text-sm text-stone-600">เบอร์โทร</label>
         <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="email" className="text-sm text-stone-600">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
+        <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
       </div>
 
       <div className="grid grid-cols-2 gap-3">

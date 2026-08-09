@@ -5,6 +5,7 @@ export type Customer = {
   id: string
   name: string
   phone: string | null
+  email: string | null
   channel: string | null
   channel_handle: string | null
   note: string | null

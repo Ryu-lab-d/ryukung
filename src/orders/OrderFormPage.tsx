@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSettings } from '../settings/useSettings'
+import { useCustomers } from '../customers/useCustomers'
 import { buildOrderSchema, type OrderFormValues } from './schema'
 import { createDraft, saveDraft, confirmOrder } from './api'
 import { useGuardedSubmit } from '../lib/guardedSubmit'
@@ -14,6 +15,9 @@ import {
 import { Step1Customer } from './Step1Customer'
 import { Step2Products } from './Step2Products'
 import { Step3Fulfillment } from './Step3Fulfillment'
+import { supabase } from '../lib/supabase'
+import { sendCustomerEmail } from '../lib/customerEmail'
+import { orderConfirmedEmail } from '../lib/emailTemplates'
 
 const EMPTY_ORDER: OrderFormValues = {
   customer_id: null,
@@ -38,6 +42,7 @@ export function OrderFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { settings } = useSettings()
+  const { customers } = useCustomers()
   const [orderId, setOrderId] = useState<string | null>(id ?? null)
   const [step, setStep] = useState(1)
   const [error, setError] = useState<string | null>(null)
@@ -70,9 +75,37 @@ export function OrderFormPage() {
 
   const { run: runConfirm, busy: confirming } = useGuardedSubmit(async (values: OrderFormValues) => {
     if (!orderId) return
+    const customer = customers.find((c) => c.id === values.customer_id)
+    if (!customer?.email) {
+      setError('กรุณากรอกอีเมลลูกค้าให้ครบก่อนยืนยันออเดอร์ (ย้อนกลับไปหน้า "ลูกค้า")')
+      return
+    }
     const { orderNo, error } = await confirmOrder(orderId, values)
     if (error) { setError(error.message); return }
     clearDraftFromLocalStorage(orderId)
+
+    // แจ้งอีเมลลูกค้าว่ารับออเดอร์แล้ว — best-effort ไม่บล็อกการนำทางแม้ส่งไม่สำเร็จ (เช่น SMTP มีปัญหาชั่วคราว)
+    if (orderNo && settings) {
+      void supabase
+        .from('orders')
+        .select('public_token, grand_total')
+        .eq('id', orderId)
+        .single()
+        .then(({ data }) => {
+          if (!data?.public_token) return
+          const { subject, html } = orderConfirmedEmail({
+            shopName: settings.shop_name,
+            orderNo,
+            customerName: customer.name,
+            itemsSummary: values.items.map((it) => `${it.product_name} x${it.qty}`).join(', '),
+            grandTotal: Number(data.grand_total ?? 0),
+            neededDate: values.needed_date,
+            publicUrl: `${window.location.origin}/o/${data.public_token}`,
+          })
+          void sendCustomerEmail(customer.email!, subject, html)
+        })
+    }
+
     // ยืนยันสำเร็จแล้วพาไปหน้ารายละเอียดออเดอร์ทันที เพื่อให้เห็นที่อยู่/สถานะของออเดอร์ที่เพิ่งสร้างโดยไม่ต้องไปหาเอง
     navigate(`/orders/${orderId}`)
     return orderNo
