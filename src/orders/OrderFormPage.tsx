@@ -97,36 +97,41 @@ export function OrderFormPage() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="fixed bottom-16 lg:bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3 flex flex-wrap gap-2 justify-between max-w-2xl mx-auto">
-          <div className="flex gap-2">
+        <div className="fixed bottom-16 lg:bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3 max-w-2xl mx-auto">
+          <div className="flex flex-wrap gap-2">
             {step > 1 && (
-              <button type="button" onClick={() => setStep((s) => s - 1)} className="rounded-lg px-4 py-2.5 text-stone-600">
-                ย้อนกลับ
+              <button
+                type="button"
+                onClick={() => setStep((s) => s - 1)}
+                className="rounded-lg border-2 border-stone-200 text-stone-700 font-medium px-4 py-2.5"
+              >
+                ← ย้อนกลับ
               </button>
             )}
-            {step < 3 && (
-              <button type="button" onClick={() => setStep((s) => s + 1)} className="rounded-lg bg-stone-900 text-white px-4 py-2.5">
-                ถัดไป
-              </button>
-            )}
-          </div>
-          <div className="flex gap-2">
             <button
               type="button"
               disabled={savingDraft}
               onClick={() => runSaveDraft()}
-              className="rounded-lg px-4 py-2.5 text-stone-600 disabled:opacity-50"
+              className="rounded-lg border-2 border-stone-200 text-stone-700 font-medium px-4 py-2.5 disabled:opacity-50"
             >
-              บันทึกร่าง
+              {savingDraft ? 'กำลังบันทึก...' : '💾 บันทึกร่าง'}
             </button>
-            {step === 3 && (
+            {step < 3 ? (
+              <button
+                type="button"
+                onClick={() => setStep((s) => s + 1)}
+                className="ml-auto rounded-lg bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[120px]"
+              >
+                ถัดไป →
+              </button>
+            ) : (
               <button
                 type="button"
                 disabled={confirming}
                 onClick={methods.handleSubmit((values) => runConfirm(values))}
-                className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50"
+                className="ml-auto rounded-lg bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[140px] disabled:opacity-50"
               >
-                {confirming ? 'กำลังยืนยัน...' : 'ยืนยันออเดอร์'}
+                {confirming ? 'กำลังยืนยัน...' : '✓ ยืนยันออเดอร์'}
               </button>
             )}
           </div>
