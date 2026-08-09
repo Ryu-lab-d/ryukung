@@ -91,8 +91,16 @@ export function ChatBot({
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [botTyping, setBotTyping] = useState(false)
   const [input, setInput] = useState('')
+  const [showNudge, setShowNudge] = useState(false)
   const nextId = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
+
+  // เด้งข้อความชวนคุยขึ้นมาสักพักหลังโหลดหน้า เพราะปุ่มแชทลอยเฉยๆ ลูกค้ามักไม่สังเกตเห็น
+  useEffect(() => {
+    const showTimer = setTimeout(() => setShowNudge(true), 1200)
+    const hideTimer = setTimeout(() => setShowNudge(false), 9000)
+    return () => { clearTimeout(showTimer); clearTimeout(hideTimer) }
+  }, [])
 
   function pushBotMessage(text: string) {
     setBotTyping(true)
@@ -105,6 +113,7 @@ export function ChatBot({
 
   function handleOpen() {
     setOpen(true)
+    setShowNudge(false)
     if (!greeted) {
       setGreeted(true)
       pushBotMessage(`สวัสดีค่ะ หนูเป็นน้องริว จากร้าน ${shopName} ค่ะ มีปัญหาหรือคำถามอะไร สอบถามได้เลยนะคะ 😊`)
@@ -139,14 +148,30 @@ export function ChatBot({
 
   if (!open) {
     return (
-      <button
-        type="button"
-        onClick={handleOpen}
-        aria-label="คุยกับน้องริว"
-        className="fixed bottom-5 right-5 rounded-full bg-stone-900 text-white w-14 h-14 grid place-items-center text-2xl shadow-lg z-40"
-      >
-        💬
-      </button>
+      <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
+        {showNudge && (
+          <div className="relative bg-white text-stone-800 text-sm rounded-2xl rounded-br-sm shadow-lg pl-3.5 pr-7 py-2.5 max-w-[190px] animate-chat-nudge">
+            <button
+              type="button"
+              onClick={() => setShowNudge(false)}
+              aria-label="ปิดข้อความแนะนำ"
+              className="absolute top-1 right-1 w-5 h-5 rounded-full text-stone-400 text-xs grid place-items-center hover:bg-stone-100"
+            >
+              ×
+            </button>
+            มีคำถามเหรอคะ? ถามน้องริวได้เลยนะ 😊
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={handleOpen}
+          aria-label="คุยกับน้องริว"
+          className="relative rounded-full bg-stone-900 text-white w-14 h-14 grid place-items-center text-2xl shadow-lg"
+        >
+          <span className="absolute inset-0 rounded-full bg-stone-900 animate-chat-ring pointer-events-none" aria-hidden="true" />
+          <span className="relative">💬</span>
+        </button>
+      </div>
     )
   }
 
