@@ -1,8 +1,10 @@
-import { Link, useParams } from 'react-router-dom'
+import { useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
 import { useAddresses } from './useAddresses'
 import { useCustomerOrders } from './useCustomerOrders'
 import { formatBaht } from '../lib/money'
+import { ConfirmDialog } from '../lib/ConfirmDialog'
 
 const WORK_STATUS_LABELS: Record<string, string> = {
   to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว', cancelled: 'ยกเลิกแล้ว',
@@ -16,12 +18,25 @@ const PAYMENT_LABEL: Record<string, string> = { unpaid: 'ยังไม่จ�
 
 export function CustomerDetailPage() {
   const { id } = useParams()
-  const { customers } = useCustomers()
+  const navigate = useNavigate()
+  const { customers, remove } = useCustomers()
   const { addresses } = useAddresses(id ?? null)
   const { orders } = useCustomerOrders(id ?? null)
   const customer = customers.find((c) => c.id === id)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   if (!customer) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+
+  async function handleDelete() {
+    setShowDeleteConfirm(false)
+    setDeleting(true)
+    const { error } = await remove(customer!.id)
+    setDeleting(false)
+    if (error) { setDeleteError(error.message); return }
+    navigate('/customers')
+  }
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
@@ -108,6 +123,30 @@ export function CustomerDetailPage() {
         ))}
         {orders.length === 0 && <p className="text-sm text-stone-400">ยังไม่เคยสั่งซื้อ</p>}
       </section>
+
+      <div className="border-t border-stone-100 pt-3">
+        {deleteError && <p className="text-sm text-red-600 mb-2">{deleteError}</p>}
+        <button
+          type="button"
+          onClick={() => setShowDeleteConfirm(true)}
+          disabled={deleting}
+          className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+        >
+          {deleting ? 'กำลังลบ...' : '🗑️ ลบลูกค้าถาวร'}
+        </button>
+      </div>
+
+      {showDeleteConfirm && (
+        <ConfirmDialog
+          title={`ลบลูกค้า "${customer.name}" ถาวร?`}
+          message="ออเดอร์เก่าจะยังอยู่ครบ แค่ไม่ผูกกับลูกค้าคนนี้แล้ว ที่อยู่ของลูกค้าคนนี้จะถูกลบไปด้วย"
+          confirmLabel="ลบถาวร"
+          cancelLabel="ไม่ลบ"
+          busy={deleting}
+          onConfirm={handleDelete}
+          onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
     </div>
   )
 }

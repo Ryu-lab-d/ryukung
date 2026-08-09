@@ -97,16 +97,22 @@ export function CustomerForm() {
 
       {error && <p className="text-sm text-red-600">{error}</p>}
 
-      <div className="flex items-center gap-2">
-        <button type="submit" disabled={busy} className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50">
-          {busy ? 'กำลังบันทึก...' : 'บันทึก'}
-        </button>
-        {id && (
-          <button type="button" onClick={() => setShowDeleteConfirm(true)} disabled={busy} className="rounded-lg px-4 py-2.5 text-red-600 hover:bg-red-50 disabled:opacity-50">
-            ลบลูกค้า
+      <button type="submit" disabled={busy} className="w-full rounded-lg bg-stone-900 text-white px-4 py-2.5 font-medium disabled:opacity-50">
+        {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+      </button>
+
+      {id && (
+        <div className="border-t border-stone-100 pt-4">
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            disabled={busy}
+            className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+          >
+            🗑️ ลบลูกค้าถาวร
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {showDeleteConfirm && (
         <ConfirmDialog
