@@ -19,6 +19,7 @@ import { ReceiptPage } from './receipts/ReceiptPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { StorageManagementPage } from './storage/StorageManagementPage'
+import { CalendarPage } from './calendar/CalendarPage'
 
 /** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
 function OwnerOnlyRoute({ children }: { children: ReactNode }) {
@@ -36,6 +37,7 @@ function AuthenticatedApp() {
         <div key={location.pathname} className="animate-page-in">
           <Routes>
             <Route path="/" element={<OrderBoardPage />} />
+            <Route path="/calendar" element={<CalendarPage />} />
             <Route path="/orders/new" element={<OrderFormPage />} />
             <Route path="/orders/:id" element={<OrderDetailPage />} />
             <Route path="/orders/:id/edit" element={<OrderFormPage />} />
