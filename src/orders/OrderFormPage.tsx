@@ -3,7 +3,6 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSettings } from '../settings/useSettings'
-import { useCustomers } from '../customers/useCustomers'
 import { buildOrderSchema, type OrderFormValues } from './schema'
 import { createDraft, saveDraft, confirmOrder } from './api'
 import { useGuardedSubmit } from '../lib/guardedSubmit'
@@ -42,7 +41,6 @@ export function OrderFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { settings } = useSettings()
-  const { customers } = useCustomers()
   const [orderId, setOrderId] = useState<string | null>(id ?? null)
   const [step, setStep] = useState(1)
   const [error, setError] = useState<string | null>(null)
@@ -74,8 +72,17 @@ export function OrderFormPage() {
   })
 
   const { run: runConfirm, busy: confirming } = useGuardedSubmit(async (values: OrderFormValues) => {
-    if (!orderId) return
-    const customer = customers.find((c) => c.id === values.customer_id)
+    if (!orderId || !values.customer_id) {
+      setError('กรุณาเลือกหรือสร้างลูกค้าก่อนยืนยันออเดอร์')
+      return
+    }
+    // เช็กอีเมลจากฐานข้อมูลจริง ณ ตอนนี้เลย ไม่ใช้ข้อมูลลูกค้าที่โหลดไว้ตอนเปิดหน้า เพราะลูกค้าอาจเพิ่งกรอก/แก้อีเมล
+    // ในหน้า "ลูกค้า" เมื่อครู่นี้เอง — hook รายชื่อลูกค้าของหน้านั้นกับของฟอร์มนี้เป็นคนละชุด ไม่ได้ sync กันอัตโนมัติ
+    const { data: customer } = await supabase
+      .from('customers')
+      .select('name, email')
+      .eq('id', values.customer_id)
+      .single()
     if (!customer?.email) {
       setError('กรุณากรอกอีเมลลูกค้าให้ครบก่อนยืนยันออเดอร์ (ย้อนกลับไปหน้า "ลูกค้า")')
       return
