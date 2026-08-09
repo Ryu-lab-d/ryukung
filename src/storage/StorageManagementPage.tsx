@@ -1,122 +1,146 @@
-import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useStorageCleanup } from './useStorageCleanup'
-import { ConfirmDialog } from '../lib/ConfirmDialog'
-import { Toast } from '../lib/Toast'
+import { useCancelledOrders } from './useCancelledOrders'
+import { useAbandonedDrafts } from './useAbandonedDrafts'
+import { useHolidays } from '../calendar/useHolidays'
+import { useUnansweredQuestions } from '../chatbot/useUnansweredQuestions'
+import { CleanupSection } from './CleanupSection'
 import { formatBaht } from '../lib/money'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
 }
+const REFUND_LABEL: Record<string, string> = { none: '', pending: '⚠️ รอคืนเงิน', refunded: 'คืนเงินแล้ว' }
 
 export function StorageManagementPage() {
-  const { orders, loading, deleteMany } = useStorageCleanup()
-  const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [confirmTarget, setConfirmTarget] = useState<'selected' | 'all' | null>(null)
-  const [deleting, setDeleting] = useState(false)
-  const [message, setMessage] = useState<string | null>(null)
+  const overdue = useStorageCleanup()
+  const cancelled = useCancelledOrders()
+  const drafts = useAbandonedDrafts()
+  const { holidays, loading: holidaysLoading, removeHoliday } = useHolidays()
+  const { questions, loading: questionsLoading, remove: removeQuestion } = useUnansweredQuestions()
 
-  function toggle(id: string) {
-    setSelected((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
+  const todayKey = new Date().toISOString().slice(0, 10)
+  const pastHolidays = holidays.filter((h) => h.holiday_date < todayKey)
+
+  async function deleteManyHolidays(ids: string[]) {
+    const errors: string[] = []
+    for (const id of ids) {
+      const { error } = await removeHoliday(id)
+      if (error) errors.push(error.message)
+    }
+    return { errors }
   }
 
-  function toggleAll() {
-    setSelected((prev) => (prev.size === orders.length ? new Set() : new Set(orders.map((o) => o.id))))
+  async function deleteManyQuestions(ids: string[]) {
+    const errors: string[] = []
+    for (const id of ids) {
+      const { error } = await removeQuestion(id)
+      if (error) errors.push(error.message)
+    }
+    return { errors }
   }
-
-  async function handleConfirmedDelete() {
-    const ids = confirmTarget === 'all' ? orders.map((o) => o.id) : Array.from(selected)
-    setConfirmTarget(null)
-    setDeleting(true)
-    const { errors } = await deleteMany(ids)
-    setDeleting(false)
-    setSelected(new Set())
-    setMessage(errors.length > 0 ? `ลบไม่สำเร็จ ${errors.length} รายการ` : `ลบเรียบร้อย ${ids.length} รายการ`)
-  }
-
-  if (loading) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-4">
+    <div className="p-4 max-w-2xl mx-auto space-y-6">
       <div>
         <Link to="/" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">← กลับหน้าออเดอร์</Link>
         <h1 className="text-lg font-semibold mt-1">จัดการพื้นที่จัดเก็บ</h1>
         <p className="text-sm text-stone-500 mt-0.5">
-          ออเดอร์ที่จัดส่ง/ส่งมอบสำเร็จมาแล้วเกิน 1 วัน — ลบได้เพื่อประหยัดพื้นที่ Supabase
-          (ลบแล้วกู้คืนไม่ได้ ใบเสร็จที่เคยออกไปแล้วของออเดอร์นั้นจะถูกลบไปด้วย)
+          รวมทุกอย่างที่ลบได้เพื่อประหยัดพื้นที่ Supabase ไว้ในหน้าเดียว — ลบแล้วกู้คืนไม่ได้ทุกรายการ
         </p>
       </div>
 
-      {orders.length === 0 ? (
-        <p className="text-sm text-stone-400 rounded-lg border border-stone-200 p-4 text-center">
-          ยังไม่มีออเดอร์ที่ครบกำหนดลบตอนนี้ 🎉
-        </p>
-      ) : (
-        <>
-          <div className="flex items-center justify-between rounded-lg bg-stone-50 border border-stone-200 px-3 py-2.5">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={selected.size === orders.length} onChange={toggleAll} />
-              เลือกทั้งหมด ({orders.length} รายการ)
-            </label>
-            <button
-              type="button"
-              disabled={selected.size === 0 || deleting}
-              onClick={() => setConfirmTarget('selected')}
-              className="rounded-lg bg-red-600 text-white text-sm px-3 py-1.5 font-medium disabled:opacity-40"
-            >
-              🗑️ ลบที่เลือก ({selected.size})
-            </button>
-          </div>
+      <CleanupSection
+        title="ออเดอร์ที่จัดส่ง/ส่งมอบสำเร็จเกิน 1 วัน"
+        items={overdue.orders}
+        loading={overdue.loading}
+        onDeleteMany={overdue.deleteMany}
+        emptyMessage="ยังไม่มีออเดอร์ที่ครบกำหนดลบตอนนี้ 🎉"
+        confirmMessage={(n) => `ลบแล้วกู้คืนไม่ได้ รวมถึงใบเสร็จที่เคยออกไปแล้วของออเดอร์เหล่านี้ด้วย (${n} รายการ)`}
+        renderItem={(o) => (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-sm truncate">{o.order_no ?? 'ร่าง'} · {o.customer_name ?? 'ไม่มีชื่อลูกค้า'}</p>
+              <p className="text-sm text-stone-500 shrink-0">{formatBaht(o.grand_total)}</p>
+            </div>
+            <p className="text-xs text-stone-400">
+              {FULFILLMENT_LABELS[o.fulfillment_type] ?? o.fulfillment_type} · ส่งสำเร็จเมื่อ {new Date(o.delivered_at).toLocaleString('th-TH')}
+            </p>
+          </>
+        )}
+      />
 
-          <div className="space-y-2">
-            {orders.map((o) => (
-              <label
-                key={o.id}
-                className="flex items-center gap-3 rounded-lg border border-stone-200 p-3 cursor-pointer"
-              >
-                <input type="checkbox" checked={selected.has(o.id)} onChange={() => toggle(o.id)} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="font-medium text-sm truncate">{o.order_no ?? 'ร่าง'} · {o.customer_name ?? 'ไม่มีชื่อลูกค้า'}</p>
-                    <p className="text-sm text-stone-500 shrink-0">{formatBaht(o.grand_total)}</p>
-                  </div>
-                  <p className="text-xs text-stone-400">
-                    {FULFILLMENT_LABELS[o.fulfillment_type] ?? o.fulfillment_type} · ส่งสำเร็จเมื่อ {new Date(o.delivered_at).toLocaleString('th-TH')}
-                  </p>
-                </div>
-              </label>
-            ))}
-          </div>
+      <CleanupSection
+        title="ออเดอร์ที่ยกเลิกแล้ว"
+        description="ออเดอร์ที่ยกเลิกไปแล้วทั้งหมด ไม่ว่ายกเลิกมานานแค่ไหน"
+        items={cancelled.orders}
+        loading={cancelled.loading}
+        onDeleteMany={cancelled.deleteMany}
+        emptyMessage="ไม่มีออเดอร์ที่ยกเลิกอยู่ในระบบ"
+        confirmMessage={(n) => `ลบแล้วกู้คืนไม่ได้ รวมถึงใบเสร็จที่เคยออกไปแล้วของออเดอร์เหล่านี้ด้วย (${n} รายการ) — เช็กสถานะคืนเงินให้เรียบร้อยก่อนลบ`}
+        renderItem={(o) => (
+          <>
+            <div className="flex items-center justify-between gap-2">
+              <p className="font-medium text-sm truncate">{o.order_no ?? 'ร่าง'} · {o.customer_name ?? 'ไม่มีชื่อลูกค้า'}</p>
+              <p className="text-sm text-stone-500 shrink-0">{formatBaht(o.grand_total)}</p>
+            </div>
+            <p className="text-xs text-stone-400">
+              ยกเลิกเมื่อ {new Date(o.updated_at).toLocaleDateString('th-TH')}
+              {o.refund_status !== 'none' && <span className="text-amber-600"> · {REFUND_LABEL[o.refund_status]}</span>}
+            </p>
+          </>
+        )}
+      />
 
-          <button
-            type="button"
-            disabled={deleting}
-            onClick={() => setConfirmTarget('all')}
-            className="w-full rounded-lg border-2 border-red-300 text-red-700 font-medium py-2.5 disabled:opacity-40"
-          >
-            🗑️ ลบทั้งหมดที่ครบกำหนด ({orders.length} รายการ)
-          </button>
-        </>
-      )}
+      <CleanupSection
+        title="ออเดอร์ร่างที่ค้างไว้เกิน 7 วัน"
+        description="สร้างไว้แต่ไม่เคยยืนยัน มักเป็นร่างที่พิมพ์ค้างไว้เฉยๆ"
+        items={drafts.drafts}
+        loading={drafts.loading}
+        onDeleteMany={drafts.deleteMany}
+        emptyMessage="ไม่มีออเดอร์ร่างที่ค้างไว้นานเกินไป"
+        confirmMessage={(n) => `ลบแล้วกู้คืนไม่ได้ (${n} รายการ)`}
+        renderItem={(d) => (
+          <>
+            <p className="font-medium text-sm truncate">{d.customer_name ?? 'ยังไม่มีชื่อลูกค้า'}</p>
+            <p className="text-xs text-stone-400">
+              {d.items_summary || 'ยังไม่มีสินค้า'} · สร้างเมื่อ {new Date(d.created_at).toLocaleDateString('th-TH')}
+            </p>
+          </>
+        )}
+      />
 
-      {confirmTarget && (
-        <ConfirmDialog
-          title="แน่ใจนะว่าจะลบ?"
-          message={`ลบแล้วกู้คืนไม่ได้ รวมถึงใบเสร็จที่เคยออกไปแล้วของออเดอร์เหล่านี้ด้วย (${confirmTarget === 'all' ? orders.length : selected.size} รายการ)`}
-          confirmLabel="ลบถาวร"
-          cancelLabel="ไม่ลบ"
-          busy={deleting}
-          onConfirm={handleConfirmedDelete}
-          onCancel={() => setConfirmTarget(null)}
-        />
-      )}
+      <CleanupSection
+        title="วันหยุดในปฏิทินที่ผ่านไปแล้ว"
+        description="วันหยุดที่ตั้งไว้แต่วันที่ผ่านไปแล้ว ไม่มีประโยชน์ให้เก็บต่อ"
+        items={pastHolidays}
+        loading={holidaysLoading}
+        onDeleteMany={deleteManyHolidays}
+        emptyMessage="ไม่มีวันหยุดเก่าที่ต้องลบ"
+        confirmMessage={(n) => `ลบแล้วกู้คืนไม่ได้ (${n} รายการ)`}
+        renderItem={(h) => (
+          <>
+            <p className="font-medium text-sm">{h.holiday_date}</p>
+            {h.note && <p className="text-xs text-stone-400">{h.note}</p>}
+          </>
+        )}
+      />
 
-      {message && <Toast message={message} onDone={() => setMessage(null)} />}
+      <CleanupSection
+        title="คำถามที่บอทตอบไม่ได้"
+        description={<>จัดการทีละคำถามได้ที่ <Link to="/chatbot" className="underline">หน้าจัดการแชทบอท</Link> — ที่นี่ลบทิ้งได้เร็วๆ ถ้าไม่ต้องการเก็บไว้แล้ว</>}
+        items={questions}
+        loading={questionsLoading}
+        onDeleteMany={deleteManyQuestions}
+        emptyMessage="ยังไม่มีคำถามที่ตอบไม่ได้"
+        confirmMessage={(n) => `ลบแล้วกู้คืนไม่ได้ (${n} รายการ)`}
+        renderItem={(q) => (
+          <>
+            <p className="text-sm truncate">{q.question_text}</p>
+            <p className="text-xs text-stone-400">ถาม {q.asked_count} ครั้ง</p>
+          </>
+        )}
+      />
     </div>
   )
 }

@@ -2,39 +2,35 @@ import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { deleteManyOrders } from './deleteManyOrders'
 
-export type CleanupOrder = {
+export type CancelledOrder = {
   id: string
   order_no: string | null
   customer_name: string | null
-  fulfillment_type: string
   grand_total: number
-  delivered_at: string
+  refund_status: string
+  updated_at: string
 }
 
-const ONE_DAY_MS = 24 * 60 * 60 * 1000
-
-export function useStorageCleanup() {
-  const [orders, setOrders] = useState<CleanupOrder[]>([])
+export function useCancelledOrders() {
+  const [orders, setOrders] = useState<CancelledOrder[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString()
     const { data } = await supabase
       .from('orders')
-      .select('id, order_no, fulfillment_type, grand_total, delivered_at, customers(name)')
-      .eq('work_status', 'delivered')
-      .lte('delivered_at', cutoff)
-      .order('delivered_at', { ascending: true })
+      .select('id, order_no, grand_total, refund_status, updated_at, customers(name)')
+      .eq('work_status', 'cancelled')
+      .order('updated_at', { ascending: true })
 
     setOrders(
       (data ?? []).map((o: any) => ({
         id: o.id,
         order_no: o.order_no,
         customer_name: o.customers?.name ?? null,
-        fulfillment_type: o.fulfillment_type,
         grand_total: Number(o.grand_total),
-        delivered_at: o.delivered_at,
+        refund_status: o.refund_status,
+        updated_at: o.updated_at,
       }))
     )
     setLoading(false)
