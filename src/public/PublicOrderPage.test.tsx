@@ -17,7 +17,7 @@ const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
   order_no: 'RYB-000001',
   customer_name: 'Somchai ใจดี',
-  needed_date: '2026-08-10',
+  needed_date: '2026-08-10' as string | null,
   fulfillment_type: 'pickup',
   work_status: 'to_bake' as string,
   payment_status: 'unpaid',
@@ -172,5 +172,34 @@ describe('ปุ่มยืนยันการชำระเงิน', () =
     const claimButton = await screen.findByRole('button', { name: /ยืนยันการชำระเงิน/ })
     await userEvent.click(claimButton)
     expect(await screen.findByText('เครือข่ายมีปัญหา')).toBeInTheDocument()
+  })
+})
+
+describe('ปุ่มเพิ่มลงปฏิทินและแชร์ออเดอร์', () => {
+  it('มีวันที่ต้องได้ของ กดเพิ่มลงปฏิทินแล้วสร้างไฟล์ .ics ให้ดาวน์โหลด', async () => {
+    const createObjectURL = vi.fn(() => 'blob:mock-url')
+    URL.createObjectURL = createObjectURL
+    URL.revokeObjectURL = vi.fn()
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+
+    await openOrder(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: /เพิ่มลงปฏิทิน/ }))
+
+    expect(createObjectURL).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    clickSpy.mockRestore()
+  })
+
+  it('ไม่มีวันที่ต้องได้ของ ไม่แสดงปุ่มเพิ่มลงปฏิทิน', async () => {
+    await openOrder({ ...baseOrder, needed_date: null })
+    expect(screen.queryByRole('button', { name: /เพิ่มลงปฏิทิน/ })).not.toBeInTheDocument()
+  })
+
+  it('กดแชร์ออเดอร์ (ไม่มี navigator.share) คัดลอกลิงก์แทนแล้วขึ้นข้อความยืนยัน', async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockResolvedValue(undefined) } })
+    await openOrder(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href)
+    expect(await screen.findByRole('button', { name: /คัดลอกลิงก์แล้ว/ })).toBeInTheDocument()
   })
 })

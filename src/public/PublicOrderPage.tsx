@@ -7,6 +7,8 @@ import { Linkify } from '../lib/Linkify'
 import { ChatBot } from './ChatBot'
 import { PromptPayQR } from './PromptPayQR'
 import { claimPayment } from '../lib/paymentClaim'
+import { AddToCalendarButton } from './AddToCalendarButton'
+import { ShareOrderButton } from './ShareOrderButton'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
@@ -515,6 +517,23 @@ export function PublicOrderPage() {
           {!order.address_editable && order.fulfillment_type !== 'pickup' && (
             <p className="text-xs text-stone-400 pt-1">แพ็คของแล้ว แก้ไขที่อยู่เองไม่ได้แล้ว ติดต่อร้านโดยตรงถ้าจำเป็น</p>
           )}
+        </div>
+
+        <div className="flex gap-2">
+          {order.needed_date && (
+            <AddToCalendarButton
+              orderNo={order.order_no}
+              shopName={order.shop_name}
+              neededDate={order.needed_date}
+              location={order.fulfillment_type === 'pickup' ? order.pickup_place : order.ship_address_text}
+              description={
+                order.fulfillment_type === 'pickup'
+                  ? `นัดรับที่ ${order.pickup_place ?? '-'} เวลา ${order.pickup_time ?? '-'}`
+                  : `${FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}${order.ship_address_text ? `: ${order.ship_address_text}` : ''}`
+              }
+            />
+          )}
+          <ShareOrderButton shopName={order.shop_name} orderNo={order.order_no} />
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
