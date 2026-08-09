@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
+import { Linkify } from '../lib/Linkify'
 import { ChatBot } from './ChatBot'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
@@ -66,24 +67,6 @@ const FULFILLMENT_LABELS: Record<string, string> = {
  */
 function normalizeName(value: string): string {
   return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
-/** แปลง URL ที่อยู่ในข้อความธรรมดาให้กดได้จริง เพราะข้อความวิธีชำระเงินมาจาก settings เป็นข้อความอิสระที่ริวคุงแก้เองได้ */
-function Linkify({ text }: { text: string }) {
-  const parts = text.split(/(https?:\/\/[^\s]+)/g)
-  return (
-    <>
-      {parts.map((part, i) =>
-        /^https?:\/\//.test(part) ? (
-          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-medium text-stone-900">
-            {part}
-          </a>
-        ) : (
-          <span key={i}>{part}</span>
-        )
-      )}
-    </>
-  )
 }
 
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean }> = {

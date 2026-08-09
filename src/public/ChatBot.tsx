@@ -1,17 +1,50 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { Linkify } from '../lib/Linkify'
 
 type Faq = { keywords: string[]; answer: string }
 type ChatMessage = { id: number; from: 'bot' | 'user'; text: string }
 
-/** จับคู่คำถามลูกค้ากับ FAQ ที่ร้านตั้งไว้แบบง่ายๆ (คำสำคัญตรงกันก็ตอบ) ไม่ใช้ AI จริงจึงไม่มีค่าใช้จ่ายต่อครั้ง */
+const FUZZY_THRESHOLD = 0.6
+const MIN_FUZZY_KEYWORD_LEN = 3
+
+function normalize(s: string): string {
+  return s.toLowerCase().replace(/\s+/g, '')
+}
+
+function bigrams(s: string): Set<string> {
+  const set = new Set<string>()
+  for (let i = 0; i < s.length - 1; i++) set.add(s.slice(i, i + 2))
+  return set
+}
+
+/** วัดว่าข้อความสองอันมีตัวอักษรที่เรียงติดกัน (bigram) ซ้อนกันมากแค่ไหน — ทนต่อคำถามที่สลับลำดับคำ
+ * เช่น "กี่วันส่ง" กับคำสำคัญ "ส่งกี่วัน" แม้ไม่ใช่คำเดียวกันเป๊ะแต่ก็ควรจับคู่ได้ */
+function similarity(a: string, b: string): number {
+  const A = bigrams(a)
+  const B = bigrams(b)
+  if (A.size === 0 || B.size === 0) return 0
+  let overlap = 0
+  for (const g of A) if (B.has(g)) overlap++
+  return overlap / Math.min(A.size, B.size)
+}
+
+/**
+ * จับคู่คำถามลูกค้ากับ FAQ ที่ร้านตั้งไว้ — ไม่ใช้ AI จริงจึงไม่มีค่าใช้จ่ายต่อครั้ง
+ * คำสำคัญตรงตัวเป๊ะถือว่าคะแนนเต็มทันที ถ้าไม่ตรงเป๊ะจะลองเทียบความใกล้เคียงแบบสลับคำ/คำถามยาวกว่าเดิมได้
+ * แต่ยังคุมเกณฑ์ไว้ไม่ให้ตอบมั่วตอนคำถามไม่เกี่ยวข้องเลย (fallback ไปหาแอดมินแทนดีกว่าตอบผิด)
+ */
 function matchFaq(question: string, faqs: Faq[]): string | null {
-  const q = question.toLowerCase()
+  const q = normalize(question)
+  let best: { answer: string; score: number } | null = null
   for (const faq of faqs) {
-    if (faq.keywords.some((k) => k.trim() && q.includes(k.trim().toLowerCase()))) {
-      return faq.answer
+    for (const raw of faq.keywords) {
+      const k = normalize(raw)
+      if (!k) continue
+      const score = q.includes(k) ? 1 : k.length >= MIN_FUZZY_KEYWORD_LEN ? similarity(q, k) : 0
+      if (score > (best?.score ?? 0)) best = { answer: faq.answer, score }
     }
   }
-  return null
+  return best && best.score >= FUZZY_THRESHOLD ? best.answer : null
 }
 
 function TypingDots() {
@@ -37,7 +70,11 @@ function TypewriterText({ text }: { text: string }) {
     }, 18)
     return () => clearInterval(id)
   }, [text])
-  return <span className="whitespace-pre-line">{shown}</span>
+  return (
+    <span className="whitespace-pre-line">
+      <Linkify text={shown} />
+    </span>
+  )
 }
 
 export function ChatBot({

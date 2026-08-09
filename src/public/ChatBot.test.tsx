@@ -30,6 +30,31 @@ describe('แชทบอทน้องริว', () => {
     expect(await screen.findByText(/ปกติจัดส่งภายใน 2-3 วันค่ะ/, {}, { timeout: 2000 })).toBeInTheDocument()
   })
 
+  it('คำถามใกล้เคียง (สลับคำ ไม่ตรงเป๊ะ) ก็ยังจับคู่ FAQ ได้', async () => {
+    openChat()
+    await userEvent.click(screen.getByRole('button', { name: 'คุยกับน้องริว' }))
+    await screen.findByText(/น้องริว จากร้าน/, {}, { timeout: 2000 })
+
+    const input = screen.getByPlaceholderText('พิมพ์คำถาม...')
+    await userEvent.type(input, 'กี่วันส่งของคะ')
+    await userEvent.click(screen.getByRole('button', { name: 'ส่งข้อความ' }))
+
+    expect(await screen.findByText(/ปกติจัดส่งภายใน 2-3 วันค่ะ/, {}, { timeout: 2000 })).toBeInTheDocument()
+  })
+
+  it('ลิงก์ในคำตอบของบอทกดได้จริง (ไม่ใช่แค่ข้อความเฉยๆ)', async () => {
+    openChat()
+    await userEvent.click(screen.getByRole('button', { name: 'คุยกับน้องริว' }))
+    await screen.findByText(/น้องริว จากร้าน/, {}, { timeout: 2000 })
+
+    const input = screen.getByPlaceholderText('พิมพ์คำถาม...')
+    await userEvent.type(input, 'วันนี้อากาศเป็นยังไงบ้าง')
+    await userEvent.click(screen.getByRole('button', { name: 'ส่งข้อความ' }))
+
+    const link = await screen.findByRole('link', { name: /lin\.ee\/yscT9fJ/ }, { timeout: 8000 })
+    expect(link).toHaveAttribute('href', 'https://lin.ee/yscT9fJ')
+  }, 15000)
+
   it('คำถามไม่ตรง FAQ ไหนเลย ตอบขอโทษพร้อมลิงก์ไลน์', async () => {
     openChat()
     await userEvent.click(screen.getByRole('button', { name: 'คุยกับน้องริว' }))
