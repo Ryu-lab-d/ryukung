@@ -3,11 +3,14 @@ import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
+import { ChatBot } from './ChatBot'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
   payment_instructions: string | null
+  faqs: { keywords: string[]; answer: string }[]
+  line_url: string | null
   order_no: string
   customer_name: string | null
   needed_date: string | null
@@ -205,6 +208,35 @@ function AddressEditForm({
           </button>
         </div>
       </form>
+    </div>
+  )
+}
+
+/** เอฟเฟกต์ยืนยันสำเร็จแบบวาดเครื่องหมายถูก ใช้เฉพาะตอนบันทึกที่อยู่ใหม่สำเร็จ ให้รู้สึกหนักแน่นกว่า Toast ทั่วไป */
+function AddressSavedOverlay({ onDone }: { onDone: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2000)
+    return () => clearTimeout(t)
+  }, [onDone])
+
+  return (
+    <div className="fixed inset-0 bg-black/40 grid place-items-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 text-center space-y-2 max-w-xs animate-toast-pop">
+        <svg width="64" height="64" viewBox="0 0 64 64" className="mx-auto">
+          <circle cx="32" cy="32" r="29" fill="none" stroke="#16a34a" strokeWidth="4" className="animate-circle-pop" />
+          <path
+            d="M18 33 L27 42 L46 22"
+            fill="none"
+            stroke="#16a34a"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="animate-check-draw"
+          />
+        </svg>
+        <p className="font-semibold text-stone-900">บันทึกที่อยู่ใหม่เรียบร้อยแล้ว!</p>
+        <p className="text-sm text-stone-500">ทางร้านจะเห็นที่อยู่ใหม่นี้ทันที</p>
+      </div>
     </div>
   )
 }
@@ -448,7 +480,9 @@ export function PublicOrderPage() {
         />
       )}
 
-      {addressSaved && <Toast message="บันทึกที่อยู่ใหม่แล้ว" onDone={() => setAddressSaved(false)} />}
+      {addressSaved && <AddressSavedOverlay onDone={() => setAddressSaved(false)} />}
+
+      <ChatBot shopName={order.shop_name} faqs={order.faqs} lineUrl={order.line_url} />
     </div>
   )
 }

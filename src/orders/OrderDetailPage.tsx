@@ -9,6 +9,7 @@ import { CopyPublicLinkButton } from './CopyPublicLinkButton'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
 import { formatBaht } from '../lib/money'
+import { supabase } from '../lib/supabase'
 
 const WORK_STATUS_LABELS: Record<string, string> = {
   to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว',
@@ -55,6 +56,11 @@ export function OrderDetailPage() {
     void applyStatusChange(newStatus)
   }
 
+  async function handleAcknowledgeAddressEdit() {
+    await supabase.from('orders').update({ address_edited_at: null }).eq('id', order.id)
+    await reload()
+  }
+
   async function handleDelete() {
     setShowDeleteConfirm(false)
     setDeleting(true)
@@ -76,6 +82,15 @@ export function OrderDetailPage() {
       {order.customers?.note && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
           {order.customers.note}
+        </div>
+      )}
+
+      {order.address_edited_at && (
+        <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
+          <span>📮 ลูกค้าเพิ่งแก้ไขที่อยู่จัดส่งเอง เมื่อ {new Date(order.address_edited_at).toLocaleString('th-TH')}</span>
+          <button type="button" onClick={handleAcknowledgeAddressEdit} className="shrink-0 rounded-lg bg-blue-600 text-white text-xs px-2.5 py-1.5 font-medium">
+            รับทราบแล้ว
+          </button>
         </div>
       )}
 

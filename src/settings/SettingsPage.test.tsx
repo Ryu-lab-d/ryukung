@@ -21,6 +21,8 @@ const settings = {
   shipping_lead_days: 1,
   require_full_customer_info: true,
   payment_instructions: 'แจ้งชำระเงินผ่านไลน์ @ryukung_bakery',
+  line_url: 'https://lin.ee/yscT9fJ',
+  faqs: [{ keywords: ['จัดส่ง'], answer: 'ทดสอบคำตอบ' }],
 }
 
 vi.mock('./useSettings', () => ({

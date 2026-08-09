@@ -22,6 +22,15 @@ const baseOrder = {
   carrier: null,
   tracking_no: null,
   note: null,
+  payment_instructions: null,
+  faqs: [],
+  line_url: null,
+  pickup_place: 'หน้าร้าน',
+  pickup_time: '10:00',
+  ship_recipient_name: null,
+  ship_recipient_phone: null,
+  ship_address_text: null,
+  address_editable: false,
   items: [{ product_name: 'คุกกี้', unit_price: 40, qty: 2, line_total: 80, note: null }],
 }
 

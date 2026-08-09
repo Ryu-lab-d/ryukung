@@ -70,6 +70,29 @@ export function SettingsPage() {
     )
   }
 
+  function updateFaq(index: number, patch: Partial<{ keywordsText: string; answer: string }>) {
+    setDraft((d) => {
+      if (!d) return d
+      const faqs = [...d.faqs]
+      const current = faqs[index]
+      faqs[index] = {
+        answer: patch.answer ?? current.answer,
+        keywords: patch.keywordsText !== undefined
+          ? patch.keywordsText.split(',').map((k) => k.trim()).filter(Boolean)
+          : current.keywords,
+      }
+      return { ...d, faqs }
+    })
+  }
+
+  function addFaq() {
+    setDraft((d) => (d ? { ...d, faqs: [...d.faqs, { keywords: [], answer: '' }] } : d))
+  }
+
+  function removeFaq(index: number) {
+    setDraft((d) => (d ? { ...d, faqs: d.faqs.filter((_, i) => i !== index) } : d))
+  }
+
   function checkbox(
     label: string,
     key: 'receipt_show_logo' | 'receipt_show_address' | 'receipt_show_phone' | 'receipt_show_promptpay' | 'require_full_customer_info'
@@ -125,6 +148,48 @@ export function SettingsPage() {
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
         {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
+        <div className="space-y-1">
+          <label htmlFor="line_url" className="text-sm text-stone-600">ลิงก์ไลน์ร้าน (ใช้ตอนน้องริวตอบไม่ได้แล้วส่งต่อให้พนักงาน)</label>
+          <input
+            id="line_url"
+            value={values.line_url ?? ''}
+            onChange={(e) => set('line_url', e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        </div>
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-stone-500">คำถามที่พบบ่อย (น้องริวตอบให้อัตโนมัติ)</h2>
+          <button type="button" onClick={addFaq} className="text-xs text-stone-600 underline">+ เพิ่มคำถาม</button>
+        </div>
+        {values.faqs.map((faq, i) => (
+          <div key={i} className="rounded-lg border border-stone-200 p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs text-stone-500">คำถามที่ {i + 1}</span>
+              <button type="button" onClick={() => removeFaq(i)} className="text-xs text-red-600 underline">ลบ</button>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-stone-500">คำสำคัญ (คั่นด้วยจุลภาค)</label>
+              <input
+                value={faq.keywords.join(', ')}
+                onChange={(e) => updateFaq(i, { keywordsText: e.target.value })}
+                placeholder="เช่น จัดส่ง, ส่งกี่วัน"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-stone-500">คำตอบ</label>
+              <textarea
+                value={faq.answer}
+                onChange={(e) => updateFaq(i, { answer: e.target.value })}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        ))}
+        {values.faqs.length === 0 && <p className="text-sm text-stone-400">ยังไม่มีคำถามที่ตั้งไว้</p>}
       </section>
 
       <section className="space-y-3">

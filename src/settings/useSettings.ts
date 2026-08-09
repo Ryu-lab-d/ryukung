@@ -18,6 +18,8 @@ export type Settings = {
   shipping_lead_days: number
   require_full_customer_info: boolean
   payment_instructions: string | null
+  line_url: string | null
+  faqs: { keywords: string[]; answer: string }[]
 }
 
 export function useSettings() {

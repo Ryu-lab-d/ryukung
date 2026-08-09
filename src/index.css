@@ -121,3 +121,22 @@ a:focus-visible {
 .animate-shake {
   animation: shake 0.4s ease-in-out;
 }
+
+/* วงกลม+เครื่องหมายถูกที่ค่อยๆ วาดตัวเอง ใช้ตอนยืนยันว่าบันทึกที่อยู่ใหม่สำเร็จ */
+@keyframes circle-pop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+@keyframes check-draw {
+  from { stroke-dashoffset: 40; }
+  to { stroke-dashoffset: 0; }
+}
+.animate-circle-pop {
+  transform-origin: center;
+  animation: circle-pop 0.3s ease-out;
+}
+.animate-check-draw {
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+  animation: check-draw 0.4s ease-out 0.2s forwards;
+}
