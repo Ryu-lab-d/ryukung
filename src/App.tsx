@@ -16,6 +16,7 @@ import { OrderDetailPage } from './orders/OrderDetailPage'
 import { ReceiptPage } from './receipts/ReceiptPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
+import { StorageManagementPage } from './storage/StorageManagementPage'
 
 function AuthenticatedApp() {
   const location = useLocation()
@@ -42,6 +43,7 @@ function AuthenticatedApp() {
             <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
             <Route path="/summary" element={<SalesSummaryPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/storage" element={<StorageManagementPage />} />
           </Routes>
         </div>
       </AppLayout>

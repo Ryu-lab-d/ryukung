@@ -92,8 +92,8 @@ export async function recordPayment(
 
 /**
  * ลบออเดอร์ถาวร — ลบไฟล์สลิปที่แนบไว้ในโฟลเดอร์ของออเดอร์นี้ออกจาก Storage ก่อน (ประหยัดพื้นที่)
- * แล้วค่อยลบแถวออเดอร์ ถ้าออเดอร์นี้เคยออกใบเสร็จไปแล้วฐานข้อมูลจะปฏิเสธการลบเสมอ (กฎข้อ 7 ในสเปก
- * ใบเสร็จที่ออกแล้วต้องอยู่ถาวร) ต้องยกเลิกใบเสร็จหรือใช้ "ยกเลิกออเดอร์" แทนในกรณีนั้น
+ * แล้วค่อยลบแถวออเดอร์ ใบเสร็จที่เคยออกไปแล้วของออเดอร์นี้จะถูกลบไปพร้อมกัน (on delete cascade)
+ * เพื่อให้ลบออเดอร์เก่าประหยัดพื้นที่ได้จริงแม้เคยออกใบเสร็จไปแล้ว
  */
 export async function deleteOrder(orderId: string) {
   const { data: files } = await supabase.storage.from('slips').list(orderId)
@@ -101,8 +101,5 @@ export async function deleteOrder(orderId: string) {
     await supabase.storage.from('slips').remove(files.map((f) => `${orderId}/${f.name}`))
   }
   const { error } = await supabase.from('orders').delete().eq('id', orderId)
-  if (error?.code === '23503') {
-    return { error: { message: 'ลบไม่ได้เพราะออเดอร์นี้เคยออกใบเสร็จไปแล้ว ใบเสร็จที่ออกแล้วต้องเก็บไว้ถาวร — ใช้ "ยกเลิกออเดอร์" แทน' } }
-  }
   return { error: error ? { message: error.message } : null }
 }

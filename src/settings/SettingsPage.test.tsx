@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 import { SettingsPage } from './SettingsPage'
 
 const save = vi.fn()
@@ -33,14 +34,14 @@ beforeEach(() => save.mockReset())
 
 describe('หน้าตั้งค่า', () => {
   it('แสดงค่าที่มีอยู่ในช่องกรอก', () => {
-    render(<SettingsPage />)
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
     expect(screen.getByLabelText('ชื่อร้าน')).toHaveValue('RYUKUNG BAKERY')
     expect(screen.getByLabelText('ที่อยู่ร้าน')).toHaveValue('123 ถนนทดสอบ')
   })
 
   it('แก้ชื่อร้านแล้วกดบันทึก เรียก save ด้วยค่าใหม่', async () => {
     save.mockResolvedValue({ error: null })
-    render(<SettingsPage />)
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
     const input = screen.getByLabelText('ชื่อร้าน')
     await userEvent.clear(input)
     await userEvent.type(input, 'RYUKUNG')
@@ -51,14 +52,14 @@ describe('หน้าตั้งค่า', () => {
   })
 
   it('มีสวิตช์เลือกว่าใบเสร็จโชว์อะไรบ้าง', () => {
-    render(<SettingsPage />)
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
     expect(screen.getByLabelText('ใบเสร็จแสดงโลโก้')).toBeInTheDocument()
     expect(screen.getByLabelText('ใบเสร็จแสดงที่อยู่')).toBeInTheDocument()
     expect(screen.getByLabelText('ใบเสร็จแสดงเบอร์โทร')).toBeInTheDocument()
   })
 
   it('มีสวิตช์บังคับกรอกข้อมูลลูกค้าให้ครบ', () => {
-    render(<SettingsPage />)
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
     expect(
       screen.getByLabelText('บังคับกรอกข้อมูลลูกค้าให้ครบก่อนยืนยันออเดอร์')
     ).toBeChecked()

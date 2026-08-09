@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { signedInClient, purgeOrder } from './helpers'
+import { signedInClient } from './helpers'
 
 describe('ลบออเดอร์และลูกค้า', () => {
   it('ลบออเดอร์ที่ไม่มีใบเสร็จได้ปกติ', async () => {
@@ -9,7 +9,7 @@ describe('ลบออเดอร์และลูกค้า', () => {
     expect(error).toBeNull()
   })
 
-  it('ลบออเดอร์ที่เคยออกใบเสร็จแล้วไม่ได้ (ฐานข้อมูลกันไว้ให้)', async () => {
+  it('ลบออเดอร์ที่เคยออกใบเสร็จแล้วได้ และใบเสร็จถูกลบไปด้วย (เพื่อประหยัดพื้นที่ตามที่ร้านต้องการ)', async () => {
     const db = await signedInClient()
     const no = (await db.rpc('next_order_no')).data as string
     const order = await db.from('orders').insert({ is_draft: false, order_no: no }).select().single()
@@ -17,10 +17,10 @@ describe('ลบออเดอร์และลูกค้า', () => {
     expect(receipt.error).toBeNull()
 
     const { error } = await db.from('orders').delete().eq('id', order.data!.id)
-    expect(error).not.toBeNull()
-    expect(error!.code).toBe('23503')
+    expect(error).toBeNull()
 
-    await purgeOrder(order.data!.id)
+    const remaining = await db.from('receipts').select('id').eq('order_id', order.data!.id)
+    expect(remaining.data).toEqual([])
   })
 
   it('ลบลูกค้าได้ และออเดอร์เก่ายังอยู่แค่ไม่มีลูกค้าผูกแล้ว', async () => {

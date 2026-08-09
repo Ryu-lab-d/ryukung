@@ -6,14 +6,13 @@ import { CancelOrderDialog } from './CancelOrderDialog'
 import { PaymentsSection } from './PaymentsSection'
 import { ShippingSection } from './ShippingSection'
 import { CopyPublicLinkButton } from './CopyPublicLinkButton'
+import { WorkStatusStepper } from './WorkStatusStepper'
+import { StatusChangeToast } from './StatusChangeToast'
+import { stageLabel } from './workStatus'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
 import { formatBaht } from '../lib/money'
 import { supabase } from '../lib/supabase'
-
-const WORK_STATUS_LABELS: Record<string, string> = {
-  to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว',
-}
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
@@ -34,26 +33,16 @@ export function OrderDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
-  const [pendingStatus, setPendingStatus] = useState<string | null>(null)
-  const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [statusChange, setStatusChange] = useState<{ status: string; label: string } | null>(null)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   if (loading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
-  async function applyStatusChange(newStatus: string) {
-    const oldLabel = WORK_STATUS_LABELS[order.work_status] ?? order.work_status
-    const newLabel = WORK_STATUS_LABELS[newStatus] ?? newStatus
-    await changeWorkStatus(order.id, newStatus)
+  async function handleAdvanceStatus(newStatus: string) {
+    const { error } = await changeWorkStatus(order.id, newStatus)
+    if (error) { setStatusError(error.message); return }
     await reload()
-    setToastMessage(`เปลี่ยนสถานะจาก "${oldLabel}" เป็น "${newLabel}" สำเร็จ`)
-  }
-
-  function handleStatusClick(newStatus: string) {
-    // นโยบายร้าน: ยังไม่เก็บเงินไม่เริ่มทำ — ถ้าจะย้ายไป "กำลังทำ" ทั้งที่ยังไม่ได้รับเงินเลย ต้องยืนยันก่อน
-    if (newStatus === 'baking' && order.payment_status === 'unpaid') {
-      setPendingStatus(newStatus)
-      return
-    }
-    void applyStatusChange(newStatus)
+    setStatusChange({ status: newStatus, label: stageLabel(order.fulfillment_type, newStatus) })
   }
 
   async function handleAcknowledgeAddressEdit() {
@@ -194,20 +183,17 @@ export function OrderDetailPage() {
               💰 {PAYMENT_LABEL[order.payment_status]}
             </span>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(WORK_STATUS_LABELS).map(([status, label]) => (
-              <button
-                key={status}
-                type="button"
-                disabled={order.work_status === status}
-                onClick={() => handleStatusClick(status)}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (order.work_status === status ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700')}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <WorkStatusStepper
+            fulfillmentType={order.fulfillment_type}
+            workStatus={order.work_status}
+            paymentStatus={order.payment_status}
+            onAdvance={handleAdvanceStatus}
+          />
         </div>
+      )}
+
+      {order.work_status === 'delivered' && order.delivered_at && (
+        <DeliveredCleanupBanner deliveredAt={order.delivered_at} onDeleteNow={() => setShowDeleteConfirm(true)} />
       )}
 
       <PaymentsSection orderId={order.id} payments={payments} onRecorded={reload} />
@@ -249,7 +235,7 @@ export function OrderDetailPage() {
       {showDeleteConfirm && (
         <ConfirmDialog
           title="แน่ใจนะว่าจะลบออเดอร์นี้?"
-          message="ลบแล้วกู้คืนไม่ได้ ถ้าเคยออกใบเสร็จไปแล้วจะลบไม่ได้ (ใช้ปุ่มยกเลิกออเดอร์แทน)"
+          message="ลบแล้วกู้คืนไม่ได้ รวมถึงใบเสร็จที่เคยออกไปแล้วของออเดอร์นี้ด้วย (ถ้ามี)"
           confirmLabel="ลบถาวร"
           cancelLabel="ไม่ลบ"
           busy={deleting}
@@ -258,19 +244,41 @@ export function OrderDetailPage() {
         />
       )}
 
-      {pendingStatus && (
-        <ConfirmDialog
-          title="ลูกค้ายังไม่ชำระเงิน"
-          message="ยืนยันจะเริ่มทำออเดอร์นี้เลยไหม ทั้งที่ยังไม่ได้รับเงินเลย?"
-          confirmLabel="เริ่มทำเลย"
-          cancelLabel="ยังไม่เริ่ม"
-          danger={false}
-          onConfirm={() => { const s = pendingStatus; setPendingStatus(null); void applyStatusChange(s) }}
-          onCancel={() => setPendingStatus(null)}
-        />
+      {statusChange && (
+        <StatusChangeToast status={statusChange.status} label={statusChange.label} onDone={() => setStatusChange(null)} />
       )}
+      {statusError && <Toast variant="error" message={statusError} onDone={() => setStatusError(null)} />}
+    </div>
+  )
+}
 
-      {toastMessage && <Toast message={toastMessage} onDone={() => setToastMessage(null)} />}
+function DeliveredCleanupBanner({ deliveredAt, onDeleteNow }: { deliveredAt: string; onDeleteNow: () => void }) {
+  const deliveredDate = new Date(deliveredAt)
+  const hoursSince = (Date.now() - deliveredDate.getTime()) / 3_600_000
+  const dueForCleanup = hoursSince >= 24
+
+  return (
+    <div
+      className={
+        'rounded-lg border px-3 py-2.5 text-sm space-y-1.5 ' +
+        (dueForCleanup ? 'bg-orange-50 border-orange-300 text-orange-800' : 'bg-stone-50 border-stone-200 text-stone-600')
+      }
+    >
+      <p className="flex items-center gap-2">
+        {dueForCleanup ? (
+          <>🗑️ <span>ครบกำหนดลบแล้ว — ออเดอร์นี้จัดส่ง/ส่งมอบสำเร็จมาเกิน 1 วัน ลบได้เพื่อประหยัดพื้นที่ Supabase</span></>
+        ) : (
+          <>📦 <span>จัดส่ง/ส่งมอบสำเร็จเมื่อ {deliveredDate.toLocaleString('th-TH')} — ระบบจะเตือนให้ลบเพื่อประหยัดพื้นที่ เมื่อครบ 1 วันหลังจัดส่งสำเร็จ</span></>
+        )}
+      </p>
+      <div className="flex items-center gap-3">
+        {dueForCleanup && (
+          <button type="button" onClick={onDeleteNow} className="rounded-lg bg-orange-600 text-white text-xs px-2.5 py-1.5 font-medium">
+            ลบตอนนี้
+          </button>
+        )}
+        <Link to="/storage" className="text-xs underline">ดูรายการที่ครบกำหนดลบทั้งหมด</Link>
+      </div>
     </div>
   )
 }

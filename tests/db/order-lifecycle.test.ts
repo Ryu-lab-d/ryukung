@@ -54,9 +54,14 @@ describe('วงจรชีวิตออเดอร์แบบครบว�
     order = (await db.from('orders').select('*').eq('id', order.id).single()).data!
     expect(order.payment_status).toBe('paid')
 
-    await db.from('orders').update({ work_status: 'delivered' }).eq('id', order.id)
+    // เปลี่ยนสถานะงานต้องเดินทีละขั้นตามลำดับ ข้ามขั้นไม่ได้ (ฐานข้อมูลบังคับ)
+    for (const status of ['baking', 'ready', 'delivered']) {
+      const { error } = await db.from('orders').update({ work_status: status }).eq('id', order.id)
+      expect(error).toBeNull()
+    }
     order = (await db.from('orders').select('*').eq('id', order.id).single()).data!
     expect(order.work_status).toBe('delivered')
+    expect(order.delivered_at).not.toBeNull()
 
     // ลิงก์สาธารณะต้องเห็นยอดถูกต้องและไม่มีต้นทุนหลุดออกไป
     const pub = await db.rpc('get_public_order', { p_token: order.public_token })

@@ -33,12 +33,26 @@ type PublicOrderView = {
   items: { product_name: string; unit_price: number; qty: number; line_total: number; note: string | null }[]
 }
 
-const WORK_STAGES = [
+const SIMPLE_WORK_STAGES = [
   { key: 'to_bake', label: 'รับออเดอร์แล้ว' },
   { key: 'baking', label: 'กำลังทำ' },
   { key: 'ready', label: 'แพ็คของแล้ว' },
   { key: 'delivered', label: 'ส่งมอบแล้ว' },
 ] as const
+
+const COURIER_WORK_STAGES = [
+  { key: 'to_bake', label: 'รับออเดอร์แล้ว' },
+  { key: 'baking', label: 'กำลังทำ' },
+  { key: 'ready', label: 'แพ็คของแล้ว' },
+  { key: 'waiting_courier', label: 'รอขนส่งเข้ารับพัสดุ' },
+  { key: 'picked_up', label: 'ขนส่งเข้ารับพัสดุแล้ว' },
+  { key: 'in_transit', label: 'พัสดุอยู่ระหว่างจัดส่ง' },
+  { key: 'delivered', label: 'จัดส่งสำเร็จ' },
+] as const
+
+function workStagesFor(fulfillmentType: string) {
+  return fulfillmentType === 'shipping' || fulfillmentType === 'rider' ? COURIER_WORK_STAGES : SIMPLE_WORK_STAGES
+}
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ร้านไปส่งเอง',
@@ -79,7 +93,16 @@ const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string
 }
 
 /** ไทม์ไลน์เดียวที่รวมทั้งสถานะชำระเงินและสถานะงาน ให้ลูกค้าเห็นภาพรวมในที่เดียว ไม่ต้องแยกอ่านสองที่ */
-function StatusTimeline({ workStatus, paymentStatus }: { workStatus: string; paymentStatus: string }) {
+function StatusTimeline({
+  workStatus,
+  paymentStatus,
+  fulfillmentType,
+}: {
+  workStatus: string
+  paymentStatus: string
+  fulfillmentType: string
+}) {
+  const WORK_STAGES = workStagesFor(fulfillmentType)
   const currentIndex = WORK_STAGES.findIndex((s) => s.key === workStatus)
   const payment = PAYMENT_STAGE[paymentStatus] ?? PAYMENT_STAGE.unpaid
 
@@ -390,7 +413,7 @@ export function PublicOrderPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
-          <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} />
+          <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} fulfillmentType={order.fulfillment_type} />
 
           {order.payment_status !== 'paid' && (
             <button

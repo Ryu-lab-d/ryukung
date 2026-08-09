@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
 
@@ -113,6 +114,17 @@ export function SettingsPage() {
   return (
     <div className="p-4 max-w-lg space-y-6">
       <h1 className="text-lg font-semibold">ตั้งค่า</h1>
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-stone-500">จัดการร้าน</h2>
+        <Link
+          to="/storage"
+          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">🗑️ จัดการพื้นที่จัดเก็บ</span>
+          <span className="text-stone-400">→</span>
+        </Link>
+      </section>
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>
