@@ -20,6 +20,7 @@ const settings = {
   receipt_no_prefix: 'RC',
   shipping_lead_days: 1,
   require_full_customer_info: true,
+  payment_instructions: 'แจ้งชำระเงินผ่านไลน์ @ryukung_bakery',
 }
 
 vi.mock('./useSettings', () => ({

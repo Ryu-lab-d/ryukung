@@ -45,16 +45,17 @@ export function SettingsPage() {
 
   function text(
     label: string,
-    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer'
+    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer' | 'payment_instructions'
   ) {
     return (
       <div className="space-y-1">
         <label htmlFor={key} className="text-sm text-stone-600">{label}</label>
-        {key === 'address' || key === 'receipt_footer' ? (
+        {key === 'address' || key === 'receipt_footer' || key === 'payment_instructions' ? (
           <textarea
             id={key}
             value={values[key] ?? ''}
             onChange={(e) => set(key, e.target.value)}
+            rows={key === 'payment_instructions' ? 5 : undefined}
             className="w-full rounded-lg border border-stone-300 px-3 py-2"
           />
         ) : (
@@ -119,6 +120,11 @@ export function SettingsPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
+        {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
       </section>
 
       <section className="space-y-3">

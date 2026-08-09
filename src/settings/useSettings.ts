@@ -17,6 +17,7 @@ export type Settings = {
   receipt_no_prefix: string
   shipping_lead_days: number
   require_full_customer_info: boolean
+  payment_instructions: string | null
 }
 
 export function useSettings() {

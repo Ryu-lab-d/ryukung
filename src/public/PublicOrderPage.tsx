@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
@@ -7,10 +7,16 @@ import { Toast } from '../lib/Toast'
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
+  payment_instructions: string | null
   order_no: string
   customer_name: string | null
   needed_date: string | null
   fulfillment_type: string
+  pickup_place: string | null
+  pickup_time: string | null
+  ship_recipient_name: string | null
+  ship_recipient_phone: string | null
+  ship_address_text: string | null
   work_status: string
   payment_status: string
   items_total: number
@@ -20,6 +26,7 @@ type PublicOrderView = {
   carrier: string | null
   tracking_no: string | null
   note: string | null
+  address_editable: boolean
   items: { product_name: string; unit_price: number; qty: number; line_total: number; note: string | null }[]
 }
 
@@ -30,6 +37,10 @@ const WORK_STAGES = [
   { key: 'delivered', label: 'ส่งมอบแล้ว' },
 ] as const
 
+const FULFILLMENT_LABELS: Record<string, string> = {
+  pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ร้านไปส่งเอง',
+}
+
 /**
  * เทียบชื่อแบบทนต่อสิ่งที่คีย์บอร์ดมือถือทำโดยที่ผู้ใช้ไม่รู้ตัว — ตัวพิมพ์ใหญ่/เล็กที่ iOS/Android
  * auto-capitalize ให้อัตโนมัติ, ช่องว่างซ้อนที่ระบบคำแนะนำคำแทรกให้, หรืออักขระ Unicode ที่ต่างรูปแบบ
@@ -38,6 +49,24 @@ const WORK_STAGES = [
  */
 function normalizeName(value: string): string {
   return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** แปลง URL ที่อยู่ในข้อความธรรมดาให้กดได้จริง เพราะข้อความวิธีชำระเงินมาจาก settings เป็นข้อความอิสระที่ริวคุงแก้เองได้ */
+function Linkify({ text }: { text: string }) {
+  const parts = text.split(/(https?:\/\/[^\s]+)/g)
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline font-medium text-stone-900">
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  )
 }
 
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean }> = {
@@ -99,6 +128,87 @@ function StatusTimeline({ workStatus, paymentStatus }: { workStatus: string; pay
   )
 }
 
+function AddressEditForm({
+  token,
+  order,
+  onSaved,
+  onCancel,
+}: {
+  token: string
+  order: PublicOrderView
+  onSaved: () => void
+  onCancel: () => void
+}) {
+  const [recipientName, setRecipientName] = useState(order.ship_recipient_name ?? '')
+  const [recipientPhone, setRecipientPhone] = useState(order.ship_recipient_phone ?? '')
+  const [addressText, setAddressText] = useState(order.ship_address_text ?? '')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault()
+    if (!addressText.trim()) { setError('กรุณากรอกที่อยู่'); return }
+    setBusy(true)
+    const { data, error } = await supabase.rpc('update_public_order_address', {
+      p_token: token,
+      p_recipient_name: recipientName.trim() || null,
+      p_recipient_phone: recipientPhone.trim() || null,
+      p_address_text: addressText.trim(),
+    })
+    setBusy(false)
+    if (error || !data) {
+      setError(error?.message ?? 'แก้ไขไม่สำเร็จ ออเดอร์นี้อาจเลยขั้นตอนที่แก้ที่อยู่ได้แล้ว')
+      return
+    }
+    onSaved()
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3">
+        <h2 className="text-lg font-semibold">แก้ไขที่อยู่จัดส่ง</h2>
+        <div className="space-y-1">
+          <label htmlFor="pub-recipient-name" className="text-sm text-stone-600">ชื่อผู้รับ</label>
+          <input
+            id="pub-recipient-name"
+            value={recipientName}
+            onChange={(e) => setRecipientName(e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="pub-recipient-phone" className="text-sm text-stone-600">เบอร์ผู้รับ</label>
+          <input
+            id="pub-recipient-phone"
+            value={recipientPhone}
+            onChange={(e) => setRecipientPhone(e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        </div>
+        <div className="space-y-1">
+          <label htmlFor="pub-address-text" className="text-sm text-stone-600">ที่อยู่เต็ม</label>
+          <textarea
+            id="pub-address-text"
+            value={addressText}
+            onChange={(e) => setAddressText(e.target.value)}
+            rows={3}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          />
+        </div>
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <div className="flex gap-2 pt-1">
+          <button type="button" onClick={onCancel} className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium">
+            ยกเลิก
+          </button>
+          <button type="submit" disabled={busy} className="flex-1 rounded-lg bg-stone-900 text-white py-2.5 font-medium disabled:opacity-50">
+            {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+          </button>
+        </div>
+      </form>
+    </div>
+  )
+}
+
 export function PublicOrderPage() {
   const { token } = useParams()
   const [order, setOrder] = useState<PublicOrderView | null | undefined>(undefined)
@@ -108,13 +218,18 @@ export function PublicOrderPage() {
   const [shake, setShake] = useState(false)
   const [nameError, setNameError] = useState(false)
   const [noNameOnFile, setNoNameOnFile] = useState(false)
+  const [showPaymentInfo, setShowPaymentInfo] = useState(false)
+  const [showAddressEdit, setShowAddressEdit] = useState(false)
+  const [addressSaved, setAddressSaved] = useState(false)
 
-  useEffect(() => {
+  const fetchOrder = useCallback(() => {
     if (!token) return
     supabase.rpc('get_public_order', { p_token: token }).then(({ data }) => {
       setOrder((data as PublicOrderView | null) ?? null)
     })
   }, [token])
+
+  useEffect(() => { fetchOrder() }, [fetchOrder])
 
   function handleConfirmName(e: FormEvent) {
     e.preventDefault()
@@ -244,6 +359,61 @@ export function PublicOrderPage() {
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
           <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} />
+
+          {order.payment_status !== 'paid' && (
+            <button
+              type="button"
+              onClick={() => setShowPaymentInfo((v) => !v)}
+              className="w-full rounded-xl bg-red-50 border border-red-200 text-red-700 font-medium py-2.5 text-sm"
+            >
+              💳 ยังไม่ได้ชำระเงิน · ดูวิธีชำระเงิน
+            </button>
+          )}
+          {showPaymentInfo && order.payment_instructions && (
+            <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-line">
+              <Linkify text={order.payment_instructions} />
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-2xl shadow-sm p-5 space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-stone-500">กำหนดการจัดส่ง</h2>
+            {order.address_editable && (
+              <button type="button" onClick={() => setShowAddressEdit(true)} className="text-xs text-stone-600 underline">
+                แก้ไขที่อยู่
+              </button>
+            )}
+          </div>
+          <div className="text-sm space-y-1">
+            <div className="flex justify-between"><span className="text-stone-500">วิธีรับของ</span><span>{FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">วันที่ต้องได้ของ</span><span>{order.needed_date ?? '-'}</span></div>
+            {order.fulfillment_type === 'pickup' ? (
+              <>
+                <div className="flex justify-between"><span className="text-stone-500">จุดนัดรับ</span><span>{order.pickup_place ?? '-'}</span></div>
+                <div className="flex justify-between"><span className="text-stone-500">เวลานัดรับ</span><span>{order.pickup_time ?? '-'}</span></div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-stone-500">ผู้รับ</span>
+                  <span>{order.ship_recipient_name ?? '-'} {order.ship_recipient_phone && `· ${order.ship_recipient_phone}`}</span>
+                </div>
+                {order.ship_address_text && (
+                  <div>
+                    <span className="text-stone-500">ที่อยู่: </span>
+                    <span>{order.ship_address_text}</span>
+                  </div>
+                )}
+                {order.tracking_no && (
+                  <div className="flex justify-between"><span className="text-stone-500">เลขพัสดุ</span><span>{order.tracking_no} ({order.carrier})</span></div>
+                )}
+              </>
+            )}
+          </div>
+          {!order.address_editable && order.fulfillment_type !== 'pickup' && (
+            <p className="text-xs text-stone-400 pt-1">แพ็คของแล้ว แก้ไขที่อยู่เองไม่ได้แล้ว ติดต่อร้านโดยตรงถ้าจำเป็น</p>
+          )}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
@@ -262,13 +432,23 @@ export function PublicOrderPage() {
             <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
             <div className="flex justify-between font-semibold text-base"><span>ยอดรวม</span><span>{formatBaht(order.grand_total)}</span></div>
           </div>
-
-          <div className="border-t border-stone-100 pt-2 space-y-1 text-sm">
-            <p>วันที่ต้องได้ของ: {order.needed_date ?? '-'}</p>
-            {order.tracking_no && <p>เลขพัสดุ: {order.tracking_no} ({order.carrier})</p>}
-          </div>
         </div>
       </div>
+
+      {showAddressEdit && token && (
+        <AddressEditForm
+          token={token}
+          order={order}
+          onCancel={() => setShowAddressEdit(false)}
+          onSaved={() => {
+            setShowAddressEdit(false)
+            setAddressSaved(true)
+            fetchOrder()
+          }}
+        />
+      )}
+
+      {addressSaved && <Toast message="บันทึกที่อยู่ใหม่แล้ว" onDone={() => setAddressSaved(false)} />}
     </div>
   )
 }
