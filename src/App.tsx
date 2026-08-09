@@ -20,6 +20,7 @@ import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { StorageManagementPage } from './storage/StorageManagementPage'
 import { CalendarPage } from './calendar/CalendarPage'
+import { ChatbotManagementPage } from './chatbot/ChatbotManagementPage'
 
 /** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
 function OwnerOnlyRoute({ children }: { children: ReactNode }) {
@@ -54,6 +55,7 @@ function AuthenticatedApp() {
             <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
             <Route path="/summary" element={<SalesSummaryPage />} />
             <Route path="/settings" element={<OwnerOnlyRoute><SettingsPage /></OwnerOnlyRoute>} />
+            <Route path="/chatbot" element={<OwnerOnlyRoute><ChatbotManagementPage /></OwnerOnlyRoute>} />
             <Route path="/storage" element={<StorageManagementPage />} />
           </Routes>
         </div>

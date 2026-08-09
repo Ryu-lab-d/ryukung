@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Linkify } from '../lib/Linkify'
+import { supabase } from '../lib/supabase'
 
 type Faq = { keywords: string[]; answer: string }
 type ChatMessage = { id: number; from: 'bot' | 'user'; text: string }
@@ -81,12 +82,16 @@ export function ChatBot({
   shopName,
   faqs,
   lineUrl,
+  mode = 'floating',
 }: {
   shopName: string
   faqs: Faq[]
   lineUrl: string | null
+  /** 'embedded' = ใช้ในหน้าจัดการแชทบอทของร้าน (เจ้าของร้านลองคุยเทส) เปิดค้างในหน้าเสมอ ไม่ลอย ไม่นับเป็นคำถามลูกค้าจริง */
+  mode?: 'floating' | 'embedded'
 }) {
-  const [open, setOpen] = useState(false)
+  const embedded = mode === 'embedded'
+  const [open, setOpen] = useState(embedded)
   const [greeted, setGreeted] = useState(false)
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [botTyping, setBotTyping] = useState(false)
@@ -95,12 +100,21 @@ export function ChatBot({
   const nextId = useRef(0)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  // เด้งข้อความชวนคุยขึ้นมาสักพักหลังโหลดหน้า เพราะปุ่มแชทลอยเฉยๆ ลูกค้ามักไม่สังเกตเห็น
+  // เด้งข้อความชวนคุยขึ้นมาสักพักหลังโหลดหน้า เพราะปุ่มแชทลอยเฉยๆ ลูกค้ามักไม่สังเกตเห็น (โหมดฝังในหน้าไม่ต้องมี)
   useEffect(() => {
+    if (embedded) return
     const showTimer = setTimeout(() => setShowNudge(true), 1200)
     const hideTimer = setTimeout(() => setShowNudge(false), 9000)
     return () => { clearTimeout(showTimer); clearTimeout(hideTimer) }
-  }, [])
+  }, [embedded])
+
+  // โหมดฝังในหน้า (ทดสอบจากฝั่งร้าน) เปิดค้างอยู่แล้วตั้งแต่แรก ต้องทักทายเองตั้งแต่เมานท์
+  useEffect(() => {
+    if (!embedded || greeted) return
+    setGreeted(true)
+    pushBotMessage(`สวัสดีค่ะ หนูเป็นน้องริว จากร้าน ${shopName} ค่ะ มีปัญหาหรือคำถามอะไร สอบถามได้เลยนะคะ 😊`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [embedded])
 
   function pushBotMessage(text: string) {
     setBotTyping(true)
@@ -136,6 +150,8 @@ export function ChatBot({
       pushBotMessage(
         `ต้องขออภัยด้วยนะคะ น้องริวยังไม่สามารถช่วยตอบคำถามนี้ได้ แต่เดี๋ยวน้องประสานงานเจ้าหน้าที่ให้นะคะ 🙏\n\n${lineText}หากมีคำถามไหนที่ทางร้านสามารถตอบได้ ทางร้านจะตอบให้แน่นอนค่ะ`
       )
+      // เก็บเฉพาะข้อความคำถามที่ตอบไม่ได้ไว้ให้ร้านดูว่าควรเพิ่ม FAQ อะไรบ้าง — ข้ามตอนเจ้าของร้านทดสอบเองในหน้าจัดการ
+      if (!embedded) void supabase.rpc('log_unanswered_chat_question', { p_question: question })
     }
   }
 
@@ -146,7 +162,7 @@ export function ChatBot({
     }
   }, [messages, botTyping])
 
-  if (!open) {
+  if (!open && !embedded) {
     return (
       <div className="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2">
         {showNudge && (
@@ -176,15 +192,23 @@ export function ChatBot({
   }
 
   return (
-    <div className="fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:w-96 sm:h-[560px] sm:rounded-2xl bg-white shadow-xl z-40 flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 bg-stone-900 text-white sm:rounded-t-2xl shrink-0">
+    <div
+      className={
+        embedded
+          ? 'w-full h-[560px] rounded-2xl border border-stone-200 bg-white shadow-sm flex flex-col'
+          : 'fixed inset-0 sm:inset-auto sm:bottom-5 sm:right-5 sm:w-96 sm:h-[560px] sm:rounded-2xl bg-white shadow-xl z-40 flex flex-col'
+      }
+    >
+      <div className="flex items-center justify-between px-4 py-3 bg-stone-900 text-white rounded-t-2xl shrink-0">
         <div>
           <p className="font-semibold text-sm">🥐 น้องริว</p>
-          <p className="text-xs text-stone-300">{shopName}</p>
+          <p className="text-xs text-stone-300">{embedded ? 'ทดสอบคุยกับบอท (มุมมองลูกค้า)' : shopName}</p>
         </div>
-        <button type="button" onClick={() => setOpen(false)} aria-label="ปิดแชท" className="text-white text-2xl leading-none px-1">
-          ×
-        </button>
+        {!embedded && (
+          <button type="button" onClick={() => setOpen(false)} aria-label="ปิดแชท" className="text-white text-2xl leading-none px-1">
+            ×
+          </button>
+        )}
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 space-y-2 bg-stone-50">
