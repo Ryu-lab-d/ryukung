@@ -5,6 +5,7 @@ import { useAddresses } from './useAddresses'
 import { useCustomerOrders } from './useCustomerOrders'
 import { formatBaht } from '../lib/money'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { reorderFromOrder } from '../orders/api'
 
 const WORK_STATUS_LABELS: Record<string, string> = {
   to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว', cancelled: 'ยกเลิกแล้ว',
@@ -26,8 +27,18 @@ export function CustomerDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [reorderingId, setReorderingId] = useState<string | null>(null)
+  const [reorderError, setReorderError] = useState<string | null>(null)
 
   if (!customer) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+
+  async function handleReorder(orderId: string) {
+    setReorderingId(orderId)
+    const { id: newId, error } = await reorderFromOrder(orderId)
+    setReorderingId(null)
+    if (error) { setReorderError(error.message); return }
+    navigate(`/orders/${newId}/edit`)
+  }
 
   async function handleDelete() {
     setShowDeleteConfirm(false)
@@ -103,23 +114,28 @@ export function CustomerDetailPage() {
 
       <section className="rounded-xl border border-stone-200 bg-white p-3 space-y-1">
         <h2 className="text-sm font-semibold mb-1">ประวัติการซื้อ</h2>
+        {reorderError && <p className="text-xs text-red-600 pb-1">{reorderError}</p>}
         {orders.map((o) => (
-          <Link
-            key={o.id}
-            to={`/orders/${o.id}`}
-            className="flex items-center justify-between text-sm py-2 border-b border-stone-100 last:border-0"
-          >
-            <div>
+          <div key={o.id} className="flex items-center justify-between gap-2 text-sm py-2 border-b border-stone-100 last:border-0">
+            <Link to={`/orders/${o.id}`} className="flex-1 min-w-0">
               <p className="font-medium">{o.order_no}</p>
               <p className="text-xs text-stone-500">{o.needed_date ?? '-'}</p>
-            </div>
-            <div className="text-right">
+            </Link>
+            <div className="text-right shrink-0">
               <p className="font-medium">{formatBaht(o.grand_total)}</p>
               <span className={'text-xs rounded-full px-2 py-0.5 ' + (PAYMENT_COLOR[o.payment_status] ?? 'bg-stone-100 text-stone-600')}>
                 {PAYMENT_LABEL[o.payment_status] ?? WORK_STATUS_LABELS[o.work_status] ?? o.work_status}
               </span>
             </div>
-          </Link>
+            <button
+              type="button"
+              onClick={() => void handleReorder(o.id)}
+              disabled={reorderingId === o.id}
+              className="shrink-0 text-xs rounded-lg border border-stone-300 text-stone-600 px-2 py-1.5 disabled:opacity-50"
+            >
+              {reorderingId === o.id ? '...' : '🔁 สั่งซ้ำ'}
+            </button>
+          </div>
         ))}
         {orders.length === 0 && <p className="text-sm text-stone-400">ยังไม่เคยสั่งซื้อ</p>}
       </section>

@@ -5,11 +5,14 @@ import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
 import { Linkify } from '../lib/Linkify'
 import { ChatBot } from './ChatBot'
+import { PromptPayQR } from './PromptPayQR'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
   payment_instructions: string | null
+  promptpay: string | null
+  balance_due: number
   faqs: { keywords: string[]; answer: string }[]
   line_url: string | null
   order_no: string
@@ -429,6 +432,11 @@ export function PublicOrderPage() {
             >
               💳 ยังไม่ได้ชำระเงิน · ดูวิธีชำระเงิน
             </button>
+          )}
+          {showPaymentInfo && order.promptpay && order.balance_due > 0 && (
+            <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3">
+              <PromptPayQR promptpayId={order.promptpay} amount={order.balance_due} />
+            </div>
           )}
           {showPaymentInfo && order.payment_instructions && (
             <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-line">

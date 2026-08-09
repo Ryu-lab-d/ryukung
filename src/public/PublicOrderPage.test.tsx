@@ -22,7 +22,9 @@ const baseOrder = {
   carrier: null,
   tracking_no: null,
   note: null,
-  payment_instructions: null,
+  payment_instructions: null as string | null,
+  promptpay: null as string | null,
+  balance_due: 80,
   faqs: [],
   line_url: null as string | null,
   pickup_place: 'หน้าร้าน',
@@ -110,5 +112,27 @@ describe('ปุ่มติดต่อพนักงานผ่านไล�
   it('สถานะยังไม่ถึงจัดส่งสำเร็จ ไม่มีข้อความ "ไม่ได้รับของ"', async () => {
     await openOrder({ ...baseOrder, work_status: 'baking', line_url: 'https://lin.ee/yscT9fJ' })
     expect(screen.queryByText(/ไม่ได้รับของ/)).not.toBeInTheDocument()
+  })
+})
+
+describe('QR พร้อมเพย์ล็อกยอด', () => {
+  it('ร้านตั้งเลขพร้อมเพย์ไว้ กดดูวิธีชำระเงินแล้วเห็น QR พร้อมยอดที่ต้องจ่ายจริง', async () => {
+    await openOrder({ ...baseOrder, promptpay: '0812345678', balance_due: 80 })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    expect(await screen.findByAltText('QR พร้อมเพย์')).toBeInTheDocument()
+    expect(screen.getByText('80.00 บาท')).toBeInTheDocument()
+    expect(screen.getByText(/ยอดถูกล็อกไว้ในตัว QR/)).toBeInTheDocument()
+  })
+
+  it('ยังไม่ได้ตั้งเลขพร้อมเพย์ ไม่แสดง QR (โชว์แค่ข้อความวิธีชำระเงินถ้ามี)', async () => {
+    await openOrder({ ...baseOrder, promptpay: null, balance_due: 80, payment_instructions: 'โอนเข้าบัญชี...' })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    expect(screen.queryByAltText('QR พร้อมเพย์')).not.toBeInTheDocument()
+  })
+
+  it('ยอดคงเหลือเป็นศูนย์ ไม่แสดง QR แม้จะตั้งเลขพร้อมเพย์ไว้', async () => {
+    await openOrder({ ...baseOrder, promptpay: '0812345678', balance_due: 0 })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    expect(screen.queryByAltText('QR พร้อมเพย์')).not.toBeInTheDocument()
   })
 })

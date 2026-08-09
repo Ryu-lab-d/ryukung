@@ -96,6 +96,66 @@ export async function recordPayment(
 }
 
 /**
+ * สั่งซ้ำออเดอร์เก่า — สร้างร่างใหม่ให้ลูกค้าคนเดิม คัดลอกสินค้า/จำนวน/ข้อมูลจัดส่งจากออเดอร์เก่ามาให้
+ * แต่ดึงราคาสินค้า ณ ปัจจุบันจากตาราง products มาใช้แทนราคาเก่า (เผื่อราคาสินค้าเปลี่ยนไปแล้ว) — ถ้าสินค้านั้น
+ * ถูกลบ/ปิดใช้งานไปแล้ว จะใช้ราคาเดิมที่บันทึกไว้ในออเดอร์เก่าแทน ไม่ใส่วันที่นัด/ส่วนลดมาให้ ให้พนักงานกรอกใหม่เอง
+ */
+export async function reorderFromOrder(oldOrderId: string) {
+  const [{ data: oldOrder, error: orderError }, { data: oldItems, error: itemsError }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select('customer_id, fulfillment_type, pickup_place, pickup_time, ship_recipient_name, ship_recipient_phone, ship_address_text')
+      .eq('id', oldOrderId)
+      .single(),
+    supabase.from('order_items').select('product_id, product_name, unit_price, unit_cost, qty, note').eq('order_id', oldOrderId),
+  ])
+  if (orderError) return { id: undefined, error: { message: orderError.message } }
+  if (itemsError) return { id: undefined, error: { message: itemsError.message } }
+
+  const productIds = (oldItems ?? []).map((it) => it.product_id).filter((id): id is string => id !== null)
+  const { data: currentProducts } = productIds.length > 0
+    ? await supabase.from('products').select('id, price, cost').in('id', productIds)
+    : { data: [] as { id: string; price: number; cost: number }[] }
+  const priceById = new Map((currentProducts ?? []).map((p) => [p.id, p]))
+
+  const { data: draft, error: draftError } = await supabase
+    .from('orders')
+    .insert({
+      is_draft: true,
+      customer_id: oldOrder!.customer_id,
+      fulfillment_type: oldOrder!.fulfillment_type,
+      pickup_place: oldOrder!.pickup_place,
+      pickup_time: oldOrder!.pickup_time,
+      ship_recipient_name: oldOrder!.ship_recipient_name,
+      ship_recipient_phone: oldOrder!.ship_recipient_phone,
+      ship_address_text: oldOrder!.ship_address_text,
+    })
+    .select()
+    .single()
+  if (draftError) return { id: undefined, error: { message: draftError.message } }
+
+  if (oldItems && oldItems.length > 0) {
+    const { error: insertItemsError } = await supabase.from('order_items').insert(
+      oldItems.map((it) => {
+        const current = it.product_id ? priceById.get(it.product_id) : undefined
+        return {
+          order_id: draft.id,
+          product_id: it.product_id,
+          product_name: it.product_name,
+          unit_price: current?.price ?? it.unit_price,
+          unit_cost: current?.cost ?? it.unit_cost,
+          qty: it.qty,
+          note: it.note,
+        }
+      })
+    )
+    if (insertItemsError) return { id: undefined, error: { message: insertItemsError.message } }
+  }
+
+  return { id: draft.id as string, error: null }
+}
+
+/**
  * ลบออเดอร์ถาวร — ลบไฟล์สลิปที่แนบไว้ในโฟลเดอร์ของออเดอร์นี้ออกจาก Storage ก่อน (ประหยัดพื้นที่)
  * แล้วค่อยลบแถวออเดอร์ ใบเสร็จที่เคยออกไปแล้วของออเดอร์นี้จะถูกลบไปพร้อมกัน (on delete cascade)
  * เพื่อให้ลบออเดอร์เก่าประหยัดพื้นที่ได้จริงแม้เคยออกใบเสร็จไปแล้ว

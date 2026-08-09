@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useOrder } from './useOrder'
-import { changeWorkStatus, deleteOrder, assignOrder } from './api'
+import { changeWorkStatus, deleteOrder, assignOrder, reorderFromOrder } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
 import { PaymentsSection } from './PaymentsSection'
 import { ShippingSection } from './ShippingSection'
@@ -42,6 +42,8 @@ export function OrderDetailPage() {
   const [statusError, setStatusError] = useState<string | null>(null)
   const [sendingReminder, setSendingReminder] = useState(false)
   const [emailMessage, setEmailMessage] = useState<string | null>(null)
+  const [reordering, setReordering] = useState(false)
+  const [reorderError, setReorderError] = useState<string | null>(null)
 
   if (loading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
@@ -94,6 +96,14 @@ export function OrderDetailPage() {
     setEmailMessage(error ? 'ส่งอีเมลไม่สำเร็จ: ' + error : `ส่งอีเมลเตือนชำระเงินไปที่ ${order.customers.email} แล้ว`)
   }
 
+  async function handleReorder() {
+    setReordering(true)
+    const { id: newId, error } = await reorderFromOrder(order.id)
+    setReordering(false)
+    if (error) { setReorderError(error.message); return }
+    navigate(`/orders/${newId}/edit`)
+  }
+
   async function handleDelete() {
     setShowDeleteConfirm(false)
     setDeleting(true)
@@ -138,10 +148,14 @@ export function OrderDetailPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <button type="button" onClick={() => void handleReorder()} disabled={reordering} className="text-sm text-stone-600 underline disabled:opacity-50">
+            {reordering ? 'กำลังสร้าง...' : '🔁 สั่งซ้ำ'}
+          </button>
           <Link to={`/orders/${order.id}/receipt`} className="text-sm text-stone-600 underline">ใบเสร็จ</Link>
           <Link to={`/orders/${order.id}/edit`} className="text-sm text-stone-600 underline">แก้ไข</Link>
         </div>
       </div>
+      {reorderError && <p className="text-sm text-red-600">{reorderError}</p>}
 
       {!order.is_draft && <CopyPublicLinkButton token={order.public_token} />}
 
