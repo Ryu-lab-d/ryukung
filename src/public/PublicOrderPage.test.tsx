@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -201,5 +201,59 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
     await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
     expect(navigator.clipboard.writeText).toHaveBeenCalledWith(window.location.href)
     expect(await screen.findByRole('button', { name: /คัดลอกลิงก์แล้ว/ })).toBeInTheDocument()
+  })
+
+  describe('เมื่อ navigator.share มีอยู่แต่พฤติกรรมแปลกๆ (เบราว์เซอร์ในแอปไลน์/เฟซบุ๊กที่มักมีปัญหา)', () => {
+    afterEach(() => {
+      delete (navigator as { share?: unknown }).share
+    })
+
+    it('navigator.share สำเร็จ ไม่ต้องคัดลอกซ้ำ ไม่มีข้อความ "คัดลอกลิงก์แล้ว" โผล่มา', async () => {
+      const share = vi.fn().mockResolvedValue(undefined)
+      Object.assign(navigator, { share, clipboard: { writeText: vi.fn() } })
+      await openOrder(baseOrder)
+      await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+      expect(share).toHaveBeenCalled()
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
+      expect(screen.queryByRole('button', { name: /คัดลอกลิงก์แล้ว/ })).not.toBeInTheDocument()
+    })
+
+    it('ผู้ใช้กดยกเลิก share sheet เอง (AbortError) ไม่ถือเป็นปัญหา ไม่ fallback ไปคัดลอก', async () => {
+      const abortError = Object.assign(new Error('cancelled'), { name: 'AbortError' })
+      const share = vi.fn().mockRejectedValue(abortError)
+      Object.assign(navigator, { share, clipboard: { writeText: vi.fn() } })
+      await openOrder(baseOrder)
+      await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+      expect(navigator.clipboard.writeText).not.toHaveBeenCalled()
+    })
+
+    it('navigator.share มีแต่ใช้งานจริงไม่ได้ (reject แบบไม่ใช่ยกเลิกเอง) ต้อง fallback ไปคัดลอกลิงก์แทนอัตโนมัติ — บั๊กเดิมคือจุดนี้เงียบไปเฉยๆ', async () => {
+      const share = vi.fn().mockRejectedValue(new Error('NotAllowedError'))
+      const writeText = vi.fn().mockResolvedValue(undefined)
+      Object.assign(navigator, { share, clipboard: { writeText } })
+      await openOrder(baseOrder)
+      await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+      expect(writeText).toHaveBeenCalledWith(window.location.href)
+      expect(await screen.findByRole('button', { name: /คัดลอกลิงก์แล้ว/ })).toBeInTheDocument()
+    })
+  })
+
+  it('ไม่มี navigator.share และ clipboard ใช้ไม่ได้ (เบราว์เซอร์ในแอปบล็อก) fallback ไปใช้ execCommand คัดลอกแบบเก่า', async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('blocked')) } })
+    const execCommand = vi.fn().mockReturnValue(true)
+    document.execCommand = execCommand
+    await openOrder(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+    expect(execCommand).toHaveBeenCalledWith('copy')
+    expect(await screen.findByRole('button', { name: /คัดลอกลิงก์แล้ว/ })).toBeInTheDocument()
+  })
+
+  it('คัดลอกไม่ได้เลยสักทาง (clipboard และ execCommand ล้มเหลวทั้งคู่) โชว์กล่องลิงก์ให้คัดลอกเอง แทนที่จะเงียบไปเฉยๆ', async () => {
+    Object.assign(navigator, { clipboard: { writeText: vi.fn().mockRejectedValue(new Error('blocked')) } })
+    document.execCommand = vi.fn().mockReturnValue(false)
+    await openOrder(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
+    expect(await screen.findByText(/คัดลอกอัตโนมัติไม่ได้/)).toBeInTheDocument()
+    expect(screen.getByDisplayValue(window.location.href)).toBeInTheDocument()
   })
 })
