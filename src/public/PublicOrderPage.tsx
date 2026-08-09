@@ -394,9 +394,32 @@ export function PublicOrderPage() {
           <p className="text-sm text-stone-500">ออเดอร์ {order.order_no}</p>
         </div>
 
+        {order.line_url && (
+          <a
+            href={order.line_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm"
+          >
+            💬 ติดต่อพนักงาน (แอดไลน์)
+          </a>
+        )}
+
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
           <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} fulfillmentType={order.fulfillment_type} />
+
+          {order.work_status === 'delivered' && order.line_url && (
+            <a
+              href={order.line_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-between w-full rounded-xl bg-amber-50 border border-amber-200 text-amber-800 font-medium py-2.5 px-3.5 text-sm mb-2"
+            >
+              <span>📦 ไม่ได้รับของ? ติดต่อที่นี่</span>
+              <span>→</span>
+            </a>
+          )}
 
           {order.payment_status !== 'paid' && (
             <button
