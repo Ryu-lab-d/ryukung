@@ -20,6 +20,7 @@ export type Settings = {
   payment_instructions: string | null
   line_url: string | null
   faqs: { keywords: string[]; answer: string }[]
+  owner_notification_email: string | null
 }
 
 export function useSettings() {

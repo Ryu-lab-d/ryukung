@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { orderConfirmedEmail, paymentReceivedEmail, paymentReminderEmail } from './emailTemplates'
+import { orderConfirmedEmail, paymentReceivedEmail, paymentReminderEmail, newOrderNotificationEmail } from './emailTemplates'
 
 describe('เทมเพลตอีเมลแจ้งลูกค้า', () => {
   it('อีเมลยืนยันรับออเดอร์ มีเลขที่ออเดอร์ ยอดรวม และลิงก์ออเดอร์', () => {
@@ -56,5 +56,23 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(subject).toContain('RYB-000123')
     expect(html).toContain('โอนเข้าพร้อมเพย์')
     expect(html).toContain('250.00')
+  })
+
+  it('อีเมลแจ้งเจ้าของร้านว่ามีออเดอร์ใหม่ มีชื่อลูกค้าและลิงก์เข้าระบบ', () => {
+    const { subject, html } = newOrderNotificationEmail({
+      shopName: 'RYUKUNG BAKERY',
+      orderNo: 'RYB-000123',
+      customerName: 'สมชาย',
+      itemsSummary: 'คุกกี้ x2',
+      grandTotal: 250,
+      neededDate: '2026-08-20',
+      fulfillmentLabel: 'นัดรับเอง',
+      orderDetailUrl: 'https://ryukung-pos.pages.dev/orders/xyz789',
+    })
+    expect(subject).toContain('มีออเดอร์ใหม่เข้ามา')
+    expect(subject).toContain('RYB-000123')
+    expect(html).toContain('สมชาย')
+    expect(html).toContain('นัดรับเอง')
+    expect(html).toContain('https://ryukung-pos.pages.dev/orders/xyz789')
   })
 })

@@ -16,7 +16,11 @@ import { Step2Products } from './Step2Products'
 import { Step3Fulfillment } from './Step3Fulfillment'
 import { supabase } from '../lib/supabase'
 import { sendCustomerEmail } from '../lib/customerEmail'
-import { orderConfirmedEmail } from '../lib/emailTemplates'
+import { orderConfirmedEmail, newOrderNotificationEmail } from '../lib/emailTemplates'
+
+const FULFILLMENT_LABELS: Record<string, string> = {
+  pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
+}
 
 const EMPTY_ORDER: OrderFormValues = {
   customer_id: null,
@@ -110,6 +114,21 @@ export function OrderFormPage() {
             publicUrl: `${window.location.origin}/o/${data.public_token}`,
           })
           void sendCustomerEmail(customer.email!, subject, html)
+
+          // แจ้งเจ้าของร้านว่ามีออเดอร์ใหม่ด้วย ถ้าตั้งอีเมลรับแจ้งเตือนไว้ — ลิงก์นี้เข้าระบบภายใน ไม่ใช่ลิงก์ลูกค้า
+          if (settings.owner_notification_email) {
+            const owner = newOrderNotificationEmail({
+              shopName: settings.shop_name,
+              orderNo,
+              customerName: customer.name,
+              itemsSummary: values.items.map((it) => `${it.product_name} x${it.qty}`).join(', '),
+              grandTotal: Number(data.grand_total ?? 0),
+              neededDate: values.needed_date,
+              fulfillmentLabel: FULFILLMENT_LABELS[values.fulfillment_type] ?? values.fulfillment_type,
+              orderDetailUrl: `${window.location.origin}/orders/${orderId}`,
+            })
+            void sendCustomerEmail(settings.owner_notification_email, owner.subject, owner.html)
+          }
         })
     }
 

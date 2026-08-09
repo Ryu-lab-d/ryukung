@@ -47,7 +47,7 @@ export function SettingsPage() {
 
   function text(
     label: string,
-    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer' | 'payment_instructions'
+    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer' | 'payment_instructions' | 'owner_notification_email'
   ) {
     return (
       <div className="space-y-1">
@@ -142,6 +142,12 @@ export function SettingsPage() {
             </div>
           </div>
         </div>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-sm font-semibold text-stone-500">แจ้งเตือนออเดอร์ใหม่</h2>
+        <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
+        {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
       </section>
 
       <section className="space-y-3">

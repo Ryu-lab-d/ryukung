@@ -81,6 +81,36 @@ export function paymentReceivedEmail(params: {
   }
 }
 
+export function newOrderNotificationEmail(params: {
+  shopName: string
+  orderNo: string
+  customerName: string
+  itemsSummary: string
+  grandTotal: number
+  neededDate: string | null
+  fulfillmentLabel: string
+  orderDetailUrl: string
+}) {
+  const { shopName, orderNo, customerName, itemsSummary, grandTotal, neededDate, fulfillmentLabel, orderDetailUrl } = params
+  const rows = [
+    { label: 'เลขที่ออเดอร์', value: orderNo },
+    { label: 'ลูกค้า', value: customerName },
+    { label: 'รายการ', value: itemsSummary },
+    { label: 'วิธีรับของ', value: fulfillmentLabel },
+    ...(neededDate ? [{ label: 'วันที่ต้องได้ของ', value: neededDate }] : []),
+    { label: 'ยอดรวม', value: `${formatBaht(grandTotal)} บาท` },
+  ]
+  return {
+    subject: `🔔 มีออเดอร์ใหม่เข้ามา! ${orderNo} — ${shopName}`,
+    html: shell(
+      shopName,
+      `<p>มีออเดอร์ใหม่เข้ามาแล้วค่ะ 🎉</p>
+       ${infoBox(rows)}
+       ${ctaButton(orderDetailUrl, 'ดูออเดอร์ในระบบ')}`
+    ),
+  }
+}
+
 export function paymentReminderEmail(params: {
   shopName: string
   orderNo: string

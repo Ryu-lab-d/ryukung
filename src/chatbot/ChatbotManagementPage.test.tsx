@@ -26,6 +26,7 @@ const settings = {
   payment_instructions: null,
   line_url: 'https://lin.ee/yscT9fJ',
   faqs: [{ keywords: ['จัดส่ง'], answer: 'ปกติจัดส่งภายใน 2-3 วันค่ะ' }],
+  owner_notification_email: null,
 }
 
 const questions = [

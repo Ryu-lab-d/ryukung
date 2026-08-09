@@ -24,6 +24,7 @@ const settings = {
   payment_instructions: 'แจ้งชำระเงินผ่านไลน์ @ryukung_bakery',
   line_url: 'https://lin.ee/yscT9fJ',
   faqs: [{ keywords: ['จัดส่ง'], answer: 'ทดสอบคำตอบ' }],
+  owner_notification_email: null,
 }
 
 vi.mock('./useSettings', () => ({
