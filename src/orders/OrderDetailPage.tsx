@@ -64,7 +64,15 @@ export function OrderDetailPage() {
     await reload()
   }
 
+  async function handleAcknowledgePaymentClaim() {
+    await supabase.from('orders').update({ payment_claimed_at: null }).eq('id', order.id)
+    await reload()
+  }
+
   async function handlePaymentRecorded(amount: number) {
+    if (order.payment_claimed_at) {
+      await supabase.from('orders').update({ payment_claimed_at: null }).eq('id', order.id)
+    }
     await reload()
     if (order.customers?.email && settings) {
       const newBalanceDue = balanceDue - amount
@@ -132,6 +140,15 @@ export function OrderDetailPage() {
         <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
           <span>📮 ลูกค้าเพิ่งแก้ไขที่อยู่จัดส่งเอง เมื่อ {new Date(order.address_edited_at).toLocaleString('th-TH')}</span>
           <button type="button" onClick={handleAcknowledgeAddressEdit} className="shrink-0 rounded-lg bg-blue-600 text-white text-xs px-2.5 py-1.5 font-medium">
+            รับทราบแล้ว
+          </button>
+        </div>
+      )}
+
+      {order.payment_claimed_at && (
+        <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2.5 text-sm text-green-800 flex items-center justify-between gap-2">
+          <span>💰 ลูกค้าแจ้งชำระเงินแล้ว เมื่อ {new Date(order.payment_claimed_at).toLocaleString('th-TH')}</span>
+          <button type="button" onClick={handleAcknowledgePaymentClaim} className="shrink-0 rounded-lg bg-green-600 text-white text-xs px-2.5 py-1.5 font-medium">
             รับทราบแล้ว
           </button>
         </div>

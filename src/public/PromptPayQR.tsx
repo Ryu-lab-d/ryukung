@@ -28,6 +28,15 @@ export function PromptPayQR({ promptpayId, amount }: { promptpayId: string; amou
       <p className="text-sm text-stone-500">สแกนเพื่อชำระ</p>
       <p className="text-2xl font-bold text-stone-900">{formatBaht(amount)} บาท</p>
       <p className="text-xs text-stone-400">ยอดถูกล็อกไว้ในตัว QR แล้ว แก้ไขไม่ได้</p>
+      {dataUrl && (
+        <a
+          href={dataUrl}
+          download="promptpay-qr.png"
+          className="mt-1 text-sm rounded-lg border border-stone-300 text-stone-700 px-3 py-1.5 font-medium"
+        >
+          💾 บันทึก QR ไว้ในเครื่อง
+        </a>
+      )}
     </div>
   )
 }

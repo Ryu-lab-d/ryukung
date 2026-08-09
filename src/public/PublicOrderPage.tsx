@@ -6,6 +6,7 @@ import { Toast } from '../lib/Toast'
 import { Linkify } from '../lib/Linkify'
 import { ChatBot } from './ChatBot'
 import { PromptPayQR } from './PromptPayQR'
+import { claimPayment } from '../lib/paymentClaim'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
@@ -13,6 +14,7 @@ type PublicOrderView = {
   payment_instructions: string | null
   promptpay: string | null
   balance_due: number
+  payment_claimed_at: string | null
   faqs: { keywords: string[]; answer: string }[]
   line_url: string | null
   order_no: string
@@ -262,6 +264,8 @@ export function PublicOrderPage() {
   const [showPaymentInfo, setShowPaymentInfo] = useState(false)
   const [showAddressEdit, setShowAddressEdit] = useState(false)
   const [addressSaved, setAddressSaved] = useState(false)
+  const [claiming, setClaiming] = useState(false)
+  const [claimError, setClaimError] = useState<string | null>(null)
 
   const fetchOrder = useCallback(() => {
     if (!token) return
@@ -271,6 +275,15 @@ export function PublicOrderPage() {
   }, [token])
 
   useEffect(() => { fetchOrder() }, [fetchOrder])
+
+  async function handleClaimPayment() {
+    if (!token) return
+    setClaiming(true)
+    const { error } = await claimPayment(token)
+    setClaiming(false)
+    if (error) { setClaimError(error); return }
+    fetchOrder()
+  }
 
   function handleConfirmName(e: FormEvent) {
     e.preventDefault()
@@ -443,6 +456,25 @@ export function PublicOrderPage() {
               <Linkify text={order.payment_instructions} />
             </div>
           )}
+          {showPaymentInfo && (
+            order.payment_claimed_at ? (
+              <div className="mt-2 rounded-xl bg-green-50 border border-green-200 px-3.5 py-3 text-sm text-green-800 text-center">
+                ✅ แจ้งการชำระเงินแล้ว เมื่อ {new Date(order.payment_claimed_at).toLocaleString('th-TH')}
+                <br />
+                โปรดรอเจ้าหน้าที่ตรวจสอบภายใน 1-3 ชั่วโมง (ไม่เกิน 1 วัน)
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => void handleClaimPayment()}
+                disabled={claiming}
+                className="mt-2 w-full rounded-xl bg-green-600 text-white font-semibold py-2.5 text-sm disabled:opacity-50"
+              >
+                {claiming ? 'กำลังส่ง...' : '✅ ยืนยันการชำระเงิน'}
+              </button>
+            )
+          )}
+          {claimError && <p className="text-xs text-red-600 mt-1 text-center">{claimError}</p>}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-2">

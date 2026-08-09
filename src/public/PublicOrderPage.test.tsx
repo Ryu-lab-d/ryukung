@@ -5,7 +5,13 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { PublicOrderPage } from './PublicOrderPage'
 
 const rpc = vi.fn()
-vi.mock('../lib/supabase', () => ({ supabase: { rpc: (...args: unknown[]) => rpc(...args) } }))
+const functionsInvoke = vi.fn()
+vi.mock('../lib/supabase', () => ({
+  supabase: {
+    rpc: (...args: unknown[]) => rpc(...args),
+    functions: { invoke: (...args: unknown[]) => functionsInvoke(...args) },
+  },
+}))
 
 const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
@@ -25,6 +31,7 @@ const baseOrder = {
   payment_instructions: null as string | null,
   promptpay: null as string | null,
   balance_due: 80,
+  payment_claimed_at: null as string | null,
   faqs: [],
   line_url: null as string | null,
   pickup_place: 'หน้าร้าน',
@@ -134,5 +141,36 @@ describe('QR พร้อมเพย์ล็อกยอด', () => {
     await openOrder({ ...baseOrder, promptpay: '0812345678', balance_due: 0 })
     await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
     expect(screen.queryByAltText('QR พร้อมเพย์')).not.toBeInTheDocument()
+  })
+})
+
+describe('ปุ่มยืนยันการชำระเงิน', () => {
+  it('ยังไม่เคยแจ้ง กดปุ่มยืนยันแล้วเรียก edge function พร้อม token แล้วรีเฟรชสถานะเป็นแจ้งแล้ว', async () => {
+    functionsInvoke.mockResolvedValue({ data: { ok: true, alreadyClaimed: false }, error: null })
+    await openOrder({ ...baseOrder, payment_claimed_at: null })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    const claimButton = await screen.findByRole('button', { name: /ยืนยันการชำระเงิน/ })
+
+    rpc.mockResolvedValue({ data: { ...baseOrder, payment_claimed_at: '2026-08-09T10:00:00Z' } })
+    await userEvent.click(claimButton)
+
+    expect(functionsInvoke).toHaveBeenCalledWith('notify-payment-claim', { body: { token: 'abc' } })
+    expect(await screen.findByText(/แจ้งการชำระเงินแล้ว/)).toBeInTheDocument()
+  })
+
+  it('เคยแจ้งแล้ว แสดงข้อความยืนยันแทนปุ่ม ไม่ให้กดซ้ำ', async () => {
+    await openOrder({ ...baseOrder, payment_claimed_at: '2026-08-09T10:00:00Z' })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    expect(await screen.findByText(/แจ้งการชำระเงินแล้ว/)).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /^✅ ยืนยันการชำระเงิน$/ })).not.toBeInTheDocument()
+  })
+
+  it('edge function error ขึ้นข้อความ error ให้ลูกค้าเห็น', async () => {
+    functionsInvoke.mockResolvedValue({ data: null, error: { message: 'เครือข่ายมีปัญหา' } })
+    await openOrder({ ...baseOrder, payment_claimed_at: null })
+    await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
+    const claimButton = await screen.findByRole('button', { name: /ยืนยันการชำระเงิน/ })
+    await userEvent.click(claimButton)
+    expect(await screen.findByText('เครือข่ายมีปัญหา')).toBeInTheDocument()
   })
 })

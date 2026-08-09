@@ -15,11 +15,18 @@ export function OrderCard({ order }: { order: BoardOrder }) {
       to={`/orders/${order.id}`}
       className={
         'block rounded-lg bg-white border p-2.5 space-y-1 shadow-sm ' +
-        (order.address_edited_at ? 'border-blue-300 ring-2 ring-blue-100' : 'border-stone-200')
+        (order.address_edited_at
+          ? 'border-blue-300 ring-2 ring-blue-100'
+          : order.payment_claimed_at
+            ? 'border-green-300 ring-2 ring-green-100'
+            : 'border-stone-200')
       }
     >
       {order.address_edited_at && (
         <p className="text-xs font-medium text-blue-700 flex items-center gap-1">📮 ลูกค้าแก้ที่อยู่ใหม่</p>
+      )}
+      {order.payment_claimed_at && (
+        <p className="text-xs font-medium text-green-700 flex items-center gap-1">💰 ลูกค้าแจ้งชำระเงินแล้ว</p>
       )}
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium truncate">{order.customer_name ?? 'ไม่มีชื่อลูกค้า'}</p>
