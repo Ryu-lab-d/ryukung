@@ -1,16 +1,19 @@
 import { useMemo, useState } from 'react'
 import { rangeToDates, type RangeKey } from './dateRange'
 import { useSalesSummary } from './useSalesSummary'
+import { useSalesTrend } from './useSalesTrend'
 import { formatBaht } from '../lib/money'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
+const TREND_DAYS = 14
 
 export function SalesSummaryPage() {
   const [rangeKey, setRangeKey] = useState<RangeKey>('today')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const { from, to } = useMemo(() => rangeToDates(rangeKey, customFrom, customTo), [rangeKey, customFrom, customTo])
-  const { orders, loading, sales, cost, profit, profitPercent, avgOrder } = useSalesSummary(from, to)
+  const { orders, loading, sales, cost, profit, profitPercent, avgOrder, topProducts } = useSalesSummary(from, to)
+  const { trend, loading: trendLoading } = useSalesTrend(TREND_DAYS)
 
   const profitIsPositive = profit >= 0
 
@@ -41,6 +44,13 @@ export function SalesSummaryPage() {
           <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         </div>
       )}
+
+      {/* แนวโน้มยอดขาย — คงที่จำนวนวันตาม TREND_DAYS เสมอ ไม่ผูกกับตัวเลือกช่วงเวลาด้านบน เพราะจุดประสงค์ต่างกัน
+          (อันบนคือ "สรุปยอดของช่วงที่เลือก" ส่วนนี้คือ "ดูเทรนด์เทียบกันข้ามวัน") */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
+        <h2 className="text-sm font-semibold text-stone-500">แนวโน้มยอดขาย {TREND_DAYS} วันล่าสุด</h2>
+        <SalesTrendChart trend={trend} loading={trendLoading} />
+      </div>
 
       {loading ? (
         <p className="text-stone-500">กำลังโหลด...</p>
@@ -95,6 +105,21 @@ export function SalesSummaryPage() {
           </p>
 
           <div className="space-y-1">
+            <h2 className="text-sm font-semibold text-stone-500">สินค้าขายดีในช่วงนี้</h2>
+            {topProducts.length === 0 && <p className="text-sm text-stone-400">ไม่มีสินค้าขายในช่วงที่เลือก</p>}
+            <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
+              {topProducts.slice(0, 5).map((p, i) => (
+                <div key={p.name} className="flex items-center gap-3 text-sm px-3 py-2.5">
+                  <span className="text-stone-400 font-semibold w-4 shrink-0">{i + 1}</span>
+                  <span className="flex-1 text-stone-700 truncate">{p.name}</span>
+                  <span className="text-stone-500 tabular-nums">{p.qty} ชิ้น</span>
+                  <span className="font-medium tabular-nums w-20 text-right">{formatBaht(p.revenue)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-1">
             <h2 className="text-sm font-semibold text-stone-500">รายการออเดอร์ในช่วงนี้</h2>
             {orders.length === 0 && <p className="text-sm text-stone-400">ไม่มีออเดอร์ในช่วงที่เลือก</p>}
             <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
@@ -108,6 +133,35 @@ export function SalesSummaryPage() {
           </div>
         </>
       )}
+    </div>
+  )
+}
+
+/** กราฟแท่งง่ายๆ ด้วย div ล้วน ไม่ใช้ไลบรารีกราฟเพิ่ม เพราะมีแค่เส้นเดียวไม่ซับซ้อนพอจะคุ้มโหลดไลบรารีใหม่ */
+function SalesTrendChart({ trend, loading }: { trend: { date: string; sales: number }[]; loading: boolean }) {
+  if (loading) return <p className="text-sm text-stone-500">กำลังโหลด...</p>
+  if (trend.every((t) => t.sales === 0)) {
+    return <p className="text-sm text-stone-400">ยังไม่มีออเดอร์ในช่วง {trend.length} วันที่ผ่านมา</p>
+  }
+
+  const max = Math.max(...trend.map((t) => t.sales))
+
+  return (
+    <div className="flex items-end gap-1 h-28">
+      {trend.map((t) => {
+        const heightPercent = t.sales > 0 ? Math.max((t.sales / max) * 100, 4) : 1
+        const day = new Date(t.date + 'T00:00:00')
+        return (
+          <div key={t.date} className="flex-1 h-full flex flex-col items-center justify-end gap-1">
+            <div
+              className={'w-full rounded-t ' + (t.sales > 0 ? 'bg-stone-900' : 'bg-stone-100')}
+              style={{ height: `${heightPercent}%` }}
+              title={`${day.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}: ${formatBaht(t.sales)} บาท`}
+            />
+            <span className="text-[10px] text-stone-400 tabular-nums">{day.getDate()}</span>
+          </div>
+        )
+      })}
     </div>
   )
 }
