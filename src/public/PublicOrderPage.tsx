@@ -225,6 +225,133 @@ function AddressEditForm({
   )
 }
 
+/** QR + วิธีชำระเงิน + ปุ่มยืนยันการชำระเงิน — ใช้ร่วมกันทั้งในการ์ดสถานะปกติและในป็อปอัพเตือนยังไม่ชำระเงิน กันโค้ดซ้ำ */
+function PaymentInfoPanel({
+  promptpay,
+  balanceDue,
+  paymentInstructions,
+  paymentClaimedAt,
+  claiming,
+  claimError,
+  onClaimPayment,
+}: {
+  promptpay: string | null
+  balanceDue: number
+  paymentInstructions: string | null
+  paymentClaimedAt: string | null
+  claiming: boolean
+  claimError: string | null
+  onClaimPayment: () => void
+}) {
+  return (
+    <>
+      {promptpay && balanceDue > 0 && (
+        <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3">
+          <PromptPayQR promptpayId={promptpay} amount={balanceDue} />
+        </div>
+      )}
+      {paymentInstructions && (
+        <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-line">
+          <Linkify text={paymentInstructions} />
+        </div>
+      )}
+      {paymentClaimedAt ? (
+        <div className="mt-2 rounded-xl bg-green-50 border border-green-200 px-3.5 py-3 text-sm text-green-800 text-center">
+          ✅ แจ้งการชำระเงินแล้ว เมื่อ {new Date(paymentClaimedAt).toLocaleString('th-TH')}
+          <br />
+          โปรดรอเจ้าหน้าที่ตรวจสอบภายใน 1-3 ชั่วโมง (ไม่เกิน 1 วัน)
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onClaimPayment}
+          disabled={claiming}
+          className="mt-2 w-full rounded-xl bg-green-600 text-white font-semibold py-2.5 text-sm disabled:opacity-50"
+        >
+          {claiming ? 'กำลังส่ง...' : '✅ ยืนยันการชำระเงิน'}
+        </button>
+      )}
+      {claimError && <p className="text-xs text-red-600 mt-1 text-center">{claimError}</p>}
+    </>
+  )
+}
+
+/**
+ * ป็อปอัพเตือนใหญ่ๆ กลางจอ ขึ้นทันทีที่ลูกค้าเข้าดูออเดอร์ถ้ายังไม่จ่าย (และยังไม่เคยกดยืนยันการชำระเงินด้วย —
+ * ถ้ากดยืนยันไปแล้วรอตรวจสอบอยู่ ข้อความ "ยังไม่ได้ชำระเงิน" จะไม่ตรงกับความจริงและอาจทำให้ลูกค้าสับสน/จ่ายซ้ำ)
+ */
+function UnpaidPaymentPopup({
+  order,
+  showPaymentInfo,
+  onShowPaymentInfo,
+  onClose,
+  claiming,
+  claimError,
+  onClaimPayment,
+}: {
+  order: PublicOrderView
+  showPaymentInfo: boolean
+  onShowPaymentInfo: () => void
+  onClose: () => void
+  claiming: boolean
+  claimError: string | null
+  onClaimPayment: () => void
+}) {
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="text-center space-y-1">
+          <p className="text-4xl">💳</p>
+          <h2 className="text-lg font-bold text-red-700">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
+        </div>
+
+        {!showPaymentInfo ? (
+          <button
+            type="button"
+            onClick={onShowPaymentInfo}
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-2.5 text-sm"
+          >
+            ดูวิธีการชำระเงิน
+          </button>
+        ) : (
+          <PaymentInfoPanel
+            promptpay={order.promptpay}
+            balanceDue={order.balance_due}
+            paymentInstructions={order.payment_instructions}
+            paymentClaimedAt={order.payment_claimed_at}
+            claiming={claiming}
+            claimError={claimError}
+            onClaimPayment={onClaimPayment}
+          />
+        )}
+
+        <p className="text-xs text-stone-500 bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2">
+          หากชำระเงินไปแล้ว กรุณารอการตรวจสอบจากเจ้าหน้าที่ อาจใช้เวลา 1-3 ชั่วโมง แต่ไม่เกิน 1 วัน หากเกิน 1 วันกรุณาติดต่อเจ้าหน้าที่
+        </p>
+
+        <div className="flex items-center justify-between pt-1">
+          <button type="button" onClick={onClose} className="text-sm text-stone-500 underline">
+            ปิด
+          </button>
+          {order.line_url && (
+            <a
+              href={order.line_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm font-medium text-[#06C755] underline"
+            >
+              พบปัญหา? ติดต่อที่นี่
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** เอฟเฟกต์ยืนยันสำเร็จแบบวาดเครื่องหมายถูก ใช้เฉพาะตอนบันทึกที่อยู่ใหม่สำเร็จ ให้รู้สึกหนักแน่นกว่า Toast ทั่วไป */
 function AddressSavedOverlay({ onDone }: { onDone: () => void }) {
   useEffect(() => {
@@ -268,6 +395,7 @@ export function PublicOrderPage() {
   const [addressSaved, setAddressSaved] = useState(false)
   const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
+  const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
 
   const fetchOrder = useCallback(() => {
     if (!token) return
@@ -448,35 +576,17 @@ export function PublicOrderPage() {
               💳 ยังไม่ได้ชำระเงิน · ดูวิธีชำระเงิน
             </button>
           )}
-          {showPaymentInfo && order.promptpay && order.balance_due > 0 && (
-            <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3">
-              <PromptPayQR promptpayId={order.promptpay} amount={order.balance_due} />
-            </div>
-          )}
-          {showPaymentInfo && order.payment_instructions && (
-            <div className="mt-2 rounded-xl bg-stone-50 border border-stone-200 p-3 text-sm text-stone-700 whitespace-pre-line">
-              <Linkify text={order.payment_instructions} />
-            </div>
-          )}
           {showPaymentInfo && (
-            order.payment_claimed_at ? (
-              <div className="mt-2 rounded-xl bg-green-50 border border-green-200 px-3.5 py-3 text-sm text-green-800 text-center">
-                ✅ แจ้งการชำระเงินแล้ว เมื่อ {new Date(order.payment_claimed_at).toLocaleString('th-TH')}
-                <br />
-                โปรดรอเจ้าหน้าที่ตรวจสอบภายใน 1-3 ชั่วโมง (ไม่เกิน 1 วัน)
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => void handleClaimPayment()}
-                disabled={claiming}
-                className="mt-2 w-full rounded-xl bg-green-600 text-white font-semibold py-2.5 text-sm disabled:opacity-50"
-              >
-                {claiming ? 'กำลังส่ง...' : '✅ ยืนยันการชำระเงิน'}
-              </button>
-            )
+            <PaymentInfoPanel
+              promptpay={order.promptpay}
+              balanceDue={order.balance_due}
+              paymentInstructions={order.payment_instructions}
+              paymentClaimedAt={order.payment_claimed_at}
+              claiming={claiming}
+              claimError={claimError}
+              onClaimPayment={() => void handleClaimPayment()}
+            />
           )}
-          {claimError && <p className="text-xs text-red-600 mt-1 text-center">{claimError}</p>}
         </div>
 
         <div className="bg-white rounded-2xl shadow-sm p-5 space-y-2">
@@ -569,6 +679,18 @@ export function PublicOrderPage() {
       )}
 
       {addressSaved && <AddressSavedOverlay onDone={() => setAddressSaved(false)} />}
+
+      {!unpaidPopupDismissed && !order.payment_claimed_at && order.payment_status !== 'paid' && (
+        <UnpaidPaymentPopup
+          order={order}
+          showPaymentInfo={showPaymentInfo}
+          onShowPaymentInfo={() => setShowPaymentInfo(true)}
+          onClose={() => setUnpaidPopupDismissed(true)}
+          claiming={claiming}
+          claimError={claimError}
+          onClaimPayment={() => void handleClaimPayment()}
+        />
+      )}
 
       <ChatBot shopName={order.shop_name} faqs={order.faqs} lineUrl={order.line_url} />
     </div>

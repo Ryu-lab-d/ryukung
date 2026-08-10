@@ -96,6 +96,10 @@ async function openOrder(order: typeof baseOrder) {
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
+  // ป็อปอัพเตือนยังไม่ชำระเงินขึ้นอัตโนมัติถ้ายังไม่จ่าย ปิดออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติ
+  // ด้านล่าง (มี describe แยกที่ทดสอบป็อปอัพนี้โดยเฉพาะ เปิดออเดอร์เองแบบดิบๆ ไม่ผ่าน helper นี้)
+  const closeButton = screen.queryByRole('button', { name: 'ปิด' })
+  if (closeButton) await userEvent.click(closeButton)
 }
 
 describe('ปุ่มติดต่อพนักงานผ่านไลน์', () => {
@@ -255,5 +259,59 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
     await userEvent.click(screen.getByRole('button', { name: /แชร์ออเดอร์นี้/ }))
     expect(await screen.findByText(/คัดลอกอัตโนมัติไม่ได้/)).toBeInTheDocument()
     expect(screen.getByDisplayValue(window.location.href)).toBeInTheDocument()
+  })
+})
+
+/** เปิดออเดอร์แบบดิบๆ โดยไม่ปิดป็อปอัพเตือนยังไม่ชำระเงินอัตโนมัติ (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพนี้เอง */
+async function openOrderKeepPopup(order: typeof baseOrder) {
+  rpc.mockResolvedValue({ data: order })
+  renderPage()
+  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+  await userEvent.type(input, order.customer_name!)
+  const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+  await userEvent.click(submitButton)
+  await screen.findByText(order.shop_name)
+}
+
+describe('ป็อปอัพเตือนยังไม่ชำระเงิน', () => {
+  it('ยังไม่จ่ายและยังไม่เคยแจ้งชำระเงิน ขึ้นป็อปอัพทันทีที่เข้าดูออเดอร์', async () => {
+    await openOrderKeepPopup({ ...baseOrder, payment_status: 'unpaid', payment_claimed_at: null })
+    expect(screen.getByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
+    expect(screen.getByText(/กรุณารอการตรวจสอบจากเจ้าหน้าที่/)).toBeInTheDocument()
+  })
+
+  it('จ่ายครบแล้ว ไม่ขึ้นป็อปอัพ', async () => {
+    await openOrderKeepPopup({ ...baseOrder, payment_status: 'paid', payment_claimed_at: null })
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+  })
+
+  it('ยังไม่ยืนยันว่าจ่ายครบ แต่เคยกดยืนยันการชำระเงินไปแล้ว (รอตรวจสอบ) ไม่ขึ้นป็อปอัพซ้ำ เพราะข้อความจะขัดกับความจริง', async () => {
+    await openOrderKeepPopup({ ...baseOrder, payment_status: 'unpaid', payment_claimed_at: '2026-08-09T10:00:00Z' })
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+  })
+
+  it('กด "ดูวิธีการชำระเงิน" ในป็อปอัพแล้วเห็น QR และปุ่มยืนยันการชำระเงินขึ้นในป็อปอัพเลย', async () => {
+    await openOrderKeepPopup({ ...baseOrder, promptpay: '0812345678', balance_due: 80 })
+    await userEvent.click(screen.getByRole('button', { name: 'ดูวิธีการชำระเงิน' }))
+    expect(await screen.findByAltText('QR พร้อมเพย์')).toBeInTheDocument()
+    // ปุ่มยืนยันการชำระเงินโผล่สองที่พร้อมกัน (ในป็อปอัพ + การ์ดปกติด้านหลังที่ยังไม่ได้ปิด เพราะ state showPaymentInfo ใช้ร่วมกัน)
+    expect(screen.getAllByRole('button', { name: /ยืนยันการชำระเงิน/ }).length).toBeGreaterThan(0)
+  })
+
+  it('มีลิงก์ไลน์ตั้งไว้ แสดงปุ่ม "พบปัญหา? ติดต่อที่นี่" ลิงก์ไปไลน์', async () => {
+    await openOrderKeepPopup({ ...baseOrder, line_url: 'https://lin.ee/yscT9fJ' })
+    const link = screen.getByRole('link', { name: /พบปัญหา/ })
+    expect(link).toHaveAttribute('href', 'https://lin.ee/yscT9fJ')
+  })
+
+  it('ไม่มีลิงก์ไลน์ตั้งไว้ ไม่แสดงปุ่ม "พบปัญหา"', async () => {
+    await openOrderKeepPopup({ ...baseOrder, line_url: null })
+    expect(screen.queryByRole('link', { name: /พบปัญหา/ })).not.toBeInTheDocument()
+  })
+
+  it('กด "ปิด" แล้วป็อปอัพหายไป เหลือแค่การ์ดปกติด้านล่าง', async () => {
+    await openOrderKeepPopup(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: 'ปิด' }))
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
   })
 })
