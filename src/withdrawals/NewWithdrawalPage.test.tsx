@@ -68,3 +68,43 @@ describe('NewWithdrawalPage', () => {
     expect(createWithdrawal).not.toHaveBeenCalled()
   })
 })
+
+describe('NewWithdrawalPage — ลดราคาต่อชิ้นสำหรับเบิกไปขายนอกร้าน (เช่นไม่มีค่าสติกเกอร์/ถุง)', () => {
+  it('ตั้งส่วนลดไว้ก่อนแล้วค่อยเลือกสินค้า ราคาลดให้อัตโนมัติทันทีที่เพิ่ม', async () => {
+    createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
+    renderPage()
+
+    await userEvent.type(screen.getByLabelText(/ลดราคาต่อชิ้น/), '10')
+    await userEvent.click(screen.getByText('คุกกี้'))
+
+    expect(screen.getByLabelText('ราคาขาย/ชิ้น (บาท)')).toHaveValue(30) // 40 - 10
+    expect(screen.getByText(/ราคาปกติ 40\.00 → ลดเหลือ 30\.00/)).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    expect(createWithdrawal).toHaveBeenCalledWith(
+      expect.objectContaining({ items: [expect.objectContaining({ unit_price: 30 })] })
+    )
+  })
+
+  it('เลือกสินค้าไว้ก่อนแล้วตั้งส่วนลดทีหลัง กด "ใช้กับทุกชิ้น" ปรับราคาของที่เลือกไว้แล้วทั้งหมด', async () => {
+    renderPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByText('บราวนี่'))
+
+    await userEvent.type(screen.getByLabelText(/ลดราคาต่อชิ้น/), '10')
+    await userEvent.click(screen.getByRole('button', { name: 'ใช้กับทุกชิ้นที่เลือกแล้ว' }))
+
+    const priceInputs = screen.getAllByLabelText('ราคาขาย/ชิ้น (บาท)')
+    expect(priceInputs[0]).toHaveValue(30) // คุกกี้ 40 - 10
+    expect(priceInputs[1]).toHaveValue(50) // บราวนี่ 60 - 10
+  })
+
+  it('แก้ราคาต่อชิ้นเองตรงๆ ได้เสมอ ไม่ต้องพึ่งช่องส่วนลดกลาง', async () => {
+    renderPage()
+    await userEvent.click(screen.getByText('คุกกี้'))
+    const priceInput = screen.getByLabelText('ราคาขาย/ชิ้น (บาท)')
+    await userEvent.clear(priceInput)
+    await userEvent.type(priceInput, '25')
+    expect(priceInput).toHaveValue(25)
+  })
+})
