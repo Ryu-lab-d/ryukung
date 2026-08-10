@@ -110,6 +110,13 @@ export function SettingsPage() {
           <span className="text-stone-400">→</span>
         </Link>
         <Link
+          to="/withdrawals"
+          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+        >
+          <span className="flex items-center gap-2 text-sm font-medium">📦 เบิกของ</span>
+          <span className="text-stone-400">→</span>
+        </Link>
+        <Link
           to="/promo"
           className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
         >

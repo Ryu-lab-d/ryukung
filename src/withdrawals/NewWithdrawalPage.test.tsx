@@ -1,0 +1,70 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
+import { NewWithdrawalPage } from './NewWithdrawalPage'
+
+const products = [
+  { id: 'p1', name: 'คุกกี้', sku: null, category_id: null, price: 40, cost: 15, unit: 'ชิ้น', image_path: null, is_active: true, note: null, created_at: '', updated_at: '' },
+  { id: 'p2', name: 'บราวนี่', sku: null, category_id: null, price: 60, cost: 25, unit: 'ชิ้น', image_path: null, is_active: true, note: null, created_at: '', updated_at: '' },
+]
+vi.mock('../products/useProducts', () => ({ useProducts: () => ({ products, loading: false }) }))
+vi.mock('../products/useCategories', () => ({ useCategories: () => ({ categories: [], loading: false }) }))
+
+const createWithdrawal = vi.fn()
+vi.mock('./api', () => ({ createWithdrawal: (...args: unknown[]) => createWithdrawal(...args) }))
+
+const navigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => navigate }
+})
+
+function renderPage() {
+  render(
+    <MemoryRouter>
+      <NewWithdrawalPage />
+    </MemoryRouter>
+  )
+}
+
+beforeEach(() => {
+  createWithdrawal.mockReset()
+  navigate.mockReset()
+})
+
+describe('NewWithdrawalPage', () => {
+  it('เลือกสินค้าแล้วปรับจำนวน กดเริ่มเบิกของ ส่งข้อมูลถูกต้องแล้วพาไปหน้ารายละเอียด', async () => {
+    createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
+    renderPage()
+
+    await userEvent.click(screen.getByText('คุกกี้'))
+    const qtyInput = screen.getByDisplayValue('1')
+    await userEvent.clear(qtyInput)
+    await userEvent.type(qtyInput, '20')
+
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+
+    expect(createWithdrawal).toHaveBeenCalledWith(
+      expect.objectContaining({
+        items: [expect.objectContaining({ product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty_out: 20 })],
+      })
+    )
+    expect(navigate).toHaveBeenCalledWith('/withdrawals/w1')
+  })
+
+  it('กดเลือกสินค้าเดิมซ้ำ จำนวนบวกเพิ่มแทนที่จะเพิ่มแถวใหม่', async () => {
+    renderPage()
+    // ตัวแรกในรายการที่ตรงคือการ์ดในช่องเลือกสินค้าเสมอ (ตัวที่สองที่อาจโผล่มาคือแถวในรายการที่เลือกแล้วด้านล่าง)
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(screen.getByDisplayValue('2')).toBeInTheDocument()
+  })
+
+  it('ไม่ได้เลือกสินค้าเลย กดเริ่มเบิกของ ขึ้น error ไม่ยิง createWithdrawal', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    expect(await screen.findByText('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')).toBeInTheDocument()
+    expect(createWithdrawal).not.toHaveBeenCalled()
+  })
+})
