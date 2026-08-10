@@ -18,6 +18,9 @@ vi.mock('../lib/supabase', () => ({
   },
 }))
 
+const toPng = vi.fn().mockResolvedValue('data:image/png;base64,mock')
+vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }))
+
 const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
   logo_path: null as string | null,
@@ -284,6 +287,17 @@ async function openOrderKeepPopup(order: typeof baseOrder) {
   await screen.findByText(order.shop_name)
   await userEvent.click(await screen.findByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
 }
+
+describe('ปุ่มบันทึกสรุปออเดอร์เป็นรูปภาพ', () => {
+  it('กดแล้วสร้างรูปจากการ์ดรายการสินค้าและดาวน์โหลดเป็นไฟล์ชื่อเลขออเดอร์', async () => {
+    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+    await openOrder(baseOrder)
+    await userEvent.click(screen.getByRole('button', { name: /บันทึกสรุปออเดอร์เป็นรูปภาพ/ }))
+    expect(toPng).toHaveBeenCalled()
+    expect(clickSpy).toHaveBeenCalled()
+    clickSpy.mockRestore()
+  })
+})
 
 describe('ป็อปอัพเตือนยังไม่ชำระเงิน', () => {
   it('ยังไม่จ่ายและยังไม่เคยแจ้งชำระเงิน ขึ้นป็อปอัพทันทีที่เข้าดูออเดอร์', async () => {

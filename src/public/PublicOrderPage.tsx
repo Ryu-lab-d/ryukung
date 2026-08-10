@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
+import * as htmlToImage from 'html-to-image'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
@@ -449,6 +450,58 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
   )
 }
 
+/**
+ * รายการสินค้า + ยอดรวม พร้อมปุ่มบันทึกเป็นรูปภาพ — สร้างรูปฝั่งเบราว์เซอร์ล้วนๆ (html-to-image) ไม่มีการอัปโหลด
+ * หรือเก็บอะไรใน Supabase เพิ่มเลย ลูกค้ากดแล้วได้ไฟล์ลงเครื่องตัวเองทันที ไม่กินพื้นที่จัดเก็บของร้านแม้แต่นิดเดียว
+ * ตั้งใจไม่ใส่ชื่อร้าน/เลขออเดอร์/ชื่อลูกค้าซ้ำในการ์ดนี้ เพราะด้านบนสุดของหน้าโชว์ไว้แล้วทั้งหมด
+ */
+function OrderSummaryCard({ order }: { order: PublicOrderView }) {
+  const cardRef = useRef<HTMLDivElement>(null)
+  const [downloading, setDownloading] = useState(false)
+
+  async function handleDownload() {
+    if (!cardRef.current) return
+    setDownloading(true)
+    const dataUrl = await htmlToImage.toPng(cardRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' })
+    setDownloading(false)
+    const link = document.createElement('a')
+    link.download = `${order.order_no}.png`
+    link.href = dataUrl
+    link.click()
+  }
+
+  return (
+    <div className="space-y-2">
+      <div ref={cardRef} className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
+        <div className="space-y-1">
+          {order.items.map((it, i) => (
+            <div key={i} className="flex justify-between text-sm">
+              <span>{it.product_name} x{it.qty}</span>
+              <span>{formatBaht(it.line_total)}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="border-t border-stone-100 pt-2 space-y-1 text-sm">
+          <div className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(order.items_total)}</span></div>
+          <div className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(order.discount_amount)}</span></div>
+          <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
+          <div className="flex justify-between font-semibold text-base"><span>ยอดรวม</span><span>{formatBaht(order.grand_total)}</span></div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => void handleDownload()}
+        disabled={downloading}
+        className="w-full rounded-xl border border-stone-300 text-stone-700 font-medium py-2.5 text-sm disabled:opacity-50"
+      >
+        {downloading ? 'กำลังสร้างรูป...' : '📸 บันทึกสรุปออเดอร์เป็นรูปภาพ'}
+      </button>
+    </div>
+  )
+}
+
 /** เอฟเฟกต์ยืนยันสำเร็จแบบวาดเครื่องหมายถูก ใช้เฉพาะตอนบันทึกที่อยู่ใหม่สำเร็จ ให้รู้สึกหนักแน่นกว่า Toast ทั่วไป */
 function AddressSavedOverlay({ onDone }: { onDone: () => void }) {
   useEffect(() => {
@@ -749,23 +802,7 @@ export function PublicOrderPage() {
           <ShareOrderButton shopName={order.shop_name} orderNo={order.order_no} />
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
-          <div className="space-y-1">
-            {order.items.map((it, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span>{it.product_name} x{it.qty}</span>
-                <span>{formatBaht(it.line_total)}</span>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-stone-100 pt-2 space-y-1 text-sm">
-            <div className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(order.items_total)}</span></div>
-            <div className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(order.discount_amount)}</span></div>
-            <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
-            <div className="flex justify-between font-semibold text-base"><span>ยอดรวม</span><span>{formatBaht(order.grand_total)}</span></div>
-          </div>
-        </div>
+        <OrderSummaryCard order={order} />
       </div>
 
       {showAddressEdit && token && (
