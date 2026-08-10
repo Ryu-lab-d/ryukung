@@ -21,10 +21,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                'block rounded-lg px-3 py-2 text-sm ' +
+                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm ' +
                 (isActive ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100')
               }
             >
+              <span aria-hidden="true">{item.icon}</span>
               {item.label}
             </NavLink>
           ))}
@@ -40,7 +41,9 @@ export function AppLayout({ children }: { children: ReactNode }) {
       {/* เนื้อหา เว้นที่ด้านล่างไว้ให้เมนูมือถือ/ไอแพดไม่ทับ */}
       <main className="flex-1 pb-20 lg:pb-0">{children}</main>
 
-      {/* เมนูล่าง แสดงบนมือถือและไอแพด — จำนวนช่องปรับตามจำนวนเมนูที่มองเห็นจริง (พนักงานไม่เห็น "ตั้งค่า") */}
+      {/* เมนูล่าง แสดงบนมือถือและไอแพด — จำนวนช่องปรับตามจำนวนเมนูที่มองเห็นจริง (พนักงานไม่เห็น "ตั้งค่า")
+          มีไอคอนช่วยให้กวาดตาหาเมนูได้เร็วโดยไม่ต้องอ่านตัวหนังสือเล็กๆ ทีละช่อง และเพิ่มความสูงของพื้นที่กดให้ถึง ~48px
+          ตามแนวทาง touch target ขั้นต่ำ เพราะช่องนึงแคบมากตอนมี 7 เมนูพร้อมกันบนจอมือถือทั่วไป */}
       <nav
         className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 grid [padding-bottom:env(safe-area-inset-bottom)]"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
@@ -51,10 +54,11 @@ export function AppLayout({ children }: { children: ReactNode }) {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              'py-3 text-center text-xs ' +
+              'flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-12 text-center text-[11px] leading-tight ' +
               (isActive ? 'text-stone-900 font-semibold' : 'text-stone-500')
             }
           >
+            <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span>
             {item.label}
           </NavLink>
         ))}
