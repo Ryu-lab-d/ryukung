@@ -26,6 +26,13 @@ function renderSection(props: Partial<React.ComponentProps<typeof PaymentsSectio
   )
 }
 
+/** จำลองการกดปุ่มตัวเลขบนคีย์แพดทีละหลัก เช่น pressDigits('222') = กด 2, 2, 2 ติดต่อกัน */
+async function pressDigits(digits: string) {
+  for (const d of digits) {
+    await userEvent.click(screen.getByRole('button', { name: d }))
+  }
+}
+
 describe('PaymentsSection', () => {
   it('ยังไม่มีลูกค้าแจ้งชำระ ปุ่มหลักเป็นสีปกติ ไม่มีเอฟเฟกต์แจ้งเตือน', () => {
     renderSection({ paymentClaimedAt: null })
@@ -42,42 +49,65 @@ describe('PaymentsSection', () => {
     expect(screen.getByText(/ลูกค้าแจ้งว่าชำระเงินแล้ว เมื่อ/)).toBeInTheDocument()
   })
 
-  it('กด "รับมาพอดี" เติมยอดคงเหลือให้อัตโนมัติ ไม่ต้องพิมพ์เอง', async () => {
+  it('กด "เต็มจำนวน" เติมยอดคงเหลือขึ้นจอเครื่องคิดเลขให้อัตโนมัติ ไม่ต้องกดตัวเลขเอง', async () => {
     renderSection({ balanceDue: 240 })
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
-    await userEvent.click(screen.getByRole('button', { name: /รับมาพอดี 240\.00 บาท/ }))
-    expect(screen.getByLabelText('หรือใส่จำนวนเงินเอง')).toHaveValue(240)
+    await userEvent.click(screen.getByRole('button', { name: /เต็มจำนวน 240\.00 บาท/ }))
+    expect(screen.getByTestId('payment-amount-display')).toHaveTextContent('240')
   })
 
-  it('ยอดคงเหลือเป็น 0 ไม่แสดงปุ่ม "รับมาพอดี" (ไม่มีอะไรให้เติมพอดี)', async () => {
+  it('ยอดคงเหลือเป็น 0 ไม่แสดงปุ่ม "เต็มจำนวน" (ไม่มีอะไรให้เติมพอดี)', async () => {
     renderSection({ balanceDue: 0 })
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
-    expect(screen.queryByText(/รับมาพอดี/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/เต็มจำนวน/)).not.toBeInTheDocument()
+  })
+
+  it('กดเลข 2 สามครั้งติดกัน ได้ยอด 222 บนจอ เหมือนเครื่องคิดเลข', async () => {
+    renderSection({ balanceDue: 240 })
+    await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
+    await pressDigits('222')
+    expect(screen.getByTestId('payment-amount-display')).toHaveTextContent('222')
+  })
+
+  it('กดปุ่มลบ (⌫) ลบตัวเลขล่าสุดออกทีละหลัก', async () => {
+    renderSection({ balanceDue: 240 })
+    await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
+    await pressDigits('222')
+    await userEvent.click(screen.getByRole('button', { name: 'ลบตัวเลขล่าสุด' }))
+    expect(screen.getByTestId('payment-amount-display')).toHaveTextContent('22')
+  })
+
+  it('กด "C" ล้างตัวเลขทั้งหมดกลับเป็น 0', async () => {
+    renderSection({ balanceDue: 240 })
+    await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
+    await pressDigits('222')
+    await userEvent.click(screen.getByRole('button', { name: 'C' }))
+    expect(screen.getByTestId('payment-amount-display')).toHaveTextContent('0')
   })
 
   it('บันทึกสำเร็จ: ปิด modal, ยิง onRecorded พร้อมยอดที่ถูกต้อง, และขึ้นป็อปอัพยืนยันสำเร็จ', async () => {
     recordPayment.mockResolvedValue({ error: null })
     renderSection({ balanceDue: 240 })
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
-    await userEvent.click(screen.getByRole('button', { name: /รับมาพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: /เต็มจำนวน/ }))
     await userEvent.click(screen.getByRole('button', { name: 'บันทึกการชำระเงิน' }))
 
     expect(recordPayment).toHaveBeenCalledWith('o1', expect.objectContaining({ amount: 240, method: 'transfer' }))
     expect(onRecorded).toHaveBeenCalledWith(240)
-    expect(screen.queryByLabelText('หรือใส่จำนวนเงินเอง')).not.toBeInTheDocument() // modal ปิดแล้ว
+    expect(screen.queryByRole('heading', { name: 'บันทึกการชำระเงิน' })).not.toBeInTheDocument() // modal ปิดแล้ว
     expect(await screen.findByText('ยืนยันการชำระเงินสำเร็จ')).toBeInTheDocument()
   })
 
-  it('ใส่จำนวนเงินเอง (ไม่ใช้ปุ่มรับมาพอดี) ก็บันทึกได้ปกติ', async () => {
+  it('กดตัวเลขเอง (ไม่ใช้ปุ่มเต็มจำนวน) ก็บันทึกได้ปกติ', async () => {
     recordPayment.mockResolvedValue({ error: null })
     renderSection({ balanceDue: 240 })
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
-    await userEvent.type(screen.getByLabelText('หรือใส่จำนวนเงินเอง'), '100')
+    await pressDigits('100')
     await userEvent.click(screen.getByRole('button', { name: 'บันทึกการชำระเงิน' }))
     expect(recordPayment).toHaveBeenCalledWith('o1', expect.objectContaining({ amount: 100 }))
   })
 
-  it('ไม่ใส่จำนวนเงินเลยแล้วกดบันทึก ขึ้น error ไม่ยิง recordPayment', async () => {
+  it('ไม่กดตัวเลขเลยแล้วกดบันทึก ขึ้น error ไม่ยิง recordPayment', async () => {
     renderSection()
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
     await userEvent.click(screen.getByRole('button', { name: 'บันทึกการชำระเงิน' }))
@@ -89,7 +119,7 @@ describe('PaymentsSection', () => {
     renderSection()
     await userEvent.click(screen.getByRole('button', { name: '💳 บันทึกการชำระเงิน' }))
     await userEvent.click(screen.getByRole('button', { name: 'ยกเลิก' }))
-    expect(screen.queryByLabelText('หรือใส่จำนวนเงินเอง')).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'บันทึกการชำระเงิน' })).not.toBeInTheDocument()
     expect(recordPayment).not.toHaveBeenCalled()
   })
 
