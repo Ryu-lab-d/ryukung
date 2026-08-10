@@ -11,8 +11,6 @@ import { AddToCalendarButton } from './AddToCalendarButton'
 import { ShareOrderButton } from './ShareOrderButton'
 import { productImageUrl } from '../products/ProductCard'
 
-const ABOUT_POPUP_SEEN_KEY = 'ryukung_about_popup_seen'
-
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
@@ -380,8 +378,7 @@ function UnpaidPaymentPopup({
   )
 }
 
-/** ป็อปอัพแนะนำร้าน โชว์ก่อนป็อปอัพเตือนชำระเงินเสมอ (ครั้งแรกที่เปิดจากเครื่องนี้เท่านั้น จำไว้ผ่าน localStorage
-    กันไม่ให้ลูกค้าที่เข้ามาเช็คสถานะซ้ำๆ ทุกวันต้องเห็นเรื่องราวร้านซ้ำทุกรอบ) */
+/** ป็อปอัพแนะนำร้าน โชว์ก่อนป็อปอัพเตือนชำระเงินเสมอ ทุกครั้งที่เข้าดูออเดอร์ */
 function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
   return (
     <div
@@ -496,19 +493,7 @@ export function PublicOrderPage() {
   const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
-  const [aboutPopupDismissed, setAboutPopupDismissed] = useState(
-    () => typeof localStorage !== 'undefined' && localStorage.getItem(ABOUT_POPUP_SEEN_KEY) === 'true'
-  )
-
-  function handleCloseAboutPopup() {
-    setAboutPopupDismissed(true)
-    try {
-      localStorage.setItem(ABOUT_POPUP_SEEN_KEY, 'true')
-    } catch {
-      // localStorage อาจถูกบล็อกในบางเบราว์เซอร์ (โหมดส่วนตัว/ตั้งค่าความเป็นส่วนตัวเข้ม) ไม่ถือเป็นข้อผิดพลาด
-      // แค่แปลว่าครั้งหน้าจะเห็นป็อปอัพนี้อีก ซึ่งยอมรับได้ ไม่ต้องมีอะไรพังตาม
-    }
-  }
+  const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
 
   const fetchOrder = useCallback(() => {
     if (!token) return
@@ -799,7 +784,7 @@ export function PublicOrderPage() {
       {addressSaved && <AddressSavedOverlay onDone={() => setAddressSaved(false)} />}
 
       {!aboutPopupDismissed ? (
-        <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={handleCloseAboutPopup} />
+        <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={() => setAboutPopupDismissed(true)} />
       ) : (
         !unpaidPopupDismissed &&
         !order.payment_claimed_at &&

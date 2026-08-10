@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, cleanup } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { PublicOrderPage } from './PublicOrderPage'
@@ -17,10 +17,6 @@ vi.mock('../lib/supabase', () => ({
     },
   },
 }))
-
-beforeEach(() => {
-  localStorage.clear()
-})
 
 const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
@@ -344,7 +340,7 @@ async function openOrderKeepAllPopups(order: typeof baseOrder) {
 }
 
 describe('ป็อปอัพแนะนำร้าน', () => {
-  it('เข้าดูออเดอร์ครั้งแรกจากเครื่องนี้ เห็นป็อปอัพแนะนำร้านก่อนเสมอ (มาก่อนป็อปอัพเตือนชำระเงิน)', async () => {
+  it('เข้าดูออเดอร์ เห็นป็อปอัพแนะนำร้านก่อนเสมอ (มาก่อนป็อปอัพเตือนชำระเงิน)', async () => {
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
     expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
     expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
@@ -362,9 +358,13 @@ describe('ป็อปอัพแนะนำร้าน', () => {
     expect(await screen.findByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
   })
 
-  it('ปิดไปแล้วครั้งหนึ่ง (จำไว้ผ่าน localStorage) เปิดหน้าใหม่อีกรอบไม่เห็นป็อปอัพแนะนำร้านซ้ำ', async () => {
-    localStorage.setItem('ryukung_about_popup_seen', 'true')
+  it('ไม่ได้จำไว้ข้ามการเข้าชม เปิดออเดอร์ใหม่อีกรอบ (เช่นเข้ามาเช็คสถานะอีกวัน) ก็ยังเห็นป็อปอัพแนะนำร้านอีกเหมือนเดิม', async () => {
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
-    expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
+    expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+    cleanup()
+
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
+    expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
   })
 })
