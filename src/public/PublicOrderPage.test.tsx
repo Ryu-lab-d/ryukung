@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
@@ -10,11 +10,21 @@ vi.mock('../lib/supabase', () => ({
   supabase: {
     rpc: (...args: unknown[]) => rpc(...args),
     functions: { invoke: (...args: unknown[]) => functionsInvoke(...args) },
+    storage: {
+      from: () => ({
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `https://mock.supabase.co/storage/v1/object/public/product-images/${path}` } }),
+      }),
+    },
   },
 }))
 
+beforeEach(() => {
+  localStorage.clear()
+})
+
 const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
+  logo_path: null as string | null,
   order_no: 'RYB-000001',
   customer_name: 'Somchai ใจดี',
   needed_date: '2026-08-10' as string | null,
@@ -96,9 +106,11 @@ async function openOrder(order: typeof baseOrder) {
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
-  // ป็อปอัพเตือนยังไม่ชำระเงินขึ้นอัตโนมัติถ้ายังไม่จ่าย ปิดออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติ
-  // ด้านล่าง (มี describe แยกที่ทดสอบป็อปอัพนี้โดยเฉพาะ เปิดออเดอร์เองแบบดิบๆ ไม่ผ่าน helper นี้)
-  const closeButton = screen.queryByRole('button', { name: 'ปิด' })
+  // ป็อปอัพแนะนำร้านขึ้นก่อนเสมอ (ครั้งแรกของเครื่องนี้) ตามด้วยป็อปอัพเตือนยังไม่ชำระเงินถ้ายังไม่จ่าย ปิดทั้งคู่
+  // ออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติด้านล่าง (มี describe แยกที่ทดสอบป็อปอัพแต่ละอันเองโดยเฉพาะ)
+  let closeButton = screen.queryByRole('button', { name: 'ปิด' })
+  if (closeButton) await userEvent.click(closeButton)
+  closeButton = screen.queryByRole('button', { name: 'ปิด' })
   if (closeButton) await userEvent.click(closeButton)
 }
 
@@ -262,7 +274,10 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
   })
 })
 
-/** เปิดออเดอร์แบบดิบๆ โดยไม่ปิดป็อปอัพเตือนยังไม่ชำระเงินอัตโนมัติ (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพนี้เอง */
+/**
+ * เปิดออเดอร์แบบดิบๆ ปิดแค่ป็อปอัพแนะนำร้าน (ที่ขึ้นก่อนเสมอ) แต่ไม่แตะป็อปอัพเตือนยังไม่ชำระเงิน
+ * (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพเตือนยังไม่ชำระเงินนี้เอง
+ */
 async function openOrderKeepPopup(order: typeof baseOrder) {
   rpc.mockResolvedValue({ data: order })
   renderPage()
@@ -271,6 +286,7 @@ async function openOrderKeepPopup(order: typeof baseOrder) {
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
+  await userEvent.click(await screen.findByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
 }
 
 describe('ป็อปอัพเตือนยังไม่ชำระเงิน', () => {
@@ -313,5 +329,42 @@ describe('ป็อปอัพเตือนยังไม่ชำระเ�
     await openOrderKeepPopup(baseOrder)
     await userEvent.click(screen.getByRole('button', { name: 'ปิด' }))
     expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+  })
+})
+
+/** เปิดออเดอร์แบบดิบๆ ไม่ปิดป็อปอัพไหนเลย เพื่อทดสอบป็อปอัพแนะนำร้านที่ขึ้นก่อนป็อปอัพอื่นทั้งหมด */
+async function openOrderKeepAllPopups(order: typeof baseOrder) {
+  rpc.mockResolvedValue({ data: order })
+  renderPage()
+  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+  await userEvent.type(input, order.customer_name!)
+  const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+  await userEvent.click(submitButton)
+  await screen.findByText(order.shop_name)
+}
+
+describe('ป็อปอัพแนะนำร้าน', () => {
+  it('เข้าดูออเดอร์ครั้งแรกจากเครื่องนี้ เห็นป็อปอัพแนะนำร้านก่อนเสมอ (มาก่อนป็อปอัพเตือนชำระเงิน)', async () => {
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
+    expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+  })
+
+  it('ตั้งค่าโลโก้ร้านไว้ แสดงรูปโลโก้ในป็อปอัพ', async () => {
+    await openOrderKeepAllPopups({ ...baseOrder, logo_path: 'logo/logo-1.png' })
+    expect(screen.getByAltText('')).toHaveAttribute('src', expect.stringContaining('logo/logo-1.png'))
+  })
+
+  it('ปิดป็อปอัพแนะนำร้านแล้ว ถ้ายังไม่จ่ายจะเห็นป็อปอัพเตือนชำระเงินต่อทันที', async () => {
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+    expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
+    expect(await screen.findByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
+  })
+
+  it('ปิดไปแล้วครั้งหนึ่ง (จำไว้ผ่าน localStorage) เปิดหน้าใหม่อีกรอบไม่เห็นป็อปอัพแนะนำร้านซ้ำ', async () => {
+    localStorage.setItem('ryukung_about_popup_seen', 'true')
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
+    expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
   })
 })

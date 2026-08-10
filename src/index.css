@@ -94,6 +94,15 @@ a:focus-visible {
   }
 }
 
+/* พื้นหลังมัวของป็อปอัพ ค่อยๆ จางเข้ามาแทนที่จะโผล่มาทันที ให้ความรู้สึกนุ่มนวลกว่า ใช้คู่กับ .animate-toast-pop บนกล่องเนื้อหา */
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.animate-overlay-fade {
+  animation: overlay-fade-in 0.2s ease-out;
+}
+
 /* ป้ายแจ้งผลกลางจอ (Toast) — โผล่แบบเด้งเบาๆ */
 @keyframes toast-pop {
   from {

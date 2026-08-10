@@ -9,10 +9,14 @@ import { PromptPayQR } from './PromptPayQR'
 import { claimPayment } from '../lib/paymentClaim'
 import { AddToCalendarButton } from './AddToCalendarButton'
 import { ShareOrderButton } from './ShareOrderButton'
+import { productImageUrl } from '../products/ProductCard'
+
+const ABOUT_POPUP_SEEN_KEY = 'ryukung_about_popup_seen'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
   shop_name: string
+  logo_path: string | null
   payment_instructions: string | null
   promptpay: string | null
   balance_due: number
@@ -76,31 +80,45 @@ function normalizeName(value: string): string {
   return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
 }
 
-const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean }> = {
+const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean; pulsing?: boolean }> = {
   unpaid: { label: 'ยังไม่ชำระเงิน', icon: '!', color: 'bg-red-500', done: false },
   partial: { label: 'มัดจำแล้ว', icon: '½', color: 'bg-amber-500', done: false },
-  paid: { label: 'ชำระเงินแล้ว', icon: '✓', color: 'bg-green-600', done: true },
+  pending_review: { label: 'กำลังรอการตรวจสอบจากเจ้าหน้าที่', icon: '⏳', color: 'bg-amber-500', done: false, pulsing: true },
+  paid: { label: 'ชำระเงินเสร็จสิ้น', icon: '✓', color: 'bg-green-600', done: true },
 }
 
-/** ไทม์ไลน์เดียวที่รวมทั้งสถานะชำระเงินและสถานะงาน ให้ลูกค้าเห็นภาพรวมในที่เดียว ไม่ต้องแยกอ่านสองที่ */
+/**
+ * ไทม์ไลน์เดียวที่รวมทั้งสถานะชำระเงินและสถานะงาน ให้ลูกค้าเห็นภาพรวมในที่เดียว ไม่ต้องแยกอ่านสองที่
+ * ขั้นชำระเงินมี 4 สถานะจริงๆ (ไม่ใช่แค่ 3 ตาม payment_status ดิบ): ยังไม่จ่าย → กำลังรอตรวจสอบ (ลูกค้ากด
+ * ยืนยันการชำระเงินแล้วแต่เจ้าหน้าที่ยังไม่ได้ตรวจ ต้องแทรกเข้ามาไม่งั้นจะดูเหมือน "ยังไม่จ่าย" ทั้งที่จ่ายไปแล้ว) → มัดจำแล้ว/จ่ายครบ
+ */
 function StatusTimeline({
   workStatus,
   paymentStatus,
+  paymentClaimedAt,
   fulfillmentType,
 }: {
   workStatus: string
   paymentStatus: string
+  paymentClaimedAt: string | null
   fulfillmentType: string
 }) {
   const WORK_STAGES = workStagesFor(fulfillmentType)
   const currentIndex = WORK_STAGES.findIndex((s) => s.key === workStatus)
-  const payment = PAYMENT_STAGE[paymentStatus] ?? PAYMENT_STAGE.unpaid
+  const paymentKey = paymentStatus !== 'paid' && paymentClaimedAt ? 'pending_review' : paymentStatus
+  const payment = PAYMENT_STAGE[paymentKey] ?? PAYMENT_STAGE.unpaid
 
   return (
     <div>
       <div className="flex gap-3">
         <div className="flex flex-col items-center">
-          <div className={'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 text-white ' + payment.color}>
+          <div
+            className={
+              'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 text-white ' +
+              payment.color +
+              (payment.pulsing ? ' animate-pulse ring-4 ring-amber-200' : '')
+            }
+          >
             {payment.icon}
           </div>
           <div className={'w-0.5 flex-1 min-h-8 ' + (payment.done ? 'bg-stone-900' : 'bg-stone-200')} />
@@ -298,54 +316,136 @@ function UnpaidPaymentPopup({
   onClaimPayment: () => void
 }) {
   return (
-    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade"
+      onClick={onClose}
+    >
       <div
-        className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 max-h-[90vh] overflow-y-auto"
+        className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto animate-toast-pop"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="text-center space-y-1">
-          <p className="text-4xl">💳</p>
-          <h2 className="text-lg font-bold text-red-700">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-500 grid place-items-center text-lg font-bold shadow-md z-10"
+        >
+          ✕
+        </button>
+
+        <div className="bg-gradient-to-b from-red-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
+          <div className="w-16 h-16 rounded-full bg-red-100 grid place-items-center mx-auto text-3xl">💳</div>
+          <h2 className="text-xl font-bold text-red-700 leading-snug">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
         </div>
 
-        {!showPaymentInfo ? (
-          <button
-            type="button"
-            onClick={onShowPaymentInfo}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-2.5 text-sm"
-          >
-            ดูวิธีการชำระเงิน
-          </button>
-        ) : (
-          <PaymentInfoPanel
-            promptpay={order.promptpay}
-            balanceDue={order.balance_due}
-            paymentInstructions={order.payment_instructions}
-            paymentClaimedAt={order.payment_claimed_at}
-            claiming={claiming}
-            claimError={claimError}
-            onClaimPayment={onClaimPayment}
-          />
-        )}
+        <div className="px-5 pb-5 space-y-3">
+          {!showPaymentInfo ? (
+            <button
+              type="button"
+              onClick={onShowPaymentInfo}
+              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-sm"
+            >
+              ดูวิธีการชำระเงิน
+            </button>
+          ) : (
+            <PaymentInfoPanel
+              promptpay={order.promptpay}
+              balanceDue={order.balance_due}
+              paymentInstructions={order.payment_instructions}
+              paymentClaimedAt={order.payment_claimed_at}
+              claiming={claiming}
+              claimError={claimError}
+              onClaimPayment={onClaimPayment}
+            />
+          )}
 
-        <p className="text-xs text-stone-500 bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2">
-          หากชำระเงินไปแล้ว กรุณารอการตรวจสอบจากเจ้าหน้าที่ อาจใช้เวลา 1-3 ชั่วโมง แต่ไม่เกิน 1 วัน หากเกิน 1 วันกรุณาติดต่อเจ้าหน้าที่
-        </p>
+          <div className="flex gap-2 rounded-xl bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800">
+            <span className="shrink-0">⏳</span>
+            <p>หากชำระเงินไปแล้ว กรุณารอการตรวจสอบจากเจ้าหน้าที่ อาจใช้เวลา 1-3 ชั่วโมง แต่ไม่เกิน 1 วัน หากเกิน 1 วันกรุณาติดต่อเจ้าหน้าที่</p>
+          </div>
 
-        <div className="flex items-center justify-between pt-1">
-          <button type="button" onClick={onClose} className="text-sm text-stone-500 underline">
-            ปิด
-          </button>
           {order.line_url && (
             <a
               href={order.line_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-[#06C755] underline"
+              className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-[#06C755] text-[#06C755] font-medium py-2.5 text-sm"
             >
-              พบปัญหา? ติดต่อที่นี่
+              💬 พบปัญหา? ติดต่อที่นี่
             </a>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ป็อปอัพแนะนำร้าน โชว์ก่อนป็อปอัพเตือนชำระเงินเสมอ (ครั้งแรกที่เปิดจากเครื่องนี้เท่านั้น จำไว้ผ่าน localStorage
+    กันไม่ให้ลูกค้าที่เข้ามาเช็คสถานะซ้ำๆ ทุกวันต้องเห็นเรื่องราวร้านซ้ำทุกรอบ) */
+function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
+  return (
+    <div
+      className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade"
+      onClick={onClose}
+    >
+      <div
+        className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-toast-pop"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-600 grid place-items-center text-lg font-bold shadow-md z-10"
+        >
+          ✕
+        </button>
+
+        <div
+          className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3"
+          style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
+        >
+          {logoPath && (
+            <img
+              src={productImageUrl(logoPath)}
+              alt=""
+              className="w-20 h-20 rounded-full mx-auto object-cover border-2"
+              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+            />
+          )}
+          <p className="text-4xl">🍪</p>
+          <h2 className="text-2xl font-extrabold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
+            {shopName} คืออะไร?
+          </p>
+        </div>
+
+        <div className="px-5 py-5 space-y-3 text-sm text-stone-700 leading-relaxed">
+          <p>
+            RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
+            เน้นขนมที่ทำสดใหม่ เหมาะทั้งกับการซื้อกินเองและซื้อเป็นของฝากในโอกาสพิเศษ
+          </p>
+          <p>
+            จุดเด่นของร้านคือการทำขนมแบบ Pre-order เพื่อเตรียมสินค้าให้พอดีกับจำนวนที่สั่ง และรักษาคุณภาพความสดใหม่ในทุกรอบการผลิต
+            เมนูของร้านมีทั้ง Soft Cookie, S'more, Mini Cornflake และอื่นๆ อีกมากมาย รวมถึงบริการรับผลิตขนมจำนวนมากสำหรับงานสัมมนา งานเลี้ยง และ Snack Box
+          </p>
+          <p>
+            สิ่งที่ร้านให้ความสำคัญไม่ใช่แค่รสชาติของขนม แต่ยังรวมถึงการนำเทคโนโลยีเข้ามาช่วยบริหารจัดการ ทั้งระบบสั่งซื้อ ติดตามสถานะออร์เดอร์
+            ตรวจสอบการชำระเงิน และระบบ POS เพื่อให้ทุกขั้นตอนมีประสิทธิภาพมากขึ้น
+          </p>
+          <p>
+            RYUKUNG_BAKERY จึงไม่ใช่แค่ร้านขายขนม แต่เป็นธุรกิจเล็กๆ ที่กำลังค่อยๆ เติบโตไปด้วยกัน ทั้งด้านสินค้า การบริการ และเทคโนโลยี
+          </p>
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
+          >
+            เริ่มดูออเดอร์ของฉัน
+          </button>
         </div>
       </div>
     </div>
@@ -396,6 +496,19 @@ export function PublicOrderPage() {
   const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
+  const [aboutPopupDismissed, setAboutPopupDismissed] = useState(
+    () => typeof localStorage !== 'undefined' && localStorage.getItem(ABOUT_POPUP_SEEN_KEY) === 'true'
+  )
+
+  function handleCloseAboutPopup() {
+    setAboutPopupDismissed(true)
+    try {
+      localStorage.setItem(ABOUT_POPUP_SEEN_KEY, 'true')
+    } catch {
+      // localStorage อาจถูกบล็อกในบางเบราว์เซอร์ (โหมดส่วนตัว/ตั้งค่าความเป็นส่วนตัวเข้ม) ไม่ถือเป็นข้อผิดพลาด
+      // แค่แปลว่าครั้งหน้าจะเห็นป็อปอัพนี้อีก ซึ่งยอมรับได้ ไม่ต้องมีอะไรพังตาม
+    }
+  }
 
   const fetchOrder = useCallback(() => {
     if (!token) return
@@ -553,7 +666,12 @@ export function PublicOrderPage() {
 
         <div className="bg-white rounded-2xl shadow-sm p-5">
           <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
-          <StatusTimeline workStatus={order.work_status} paymentStatus={order.payment_status} fulfillmentType={order.fulfillment_type} />
+          <StatusTimeline
+            workStatus={order.work_status}
+            paymentStatus={order.payment_status}
+            paymentClaimedAt={order.payment_claimed_at}
+            fulfillmentType={order.fulfillment_type}
+          />
 
           {order.work_status === 'delivered' && order.line_url && (
             <a
@@ -680,16 +798,22 @@ export function PublicOrderPage() {
 
       {addressSaved && <AddressSavedOverlay onDone={() => setAddressSaved(false)} />}
 
-      {!unpaidPopupDismissed && !order.payment_claimed_at && order.payment_status !== 'paid' && (
-        <UnpaidPaymentPopup
-          order={order}
-          showPaymentInfo={showPaymentInfo}
-          onShowPaymentInfo={() => setShowPaymentInfo(true)}
-          onClose={() => setUnpaidPopupDismissed(true)}
-          claiming={claiming}
-          claimError={claimError}
-          onClaimPayment={() => void handleClaimPayment()}
-        />
+      {!aboutPopupDismissed ? (
+        <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={handleCloseAboutPopup} />
+      ) : (
+        !unpaidPopupDismissed &&
+        !order.payment_claimed_at &&
+        order.payment_status !== 'paid' && (
+          <UnpaidPaymentPopup
+            order={order}
+            showPaymentInfo={showPaymentInfo}
+            onShowPaymentInfo={() => setShowPaymentInfo(true)}
+            onClose={() => setUnpaidPopupDismissed(true)}
+            claiming={claiming}
+            claimError={claimError}
+            onClaimPayment={() => void handleClaimPayment()}
+          />
+        )
       )}
 
       <ChatBot shopName={order.shop_name} faqs={order.faqs} lineUrl={order.line_url} />
