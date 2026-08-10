@@ -277,7 +277,13 @@ export function OrderDetailPage() {
         <DeliveredCleanupBanner deliveredAt={order.delivered_at} onDeleteNow={() => setShowDeleteConfirm(true)} />
       )}
 
-      <PaymentsSection orderId={order.id} payments={payments} onRecorded={handlePaymentRecorded} />
+      <PaymentsSection
+        orderId={order.id}
+        payments={payments}
+        balanceDue={balanceDue}
+        paymentClaimedAt={order.payment_claimed_at}
+        onRecorded={handlePaymentRecorded}
+      />
 
       {order.work_status !== 'cancelled' && order.payment_status !== 'paid' && (
         order.customers?.email ? (
