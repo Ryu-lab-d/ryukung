@@ -5,6 +5,7 @@ import { RequireAuth } from './auth/RequireAuth'
 import { StaffJoinPage } from './auth/StaffJoinPage'
 import { AppLayout } from './layout/AppLayout'
 import { SettingsPage } from './settings/SettingsPage'
+import { PromoCardPage } from './settings/PromoCardPage'
 import { ProductsPage } from './products/ProductsPage'
 import { ProductForm } from './products/ProductForm'
 import { CategoriesPage } from './products/CategoriesPage'
@@ -55,6 +56,7 @@ function AuthenticatedApp() {
             <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
             <Route path="/summary" element={<SalesSummaryPage />} />
             <Route path="/settings" element={<OwnerOnlyRoute><SettingsPage /></OwnerOnlyRoute>} />
+            <Route path="/promo" element={<PromoCardPage />} />
             <Route path="/chatbot" element={<OwnerOnlyRoute><ChatbotManagementPage /></OwnerOnlyRoute>} />
             <Route path="/storage" element={<StorageManagementPage />} />
           </Routes>
