@@ -127,7 +127,7 @@ export function CostRecipeForm() {
       <Link to="/costing" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
         ← กลับหน้าต้นทุน
       </Link>
-      <h1 className="text-lg font-semibold">{id ? 'แก้ไขสูตรต้นทุน' : 'เพิ่มสินค้าใหม่'}</h1>
+      <h1 className="text-lg font-semibold">{id ? 'แก้ไขสูตรต้นทุน' : 'คำนวณต้นทุนเมนูใหม่'}</h1>
 
       <div className="space-y-1">
         <label htmlFor="recipe-name" className="text-sm text-stone-600">
@@ -149,6 +149,9 @@ export function CostRecipeForm() {
             + เพิ่มวัตถุดิบ
           </button>
         </div>
+        <p className="text-xs text-stone-400 bg-stone-50 border border-stone-200 rounded-lg px-2.5 py-2">
+          ตัวอย่าง: ซื้อเนย 1 ถุง หนัก 5,000 กรัม ราคา 1,125 บาท แล้วสูตรนี้ใช้เนย 200 กรัม — ระบบคิดต้นทุนส่วนเนยให้อัตโนมัติเป็น 45 บาท
+        </p>
         {ingredientRows.map((row, i) => {
           const cost = ingredientCost({
             purchase_qty: Number(row.purchase_qty) || 0,
@@ -170,11 +173,12 @@ export function CostRecipeForm() {
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div className="space-y-0.5">
-                  <label className="text-xs text-stone-500">ซื้อมา (จำนวน)</label>
+                  <label className="text-xs text-stone-500">ซื้อมาทั้งหมดหนัก/ปริมาณเท่าไหร่</label>
                   <input
                     type="number"
                     inputMode="decimal"
                     min="0"
+                    placeholder="เช่น 5000"
                     value={row.purchase_qty}
                     onChange={(e) => updateIngredient(i, { purchase_qty: e.target.value })}
                     className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
@@ -184,28 +188,31 @@ export function CostRecipeForm() {
                   <label className="text-xs text-stone-500">หน่วย</label>
                   <input
                     list="cost-unit-suggestions"
+                    placeholder="เช่น กรัม"
                     value={row.purchase_unit}
                     onChange={(e) => updateIngredient(i, { purchase_unit: e.target.value })}
                     className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
                   />
                 </div>
                 <div className="space-y-0.5">
-                  <label className="text-xs text-stone-500">ราคาที่ซื้อ (บาท)</label>
+                  <label className="text-xs text-stone-500">ราคาที่ซื้อทั้งหมด (บาท)</label>
                   <input
                     type="number"
                     inputMode="decimal"
                     min="0"
+                    placeholder="เช่น 1125"
                     value={row.purchase_price}
                     onChange={(e) => updateIngredient(i, { purchase_price: e.target.value })}
                     className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
                   />
                 </div>
                 <div className="space-y-0.5">
-                  <label className="text-xs text-stone-500">ใช้ในสูตรนี้เท่าไหร่</label>
+                  <label className="text-xs text-stone-500">สูตรนี้ใช้กี่ {row.purchase_unit || 'หน่วย'}</label>
                   <input
                     type="number"
                     inputMode="decimal"
                     min="0"
+                    placeholder="เช่น 200"
                     value={row.qty_used}
                     onChange={(e) => updateIngredient(i, { qty_used: e.target.value })}
                     className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"

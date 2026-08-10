@@ -11,14 +11,14 @@ export function CostRecipesPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-lg font-semibold">คำนวณต้นทุน</h1>
         <Link to="/costing/new" className="rounded-lg bg-stone-900 text-white text-sm font-medium px-3.5 py-2">
-          + เพิ่มสินค้า
+          + คำนวณเมนูใหม่
         </Link>
       </div>
 
       {loading ? (
         <p className="text-stone-500">กำลังโหลด...</p>
       ) : recipes.length === 0 ? (
-        <p className="text-sm text-stone-400">ยังไม่มีสูตรที่คำนวณไว้ กด "+ เพิ่มสินค้า" เพื่อเริ่มคำนวณต้นทุนเมนูแรก</p>
+        <p className="text-sm text-stone-400">ยังไม่มีสูตรที่คำนวณไว้ กด "+ คำนวณเมนูใหม่" เพื่อเริ่มคำนวณต้นทุนเมนูแรก</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {recipes.map((r) => {

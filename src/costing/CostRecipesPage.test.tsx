@@ -24,7 +24,7 @@ describe('CostRecipesPage', () => {
     loadingOverride = false
     renderPage()
     expect(screen.getByText(/ยังไม่มีสูตรที่คำนวณไว้/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '+ เพิ่มสินค้า' })).toHaveAttribute('href', '/costing/new')
+    expect(screen.getByRole('link', { name: '+ คำนวณเมนูใหม่' })).toHaveAttribute('href', '/costing/new')
   })
 
   it('มีสูตรอยู่แล้ว แสดงต้นทุนต่อชิ้นและราคาขายแนะนำที่คำนวณจากวัตถุดิบจริง', () => {
