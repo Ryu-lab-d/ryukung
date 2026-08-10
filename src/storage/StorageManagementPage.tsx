@@ -48,6 +48,15 @@ export function StorageManagementPage() {
         <p className="text-sm text-stone-500 mt-0.5">
           รวมทุกอย่างที่ลบได้เพื่อประหยัดพื้นที่ Supabase ไว้ในหน้าเดียว — ลบแล้วกู้คืนไม่ได้ทุกรายการ
         </p>
+        {import.meta.env.VITE_SHEETS_ARCHIVE_WEBHOOK_URL ? (
+          <p className="text-xs text-green-700 mt-1">
+            📄 ก่อนลบออเดอร์แต่ละรายการ ระบบจะสำรองข้อมูลไปที่ Google Sheets ให้อัตโนมัติก่อนเสมอ
+          </p>
+        ) : (
+          <p className="text-xs text-stone-400 mt-1">
+            ยังไม่ได้ตั้งค่าสำรองออเดอร์ไป Google Sheets ก่อนลบ (ตัวเลือกเสริม)
+          </p>
+        )}
       </div>
 
       <CleanupSection
