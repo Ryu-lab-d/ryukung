@@ -31,6 +31,14 @@ function infoBox(rows: { label: string; value: string }[]): string {
   return `<div style="background:#f7ede0;border-radius:12px;padding:14px 16px;margin:16px 0;">${inner}</div>`
 }
 
+/** หมายเหตุปิดท้ายสำหรับอีเมลที่ส่งถึงลูกค้าโดยตรงเท่านั้น (ไม่ใช้กับอีเมลแจ้งเจ้าของร้าน) อธิบายที่มาของระบบและวิธีจัดการถ้าได้อีเมลผิดคน */
+function customerFooterNote(): string {
+  return `<div style="margin-top:20px;padding-top:14px;border-top:1px solid #ece1d2;font-size:12px;line-height:1.6;color:#a1927d;">
+    <p style="margin:0 0 8px;">อีเมลฉบับนี้ส่งถึงคุณลูกค้าเพื่อให้เกิดความเข้าใจตรงกันระหว่างร้านและลูกค้า และเพื่อลดปัญหาที่อาจเกิดขึ้นจากการสื่อสารคลาดเคลื่อน ทางร้านจึงได้จัดทำระบบแจ้งเตือนอัตโนมัตินี้ขึ้นมาค่ะ</p>
+    <p style="margin:0;">หากท่านได้รับอีเมลฉบับนี้โดยไม่ได้เป็นผู้สั่งซื้อ หรือได้รับโดยผิดพลาด (ไม่ใช่ชื่อของท่าน) รบกวนกรุณาลบอีเมลฉบับนี้ทิ้ง และแจ้งให้ทางร้านทราบ เพื่อป้องกันไม่ให้เกิดการรบกวนท่านในครั้งต่อไปค่ะ</p>
+  </div>`
+}
+
 export function orderConfirmedEmail(params: {
   shopName: string
   logoUrl?: string | null
@@ -52,10 +60,12 @@ export function orderConfirmedEmail(params: {
     subject: `✅ ยืนยันรับออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>สวัสดีคุณ${customerName} 🙏</p>
-       <p>ร้านได้รับออเดอร์ของคุณเรียบร้อยแล้วค่ะ รายละเอียดดังนี้:</p>
+      `<p>ถึงคุณ${customerName}</p>
+       <p>ขอบคุณที่ไว้วางใจสั่งซื้อกับ ${shopName} นะคะ ตอนนี้ทางร้านได้รับออเดอร์ของท่านเรียบร้อยแล้วค่ะ โดยในลำดับถัดไป ทางร้านจะทยอยแจ้งความคืบหน้าของสถานะออเดอร์ให้ท่านทราบเป็นระยะๆ ผ่านทางอีเมลฉบับนี้ค่ะ</p>
+       <p>รบกวนกรุณาชำระเงินตามยอดด้านล่างนี้ ผ่านลิงก์ติดตามออเดอร์ที่แนบไว้ให้ด้านล่างได้เลยนะคะ</p>
        ${infoBox(rows)}
-       ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}`,
+       ${ctaButton(publicUrl, 'ดูรายละเอียด & ชำระเงิน')}
+       ${customerFooterNote()}`,
       logoUrl
     ),
   }
@@ -80,10 +90,11 @@ export function paymentReceivedEmail(params: {
     subject: `💰 ได้รับชำระเงินแล้ว ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>สวัสดีคุณ${customerName} 🙏</p>
+      `<p>ถึงคุณ${customerName}</p>
        <p>ร้านได้รับการชำระเงินของคุณเรียบร้อยแล้วค่ะ ขอบคุณมากนะคะ</p>
        ${infoBox(rows)}
-       ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}`,
+       ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}
+       ${customerFooterNote()}`,
       logoUrl
     ),
   }
@@ -135,14 +146,15 @@ export function paymentReminderEmail(params: {
     subject: `⏰ แจ้งเตือนชำระเงิน ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>สวัสดีคุณ${customerName} 🙏</p>
+      `<p>ถึงคุณ${customerName}</p>
        <p>ร้านยังไม่ได้รับการชำระเงินสำหรับออเดอร์นี้เลยค่ะ รบกวนโอนเงินตามยอดด้านล่าง แล้วแจ้งกลับมาที่ร้านได้เลยนะคะ</p>
        ${infoBox([
          { label: 'เลขที่ออเดอร์', value: orderNo },
          { label: 'ยอดที่ต้องชำระ', value: `${formatBaht(grandTotal)} บาท` },
        ])}
        ${paymentInstructions ? `<p style="white-space:pre-line;">${paymentInstructions}</p>` : ''}
-       ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}`,
+       ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}
+       ${customerFooterNote()}`,
       logoUrl
     ),
   }
@@ -165,10 +177,11 @@ export function customEmail(params: {
   return {
     html: shell(
       shopName,
-      `<p>สวัสดีคุณ${customerName} 🙏</p>
+      `<p>ถึงคุณ${customerName}</p>
        <p style="white-space:pre-line;">${bodyText}</p>
        ${infoRows.length > 0 ? infoBox(infoRows) : ''}
-       ${ctaUrl && ctaLabel ? ctaButton(ctaUrl, ctaLabel) : ''}`,
+       ${ctaUrl && ctaLabel ? ctaButton(ctaUrl, ctaLabel) : ''}
+       ${customerFooterNote()}`,
       logoUrl
     ),
   }

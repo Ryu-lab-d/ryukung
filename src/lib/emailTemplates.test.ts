@@ -17,6 +17,10 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(html).toContain('250.00')
     expect(html).toContain('https://ryukung-pos.pages.dev/o/abc123')
     expect(html).toContain('สมชาย')
+    expect(html).toContain('ถึงคุณสมชาย')
+    expect(html).toContain('จะทยอยแจ้งความคืบหน้าของสถานะออเดอร์')
+    expect(html).toContain('อีเมลฉบับนี้ส่งถึงคุณลูกค้าเพื่อให้เกิดความเข้าใจตรงกัน')
+    expect(html).toContain('หากท่านได้รับอีเมลฉบับนี้โดยไม่ได้เป็นผู้สั่งซื้อ')
   })
 
   it('อีเมลแจ้งได้รับชำระเงิน โชว์ยอดคงเหลือถ้ายังไม่ครบ', () => {
@@ -74,6 +78,8 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(html).toContain('สมชาย')
     expect(html).toContain('นัดรับเอง')
     expect(html).toContain('https://ryukung-pos.pages.dev/orders/xyz789')
+    // อีเมลนี้ส่งถึงเจ้าของร้าน ไม่ใช่ลูกค้า จึงไม่ควรมีหมายเหตุปิดท้ายที่พูดถึง "คุณลูกค้า"
+    expect(html).not.toContain('ส่งถึงคุณลูกค้า')
   })
 
   it('ไม่ได้ตั้งโลโก้ร้านไว้ หัวอีเมลใช้ไอคอนขนมปังแทน', () => {
@@ -120,6 +126,7 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(html).toContain('RYB-000123')
     expect(html).toContain('https://ryukung-pos.pages.dev/o/abc123')
     expect(html).toContain('ดูรายละเอียดออเดอร์')
+    expect(html).toContain('อีเมลฉบับนี้ส่งถึงคุณลูกค้าเพื่อให้เกิดความเข้าใจตรงกัน')
   })
 
   it('customEmail: ไม่มี infoRows หรือ CTA ก็ไม่พังและไม่มีกล่อง/ปุ่มโผล่มา', () => {
