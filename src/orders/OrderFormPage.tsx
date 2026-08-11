@@ -17,6 +17,7 @@ import { Step3Fulfillment } from './Step3Fulfillment'
 import { supabase } from '../lib/supabase'
 import { sendCustomerEmail } from '../lib/customerEmail'
 import { orderConfirmedEmail, newOrderNotificationEmail } from '../lib/emailTemplates'
+import { productImageUrl } from '../products/ProductCard'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
@@ -106,6 +107,7 @@ export function OrderFormPage() {
           if (!data?.public_token) return
           const { subject, html } = orderConfirmedEmail({
             shopName: settings.shop_name,
+            logoUrl: settings.logo_path ? productImageUrl(settings.logo_path) : null,
             orderNo,
             customerName: customer.name,
             itemsSummary: values.items.map((it) => `${it.product_name} x${it.qty}`).join(', '),
@@ -119,6 +121,7 @@ export function OrderFormPage() {
           if (settings.owner_notification_email) {
             const owner = newOrderNotificationEmail({
               shopName: settings.shop_name,
+              logoUrl: settings.logo_path ? productImageUrl(settings.logo_path) : null,
               orderNo,
               customerName: customer.name,
               itemsSummary: values.items.map((it) => `${it.product_name} x${it.qty}`).join(', '),

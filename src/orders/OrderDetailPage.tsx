@@ -16,7 +16,9 @@ import { formatBaht } from '../lib/money'
 import { supabase } from '../lib/supabase'
 import { useSettings } from '../settings/useSettings'
 import { sendCustomerEmail } from '../lib/customerEmail'
-import { paymentReceivedEmail, paymentReminderEmail } from '../lib/emailTemplates'
+import { paymentReceivedEmail } from '../lib/emailTemplates'
+import { productImageUrl } from '../products/ProductCard'
+import { ComposeEmailModal } from './ComposeEmailModal'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
@@ -40,7 +42,7 @@ export function OrderDetailPage() {
   const [deleting, setDeleting] = useState(false)
   const [statusChange, setStatusChange] = useState<{ status: string; label: string } | null>(null)
   const [statusError, setStatusError] = useState<string | null>(null)
-  const [sendingReminder, setSendingReminder] = useState(false)
+  const [showComposeEmail, setShowComposeEmail] = useState(false)
   const [emailMessage, setEmailMessage] = useState<string | null>(null)
   const [reordering, setReordering] = useState(false)
   const [reorderError, setReorderError] = useState<string | null>(null)
@@ -78,6 +80,7 @@ export function OrderDetailPage() {
       const newBalanceDue = balanceDue - amount
       const { subject, html } = paymentReceivedEmail({
         shopName: settings.shop_name,
+        logoUrl: settings.logo_path ? productImageUrl(settings.logo_path) : null,
         orderNo: order.order_no ?? '-',
         customerName: order.customers.name,
         amount,
@@ -86,22 +89,6 @@ export function OrderDetailPage() {
       })
       void sendCustomerEmail(order.customers.email, subject, html)
     }
-  }
-
-  async function handleSendReminder() {
-    if (!order.customers?.email || !settings) return
-    setSendingReminder(true)
-    const { subject, html } = paymentReminderEmail({
-      shopName: settings.shop_name,
-      orderNo: order.order_no ?? '-',
-      customerName: order.customers.name,
-      grandTotal: Number(order.grand_total),
-      paymentInstructions: settings.payment_instructions,
-      publicUrl: `${window.location.origin}/o/${order.public_token}`,
-    })
-    const { error } = await sendCustomerEmail(order.customers.email, subject, html)
-    setSendingReminder(false)
-    setEmailMessage(error ? 'ส่งอีเมลไม่สำเร็จ: ' + error : `ส่งอีเมลเตือนชำระเงินไปที่ ${order.customers.email} แล้ว`)
   }
 
   async function handleReorder() {
@@ -285,18 +272,17 @@ export function OrderDetailPage() {
         onRecorded={handlePaymentRecorded}
       />
 
-      {order.work_status !== 'cancelled' && order.payment_status !== 'paid' && (
+      {order.work_status !== 'cancelled' && (
         order.customers?.email ? (
           <button
             type="button"
-            onClick={() => void handleSendReminder()}
-            disabled={sendingReminder}
-            className="w-full rounded-lg border-2 border-amber-300 text-amber-700 font-medium py-2.5 disabled:opacity-50"
+            onClick={() => setShowComposeEmail(true)}
+            className="w-full rounded-lg border-2 border-amber-300 text-amber-700 font-medium py-2.5"
           >
-            {sendingReminder ? 'กำลังส่งอีเมล...' : '📧 ส่งอีเมลเตือนลูกค้าว่ายังไม่ได้ชำระเงิน'}
+            ✉️ ส่งอีเมลลูกค้า
           </button>
         ) : (
-          <p className="text-xs text-stone-400 text-center">ลูกค้าคนนี้ยังไม่มีอีเมล ส่งอีเมลเตือนชำระเงินไม่ได้</p>
+          <p className="text-xs text-stone-400 text-center">ลูกค้าคนนี้ยังไม่มีอีเมล ส่งอีเมลไม่ได้</p>
         )
       )}
 
@@ -344,6 +330,24 @@ export function OrderDetailPage() {
           busy={deleting}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {showComposeEmail && order.customers?.email && settings && (
+        <ComposeEmailModal
+          shopName={settings.shop_name}
+          logoUrl={settings.logo_path ? productImageUrl(settings.logo_path) : null}
+          orderNo={order.order_no ?? '-'}
+          customerName={order.customers.name}
+          customerEmail={order.customers.email}
+          grandTotal={Number(order.grand_total)}
+          balanceDue={balanceDue}
+          fulfillmentType={order.fulfillment_type}
+          workStatus={order.work_status}
+          paymentInstructions={settings.payment_instructions}
+          publicUrl={`${window.location.origin}/o/${order.public_token}`}
+          onClose={() => setShowComposeEmail(false)}
+          onSent={(message) => { setShowComposeEmail(false); setEmailMessage(message) }}
         />
       )}
 

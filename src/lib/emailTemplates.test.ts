@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { orderConfirmedEmail, paymentReceivedEmail, paymentReminderEmail, newOrderNotificationEmail } from './emailTemplates'
+import { orderConfirmedEmail, paymentReceivedEmail, paymentReminderEmail, newOrderNotificationEmail, customEmail } from './emailTemplates'
 
 describe('เทมเพลตอีเมลแจ้งลูกค้า', () => {
   it('อีเมลยืนยันรับออเดอร์ มีเลขที่ออเดอร์ ยอดรวม และลิงก์ออเดอร์', () => {
@@ -74,5 +74,64 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(html).toContain('สมชาย')
     expect(html).toContain('นัดรับเอง')
     expect(html).toContain('https://ryukung-pos.pages.dev/orders/xyz789')
+  })
+
+  it('ไม่ได้ตั้งโลโก้ร้านไว้ หัวอีเมลใช้ไอคอนขนมปังแทน', () => {
+    const { html } = orderConfirmedEmail({
+      shopName: 'RYUKUNG BAKERY',
+      orderNo: 'RYB-000123',
+      customerName: 'สมชาย',
+      itemsSummary: 'คุกกี้ x2',
+      grandTotal: 250,
+      neededDate: null,
+      publicUrl: 'https://ryukung-pos.pages.dev/o/abc123',
+    })
+    expect(html).toContain('🥐')
+    expect(html).not.toContain('<img')
+  })
+
+  it('ตั้งโลโก้ร้านไว้ หัวอีเมลใช้รูปโลโก้จริงแทนไอคอน', () => {
+    const { html } = orderConfirmedEmail({
+      shopName: 'RYUKUNG BAKERY',
+      logoUrl: 'https://example.com/logo.png',
+      orderNo: 'RYB-000123',
+      customerName: 'สมชาย',
+      itemsSummary: 'คุกกี้ x2',
+      grandTotal: 250,
+      neededDate: null,
+      publicUrl: 'https://ryukung-pos.pages.dev/o/abc123',
+    })
+    expect(html).toContain('<img src="https://example.com/logo.png"')
+    expect(html).not.toContain('🥐')
+  })
+
+  it('customEmail: ใส่ข้อความเอง + แถวข้อมูล + ปุ่ม CTA ครบตามที่ส่งเข้าไป', () => {
+    const { html } = customEmail({
+      shopName: 'RYUKUNG BAKERY',
+      logoUrl: null,
+      customerName: 'สมชาย',
+      bodyText: 'ของกำลังเตรียมส่งค่ะ',
+      infoRows: [{ label: 'เลขที่ออเดอร์', value: 'RYB-000123' }],
+      ctaUrl: 'https://ryukung-pos.pages.dev/o/abc123',
+      ctaLabel: 'ดูรายละเอียดออเดอร์',
+    })
+    expect(html).toContain('สมชาย')
+    expect(html).toContain('ของกำลังเตรียมส่งค่ะ')
+    expect(html).toContain('RYB-000123')
+    expect(html).toContain('https://ryukung-pos.pages.dev/o/abc123')
+    expect(html).toContain('ดูรายละเอียดออเดอร์')
+  })
+
+  it('customEmail: ไม่มี infoRows หรือ CTA ก็ไม่พังและไม่มีกล่อง/ปุ่มโผล่มา', () => {
+    const { html } = customEmail({
+      shopName: 'RYUKUNG BAKERY',
+      logoUrl: null,
+      customerName: 'สมชาย',
+      bodyText: 'ข้อความทดสอบ',
+      infoRows: [],
+      ctaUrl: null,
+      ctaLabel: null,
+    })
+    expect(html).toContain('ข้อความทดสอบ')
   })
 })
