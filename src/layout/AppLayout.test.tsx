@@ -22,7 +22,7 @@ describe('โครงหน้าเว็บ', () => {
         <AppLayout><div>เนื้อหา</div></AppLayout>
       </MemoryRouter>
     )
-    for (const label of ['ออเดอร์', 'สินค้า', 'ลูกค้า', 'สรุปยอด', 'ตั้งค่า']) {
+    for (const label of ['ออเดอร์', 'คอนเทนต์', 'สินค้า', 'ลูกค้า', 'สรุปยอด', 'ตั้งค่า']) {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     }
   })
