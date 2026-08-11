@@ -15,6 +15,8 @@ export function ContentItemForm() {
   const [platforms, setPlatforms] = useState<ContentPlatform[]>([])
   const [status, setStatus] = useState<ContentStatus>('idea')
   const [idea, setIdea] = useState('')
+  const [hook, setHook] = useState('')
+  const [goal, setGoal] = useState('')
   const [caption, setCaption] = useState('')
   const [hashtags, setHashtags] = useState('')
   const [editingStyle, setEditingStyle] = useState('')
@@ -33,6 +35,8 @@ export function ContentItemForm() {
     setPlatforms(item.platforms)
     setStatus(item.status)
     setIdea(item.idea ?? '')
+    setHook(item.hook ?? '')
+    setGoal(item.goal ?? '')
     setCaption(item.caption ?? '')
     setHashtags(item.hashtags ?? '')
     setEditingStyle(item.editing_style ?? '')
@@ -64,6 +68,8 @@ export function ContentItemForm() {
       platforms,
       status,
       idea: idea.trim() || null,
+      hook: hook.trim() || null,
+      goal: goal.trim() || null,
       caption: caption.trim() || null,
       hashtags: hashtags.trim() || null,
       editing_style: editingStyle.trim() || null,
@@ -167,6 +173,30 @@ export function ContentItemForm() {
           onChange={(e) => setIdea(e.target.value)}
           rows={3}
           placeholder="อยากสื่ออะไร ทำไมถึงน่าสนใจ"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="content-hook" className="text-sm text-stone-600">Hook (ประโยคเปิดดึงความสนใจ)</label>
+        <textarea
+          id="content-hook"
+          value={hook}
+          onChange={(e) => setHook(e.target.value)}
+          rows={2}
+          placeholder="เช่น 3 วินาทีแรกที่จะทำให้คนหยุดเลื่อน..."
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+        />
+      </div>
+
+      <div className="space-y-1">
+        <label htmlFor="content-goal" className="text-sm text-stone-600">เป้าหมายการโพสต์ครั้งนี้</label>
+        <input
+          id="content-goal"
+          type="text"
+          value={goal}
+          onChange={(e) => setGoal(e.target.value)}
+          placeholder="เช่น ขายของ, สร้าง engagement, ประกาศโปรโมชั่น"
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
         />
       </div>

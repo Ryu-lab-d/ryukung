@@ -22,6 +22,8 @@ function makeItem(overrides: Partial<ContentItem> = {}): ContentItem {
     platforms: ['instagram', 'tiktok'],
     status: 'idea',
     idea: 'ทำคลิปเปิดเตาอบตอนเช้า',
+    hook: null,
+    goal: null,
     caption: null,
     hashtags: null,
     editing_style: null,

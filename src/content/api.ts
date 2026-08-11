@@ -6,6 +6,8 @@ export type ContentItemInput = {
   platforms: ContentPlatform[]
   status: ContentStatus
   idea: string | null
+  hook: string | null
+  goal: string | null
   caption: string | null
   hashtags: string | null
   editing_style: string | null

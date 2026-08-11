@@ -71,6 +71,8 @@ describe('ContentItemForm — สร้างใหม่', () => {
     await userEvent.click(screen.getByRole('button', { name: '🎵 TikTok' }))
     await userEvent.click(screen.getByRole('button', { name: '✍️ เขียนบท/แคปชั่น' }))
     await userEvent.type(screen.getByLabelText('ไอเดีย/คอนเซปต์'), 'เปิดเตาอบตอนเช้า')
+    await userEvent.type(screen.getByLabelText('Hook (ประโยคเปิดดึงความสนใจ)'), 'กลิ่นนี้ทำให้คุณหยุดเลื่อนได้ไหม?')
+    await userEvent.type(screen.getByLabelText('เป้าหมายการโพสต์ครั้งนี้'), 'สร้าง engagement')
     await userEvent.type(screen.getByLabelText('แฮชแท็ก'), '#ryukungbakery')
 
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
@@ -82,6 +84,8 @@ describe('ContentItemForm — สร้างใหม่', () => {
         platforms: ['instagram', 'tiktok'],
         status: 'script',
         idea: 'เปิดเตาอบตอนเช้า',
+        hook: 'กลิ่นนี้ทำให้คุณหยุดเลื่อนได้ไหม?',
+        goal: 'สร้าง engagement',
         hashtags: '#ryukungbakery',
       })
     )
@@ -107,6 +111,8 @@ describe('ContentItemForm — แก้ไขของเดิม', () => {
       platforms: ['facebook'],
       status: 'editing',
       idea: 'ไอเดียเดิม',
+      hook: 'ฮุคเดิม',
+      goal: 'ขายของ',
       caption: 'แคปชั่นเดิม',
       hashtags: '#เดิม',
       editing_style: 'ตลก',
@@ -119,6 +125,8 @@ describe('ContentItemForm — แก้ไขของเดิม', () => {
     renderEdit()
     expect(await screen.findByDisplayValue('ขนมปังใหม่')).toBeInTheDocument()
     expect(screen.getByDisplayValue('ไอเดียเดิม')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('ฮุคเดิม')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('ขายของ')).toBeInTheDocument()
     expect(screen.getByDisplayValue('แคปชั่นเดิม')).toBeInTheDocument()
     expect(screen.getByDisplayValue('#เดิม')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '🗑️ ลบคอนเทนต์นี้' })).toBeInTheDocument()
@@ -131,6 +139,8 @@ describe('ContentItemForm — แก้ไขของเดิม', () => {
       platforms: [],
       status: 'idea',
       idea: null,
+      hook: null,
+      goal: null,
       caption: null,
       hashtags: null,
       editing_style: null,
@@ -161,6 +171,8 @@ describe('ContentItemForm — แก้ไขของเดิม', () => {
       platforms: [],
       status: 'idea',
       idea: null,
+      hook: null,
+      goal: null,
       caption: null,
       hashtags: '#ryukungbakery #ขนมปังโฮมเมด',
       editing_style: null,
