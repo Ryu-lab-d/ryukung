@@ -30,6 +30,8 @@ import { WithdrawalDetailPage } from './withdrawals/WithdrawalDetailPage'
 import { ContentPlannerPage } from './content/ContentPlannerPage'
 import { ContentItemForm } from './content/ContentItemForm'
 import { ContentStatsPage } from './content/ContentStatsPage'
+import { IngredientsPage } from './ingredients/IngredientsPage'
+import { IngredientDetailPage } from './ingredients/IngredientDetailPage'
 
 /** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
 function OwnerOnlyRoute({ children }: { children: ReactNode }) {
@@ -73,6 +75,8 @@ function AuthenticatedApp() {
             <Route path="/content/new" element={<ContentItemForm />} />
             <Route path="/content/:id/edit" element={<ContentItemForm />} />
             <Route path="/content/stats" element={<ContentStatsPage />} />
+            <Route path="/ingredients" element={<IngredientsPage />} />
+            <Route path="/ingredients/:id" element={<IngredientDetailPage />} />
             <Route path="/settings" element={<OwnerOnlyRoute><SettingsPage /></OwnerOnlyRoute>} />
             <Route path="/promo" element={<PromoCardPage />} />
             <Route path="/chatbot" element={<OwnerOnlyRoute><ChatbotManagementPage /></OwnerOnlyRoute>} />

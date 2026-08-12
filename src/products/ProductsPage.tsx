@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useProducts } from './useProducts'
 import { useCategories } from './useCategories'
 import { ProductCard } from './ProductCard'
+import { CatalogTabs } from './CatalogTabs'
 
 export function ProductsPage() {
   const { products, loading } = useProducts()
@@ -23,6 +24,8 @@ export function ProductsPage() {
 
   return (
     <div className="p-4 space-y-4">
+      <CatalogTabs active="products" />
+
       <div className="flex items-center justify-between gap-2">
         <h1 className="text-lg font-semibold">สินค้า</h1>
         <Link to="/products/new" className="rounded-lg bg-stone-900 text-white text-sm px-3 py-2">

@@ -4,6 +4,7 @@ import { useOrderBoard } from './useOrderBoard'
 import { AlertBar } from './AlertBar'
 import { BoardDesktop } from './BoardDesktop'
 import { BoardMobile } from './BoardMobile'
+import { LowStockAlertCard } from '../ingredients/LowStockAlertCard'
 
 export function OrderBoardPage() {
   const { orders, loading, changeStatus } = useOrderBoard()
@@ -18,6 +19,7 @@ export function OrderBoardPage() {
         onFilterBakeToday={() => setMobileFilter('to_bake')}
         onFilterUnpaid={() => setMobileFilter('to_bake')}
       />
+      <LowStockAlertCard />
       <BoardDesktop orders={orders} onChangeStatus={changeStatus} />
       <BoardMobile orders={orders} filter={mobileFilter} onChangeStatus={changeStatus} />
       <Link

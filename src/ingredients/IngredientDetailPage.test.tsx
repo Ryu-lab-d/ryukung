@@ -1,0 +1,180 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import { IngredientDetailPage } from './IngredientDetailPage'
+import type { Ingredient } from './useIngredients'
+import type { IngredientMovement } from './useIngredientMovements'
+
+let ingredientOverride: Ingredient | null = null
+let ingredientLoading = false
+const reloadIngredient = vi.fn()
+vi.mock('./useIngredients', () => ({
+  useIngredient: () => ({ ingredient: ingredientOverride, loading: ingredientLoading, reload: reloadIngredient }),
+}))
+
+let movementsOverride: IngredientMovement[] = []
+let movementsLoading = false
+const reloadMovements = vi.fn()
+vi.mock('./useIngredientMovements', () => ({
+  useIngredientMovements: () => ({ movements: movementsOverride, loading: movementsLoading, reload: reloadMovements }),
+}))
+
+const saveIngredient = vi.fn()
+const deleteIngredient = vi.fn()
+vi.mock('./api', () => ({
+  saveIngredient: (...args: unknown[]) => saveIngredient(...args),
+  deleteIngredient: (...args: unknown[]) => deleteIngredient(...args),
+}))
+
+vi.mock('./RestockModal', () => ({
+  RestockModal: ({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) => (
+    <div>
+      <p>Restock Modal</p>
+      <button type="button" onClick={onClose}>ปิด restock (mock)</button>
+      <button type="button" onClick={onSaved}>บันทึก restock (mock)</button>
+    </div>
+  ),
+}))
+
+vi.mock('./AdjustStockModal', () => ({
+  AdjustStockModal: ({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) => (
+    <div>
+      <p>Adjust Modal</p>
+      <button type="button" onClick={onClose}>ปิด adjust (mock)</button>
+      <button type="button" onClick={onSaved}>บันทึก adjust (mock)</button>
+    </div>
+  ),
+}))
+
+const navigate = vi.fn()
+vi.mock('react-router-dom', async () => {
+  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+  return { ...actual, useNavigate: () => navigate }
+})
+
+function baseIngredient(overrides: Partial<Ingredient> = {}): Ingredient {
+  return {
+    id: 'i1',
+    name: 'แป้งสาลี',
+    unit: 'กรัม',
+    stock_qty: 5000,
+    low_stock_threshold: 1000,
+    cost_per_unit: 0.5,
+    note: null,
+    is_active: true,
+    created_at: '2026-08-11T00:00:00Z',
+    updated_at: '2026-08-11T00:00:00Z',
+    ...overrides,
+  }
+}
+
+function renderPage(id = 'i1') {
+  render(
+    <MemoryRouter initialEntries={[`/ingredients/${id}`]}>
+      <Routes>
+        <Route path="/ingredients/:id" element={<IngredientDetailPage />} />
+      </Routes>
+    </MemoryRouter>
+  )
+}
+
+beforeEach(() => {
+  ingredientOverride = null
+  ingredientLoading = false
+  movementsOverride = []
+  movementsLoading = false
+  reloadIngredient.mockReset()
+  reloadMovements.mockReset()
+  saveIngredient.mockReset()
+  deleteIngredient.mockReset()
+  navigate.mockReset()
+})
+
+describe('IngredientDetailPage', () => {
+  it('แสดงสต็อกคงเหลือและต้นทุนเฉลี่ยของวัตถุดิบ', () => {
+    ingredientOverride = baseIngredient({ stock_qty: 5000, cost_per_unit: 0.5 })
+    renderPage()
+    expect(screen.getByText(/5,000/)).toBeInTheDocument()
+    expect(screen.getByText(/฿0.50 \/ กรัม/)).toBeInTheDocument()
+  })
+
+  it('เติมฟอร์มแก้ไขด้วยข้อมูลเดิมของวัตถุดิบ', () => {
+    ingredientOverride = baseIngredient({ name: 'แป้งสาลี', unit: 'กรัม', low_stock_threshold: 1000, note: 'เก็บในที่แห้ง' })
+    renderPage()
+    expect(screen.getByDisplayValue('แป้งสาลี')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('เก็บในที่แห้ง')).toBeInTheDocument()
+  })
+
+  it('แก้ไขแล้วกดบันทึก เรียก saveIngredient ด้วยค่าที่แก้', async () => {
+    ingredientOverride = baseIngredient()
+    saveIngredient.mockResolvedValue({ id: 'i1', error: null })
+    renderPage()
+    const nameInput = screen.getByLabelText('ชื่อวัตถุดิบ')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'แป้งเค้ก')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(saveIngredient).toHaveBeenCalledWith('i1', expect.objectContaining({ name: 'แป้งเค้ก' }))
+  })
+
+  it('แสดงประวัติเข้า-ออกสต็อกพร้อมป้ายเหตุผลภาษาไทยและเครื่องหมาย +/-', () => {
+    ingredientOverride = baseIngredient()
+    movementsOverride = [
+      { id: 'm1', qty_delta: 1000, reason: 'purchase_in', ref_order_id: null, ref_withdrawal_id: null, note: null, created_at: '2026-08-11T00:00:00Z' },
+      { id: 'm2', qty_delta: -200, reason: 'order_confirm', ref_order_id: 'o1', ref_withdrawal_id: null, note: null, created_at: '2026-08-11T00:00:00Z' },
+    ]
+    renderPage()
+    expect(screen.getByText('เติมสต็อก')).toBeInTheDocument()
+    expect(screen.getByText('ยืนยันออเดอร์')).toBeInTheDocument()
+    expect(screen.getByText(/\+1,000/)).toBeInTheDocument()
+    expect(screen.getByText(/-200/)).toBeInTheDocument()
+  })
+
+  it('ยังไม่มีประวัติ แสดงข้อความว่ายังไม่มีประวัติ', () => {
+    ingredientOverride = baseIngredient()
+    movementsOverride = []
+    renderPage()
+    expect(screen.getByText('ยังไม่มีประวัติ')).toBeInTheDocument()
+  })
+
+  it('กด "เติมสต็อก" เปิด RestockModal บันทึกสำเร็จโหลดข้อมูลใหม่ทั้งสต็อกและประวัติ', async () => {
+    ingredientOverride = baseIngredient()
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '➕ เติมสต็อก' }))
+    expect(screen.getByText('Restock Modal')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก restock (mock)' }))
+    expect(screen.queryByText('Restock Modal')).not.toBeInTheDocument()
+    expect(reloadIngredient).toHaveBeenCalled()
+    expect(reloadMovements).toHaveBeenCalled()
+  })
+
+  it('กด "ปรับสต็อก" เปิด AdjustStockModal บันทึกสำเร็จโหลดข้อมูลใหม่', async () => {
+    ingredientOverride = baseIngredient()
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '⚖️ ปรับสต็อก' }))
+    expect(screen.getByText('Adjust Modal')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก adjust (mock)' }))
+    expect(reloadIngredient).toHaveBeenCalled()
+    expect(reloadMovements).toHaveBeenCalled()
+  })
+
+  it('กดลบแล้วยืนยัน เรียก deleteIngredient แล้วพากลับไปหน้ารายการ', async () => {
+    ingredientOverride = baseIngredient()
+    deleteIngredient.mockResolvedValue({ error: null })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '🗑️ ลบวัตถุดิบนี้' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ลบถาวร' }))
+    expect(deleteIngredient).toHaveBeenCalledWith('i1')
+    expect(navigate).toHaveBeenCalledWith('/ingredients')
+  })
+
+  it('ลบไม่สำเร็จเพราะถูกใช้ในสูตรสินค้าแล้ว แสดง error ไม่พาไปไหน', async () => {
+    ingredientOverride = baseIngredient()
+    deleteIngredient.mockResolvedValue({ error: { message: 'วัตถุดิบนี้ถูกใช้ในสูตรสินค้าแล้ว ลบไม่ได้ ให้ปิดใช้งานแทน' } })
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '🗑️ ลบวัตถุดิบนี้' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ลบถาวร' }))
+    expect(await screen.findByText('วัตถุดิบนี้ถูกใช้ในสูตรสินค้าแล้ว ลบไม่ได้ ให้ปิดใช้งานแทน')).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+  })
+})

@@ -1,10 +1,16 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useProducts } from './useProducts'
 import { useCategories } from './useCategories'
 import { uploadToBucket } from '../lib/imageUpload'
 import { productImageUrl } from './ProductCard'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { useIngredients } from '../ingredients/useIngredients'
+import { useProductIngredients } from './useProductIngredients'
+import { saveProductIngredients } from './api'
+import { formatBaht } from '../lib/money'
+
+type RecipeRow = { ingredient_id: string; qty_per_unit: string }
 
 export function ProductForm() {
   const { id } = useParams()
@@ -12,6 +18,8 @@ export function ProductForm() {
   const navigate = useNavigate()
   const { products, save, remove } = useProducts()
   const { categories } = useCategories()
+  const { ingredients } = useIngredients()
+  const { rows: savedRecipeRows } = useProductIngredients(id ?? null)
   const existing = products.find((p) => p.id === id)
 
   const [name, setName] = useState('')
@@ -26,6 +34,7 @@ export function ProductForm() {
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
 
   useEffect(() => {
     if (existing) {
@@ -40,6 +49,33 @@ export function ProductForm() {
     }
   }, [existing])
 
+  useEffect(() => {
+    if (savedRecipeRows.length > 0) {
+      setRecipeRows(savedRecipeRows.map((r) => ({ ingredient_id: r.ingredient_id, qty_per_unit: String(r.qty_per_unit) })))
+    }
+  }, [savedRecipeRows])
+
+  function addRecipeRow() {
+    setRecipeRows((prev) => [...prev, { ingredient_id: '', qty_per_unit: '' }])
+  }
+
+  function updateRecipeRow(index: number, patch: Partial<RecipeRow>) {
+    setRecipeRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)))
+  }
+
+  function removeRecipeRow(index: number) {
+    setRecipeRows((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const costFromRecipe = useMemo(() => {
+    return recipeRows.reduce((sum, r) => {
+      const ing = ingredients.find((i) => i.id === r.ingredient_id)
+      const qty = Number(r.qty_per_unit)
+      if (!ing || !qty) return sum
+      return sum + qty * ing.cost_per_unit
+    }, 0)
+  }, [recipeRows, ingredients])
+
   async function handleImageChange(file: File) {
     setUploading(true)
     const { path, error } = await uploadToBucket('product-images', 'products', file)
@@ -52,8 +88,13 @@ export function ProductForm() {
     e.preventDefault()
     setError(null)
     if (!name.trim()) { setError('กรุณาใส่ชื่อสินค้า'); return }
+    const validRows = recipeRows.filter((r) => r.ingredient_id && Number(r.qty_per_unit) > 0)
+    if (recipeRows.some((r) => r.ingredient_id && !(Number(r.qty_per_unit) > 0))) {
+      setError('กรุณาใส่จำนวนที่ใช้ให้ครบทุกแถวสูตรที่เลือกวัตถุดิบไว้')
+      return
+    }
     setBusy(true)
-    const { error } = await save(id ?? null, {
+    const { id: savedId, error } = await save(id ?? null, {
       name: name.trim(),
       category_id: categoryId || null,
       price: Number(price),
@@ -63,8 +104,17 @@ export function ProductForm() {
       is_active: isActive,
       image_path: imagePath,
     })
+    if (error || !savedId) {
+      setBusy(false)
+      setError('บันทึกไม่สำเร็จ: ' + (error?.message ?? ''))
+      return
+    }
+    const { error: recipeError } = await saveProductIngredients(
+      savedId,
+      validRows.map((r) => ({ ingredient_id: r.ingredient_id, qty_per_unit: Number(r.qty_per_unit) }))
+    )
     setBusy(false)
-    if (error) { setError('บันทึกไม่สำเร็จ: ' + error.message); return }
+    if (recipeError) { setError('บันทึกสูตรไม่สำเร็จ: ' + recipeError.message); return }
     navigate('/products')
   }
 
@@ -156,6 +206,50 @@ export function ProductForm() {
           id="unit" value={unit} onChange={(e) => setUnit(e.target.value)}
           className="w-full rounded-lg border border-stone-300 px-3 py-2"
         />
+      </div>
+
+      <div className="space-y-2 rounded-lg border border-stone-200 p-3">
+        <p className="text-sm font-medium text-stone-700">สูตร/วัตถุดิบที่ใช้ (ไม่บังคับ)</p>
+        {recipeRows.map((row, i) => (
+          <div key={i} className="flex items-center gap-2">
+            <select
+              aria-label={`วัตถุดิบแถวที่ ${i + 1}`}
+              value={row.ingredient_id}
+              onChange={(e) => updateRecipeRow(i, { ingredient_id: e.target.value })}
+              className="flex-1 min-w-0 rounded-lg border border-stone-300 px-2 py-2 text-sm"
+            >
+              <option value="">เลือกวัตถุดิบ</option>
+              {ingredients.map((ing) => (
+                <option key={ing.id} value={ing.id}>{ing.name} ({ing.unit})</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              step="0.001"
+              min="0"
+              inputMode="decimal"
+              aria-label={`จำนวนที่ใช้แถวที่ ${i + 1}`}
+              value={row.qty_per_unit}
+              onChange={(e) => updateRecipeRow(i, { qty_per_unit: e.target.value })}
+              placeholder="จำนวนที่ใช้"
+              className="w-24 shrink-0 rounded-lg border border-stone-300 px-2 py-2 text-sm"
+            />
+            <button type="button" onClick={() => removeRecipeRow(i)} className="shrink-0 text-red-600 text-sm px-1">
+              ลบ
+            </button>
+          </div>
+        ))}
+        <button type="button" onClick={addRecipeRow} className="text-sm text-stone-600 underline">
+          + เพิ่มวัตถุดิบ
+        </button>
+        {costFromRecipe > 0 && (
+          <div className="flex items-center justify-between gap-2 pt-1 text-sm">
+            <span className="text-stone-600">ต้นทุนจากสูตร: <strong>{formatBaht(costFromRecipe)}</strong></span>
+            <button type="button" onClick={() => setCost(costFromRecipe.toFixed(2))} className="text-stone-900 underline shrink-0">
+              ใช้ค่านี้เป็นต้นทุน
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="space-y-1">

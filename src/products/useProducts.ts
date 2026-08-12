@@ -31,11 +31,11 @@ export function useProducts() {
 
   const save = useCallback(
     async (id: string | null, patch: Partial<Product>) => {
-      const { error } = id
-        ? await supabase.from('products').update(patch).eq('id', id)
-        : await supabase.from('products').insert(patch)
+      const { data, error } = id
+        ? await supabase.from('products').update(patch).eq('id', id).select().single()
+        : await supabase.from('products').insert(patch).select().single()
       if (!error) await load()
-      return { error: error ? { message: error.message } : null }
+      return { id: (data?.id as string | undefined) ?? null, error: error ? { message: error.message } : null }
     },
     [load]
   )
