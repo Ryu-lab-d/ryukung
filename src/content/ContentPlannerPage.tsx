@@ -4,6 +4,7 @@ import { useContentItems } from './useContentItems'
 import { updateContentStatus } from './api'
 import { PLATFORMS, PLATFORM_ICON, CONTENT_STAGES, STATUS_LABEL, STATUS_ICON, STATUS_COLOR, nextContentStatus } from './contentMeta'
 import type { ContentPlatform, ContentStatus } from './contentMeta'
+import { QuickAddContentModal } from './QuickAddContentModal'
 
 function formatPostDate(d: string | null): string {
   if (!d) return 'ยังไม่กำหนดวันโพสต์'
@@ -16,6 +17,7 @@ export function ContentPlannerPage() {
   const [platform, setPlatform] = useState<ContentPlatform | null>(null)
   const [status, setStatus] = useState<ContentStatus | null>(null)
   const [advancingId, setAdvancingId] = useState<string | null>(null)
+  const [showQuickAdd, setShowQuickAdd] = useState(false)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -46,9 +48,13 @@ export function ContentPlannerPage() {
           <Link to="/content/stats" className="text-sm text-stone-600 underline">
             📊 สรุปสถิติ
           </Link>
-          <Link to="/content/new" className="rounded-lg bg-stone-900 text-white text-sm font-medium px-3.5 py-2">
+          <button
+            type="button"
+            onClick={() => setShowQuickAdd(true)}
+            className="rounded-lg bg-stone-900 text-white text-sm font-medium px-3.5 py-2"
+          >
             + เพิ่มไอเดียใหม่
-          </Link>
+          </button>
         </div>
       </div>
 
@@ -135,6 +141,16 @@ export function ContentPlannerPage() {
             )
           })}
         </div>
+      )}
+
+      {showQuickAdd && (
+        <QuickAddContentModal
+          onClose={() => setShowQuickAdd(false)}
+          onSaved={() => {
+            setShowQuickAdd(false)
+            void reload()
+          }}
+        />
       )}
     </div>
   )

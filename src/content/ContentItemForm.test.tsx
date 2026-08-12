@@ -63,6 +63,7 @@ describe('ContentItemForm — สร้างใหม่', () => {
   })
 
   it('กรอกครบแล้วบันทึก ส่งค่าที่เลือกไปยัง saveContentItem ครบถ้วน', async () => {
+    // เทสต์นี้รอป็อปอัพสำเร็จปิดตัวเอง (จริง 1200ms) เกิน 5000ms ดีฟอลต์ได้ถ้าเครื่องช้า จึงขยายเวลาไว้
     saveContentItem.mockResolvedValue({ id: 'new-id', error: null })
     renderNew()
 
@@ -89,8 +90,12 @@ describe('ContentItemForm — สร้างใหม่', () => {
         hashtags: '#ryukungbakery',
       })
     )
+    // บันทึกสำเร็จ ขึ้นป็อปอัพยืนยันก่อน แล้วค่อยพากลับไปหน้ารายการหลังป็อปอัพปิดเอง
+    expect(await screen.findByText('คอนเทนต์ถูกบันทึกแล้ว')).toBeInTheDocument()
+    expect(navigate).not.toHaveBeenCalled()
+    await new Promise((r) => setTimeout(r, 1300))
     expect(navigate).toHaveBeenCalledWith('/content')
-  })
+  }, 10000)
 
   it('กดแพลตฟอร์มเดิมซ้ำ ถอดออกจากรายการที่เลือกไว้', async () => {
     saveContentItem.mockResolvedValue({ id: 'new-id', error: null })

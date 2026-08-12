@@ -15,6 +15,16 @@ vi.mock('./useContentItems', () => ({
 const updateContentStatus = vi.fn()
 vi.mock('./api', () => ({ updateContentStatus: (...args: unknown[]) => updateContentStatus(...args) }))
 
+vi.mock('./QuickAddContentModal', () => ({
+  QuickAddContentModal: ({ onClose, onSaved }: { onClose: () => void; onSaved: () => void }) => (
+    <div>
+      <p>Quick Add Modal</p>
+      <button type="button" onClick={onClose}>ปิด (mock)</button>
+      <button type="button" onClick={onSaved}>บันทึกแล้ว (mock)</button>
+    </div>
+  ),
+}))
+
 function makeItem(overrides: Partial<ContentItem> = {}): ContentItem {
   return {
     id: 'c1',
@@ -56,7 +66,30 @@ describe('ContentPlannerPage', () => {
   it('ยังไม่มีคอนเทนต์เลย แสดงข้อความชวนเพิ่มไอเดียใหม่', () => {
     renderPage()
     expect(screen.getByText(/ยังไม่มีคอนเทนต์ที่ตรงเงื่อนไข/)).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: '+ เพิ่มไอเดียใหม่' })).toHaveAttribute('href', '/content/new')
+    expect(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' })).toBeInTheDocument()
+  })
+
+  it('กดปุ่ม "+ เพิ่มไอเดียใหม่" เปิดป็อปอัพเพิ่มไอเดียแบบเร็ว', async () => {
+    renderPage()
+    expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    expect(screen.getByText('Quick Add Modal')).toBeInTheDocument()
+  })
+
+  it('บันทึกจากป็อปอัพเพิ่มไอเดียแบบเร็วสำเร็จ ปิดป็อปอัพและโหลดรายการใหม่', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึกแล้ว (mock)' }))
+    expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
+    expect(reload).toHaveBeenCalled()
+  })
+
+  it('กด "ปิด" ป็อปอัพเพิ่มไอเดียแบบเร็ว โดยไม่โหลดรายการใหม่', async () => {
+    renderPage()
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    await userEvent.click(screen.getByRole('button', { name: 'ปิด (mock)' }))
+    expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
+    expect(reload).not.toHaveBeenCalled()
   })
 
   it('แสดงรายการคอนเทนต์พร้อมแพลตฟอร์ม สถานะ และวันที่โพสต์', () => {

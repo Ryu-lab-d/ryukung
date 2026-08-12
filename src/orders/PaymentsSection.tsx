@@ -1,38 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { recordPayment } from './api'
 import { uploadToBucket } from '../lib/imageUpload'
 import { formatBaht } from '../lib/money'
+import { SuccessOverlay } from '../lib/SuccessOverlay'
 
 const METHOD_LABELS: Record<string, string> = {
   transfer: 'โอนเงิน', promptpay: 'พร้อมเพย์', cash: 'เงินสด', cod: 'เก็บเงินปลายทาง', other: 'อื่นๆ',
-}
-
-/** เอฟเฟกต์ยืนยันสำเร็จแบบวาดเครื่องหมายถูก ใช้เฉพาะตอนบันทึกการชำระเงินสำเร็จ ให้รู้สึกหนักแน่นกว่า toast ทั่วไป */
-function PaymentSuccessOverlay({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2000)
-    return () => clearTimeout(t)
-  }, [onDone])
-
-  return (
-    <div className="fixed inset-0 bg-black/40 grid place-items-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 text-center space-y-2 max-w-xs animate-toast-pop">
-        <svg width="64" height="64" viewBox="0 0 64 64" className="mx-auto">
-          <circle cx="32" cy="32" r="29" fill="none" stroke="#16a34a" strokeWidth="4" className="animate-circle-pop" />
-          <path
-            d="M18 33 L27 42 L46 22"
-            fill="none"
-            stroke="#16a34a"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="animate-check-draw"
-          />
-        </svg>
-        <p className="font-semibold text-stone-900">ยืนยันการชำระเงินสำเร็จ</p>
-      </div>
-    </div>
-  )
 }
 
 const KEYPAD_KEYS = ['7', '8', '9', '4', '5', '6', '1', '2', '3', 'C', '0', '.'] as const
@@ -285,7 +258,7 @@ export function PaymentsSection({
         />
       )}
 
-      {showSuccess && <PaymentSuccessOverlay onDone={() => setShowSuccess(false)} />}
+      {showSuccess && <SuccessOverlay message="ยืนยันการชำระเงินสำเร็จ" onDone={() => setShowSuccess(false)} />}
     </div>
   )
 }

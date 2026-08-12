@@ -5,6 +5,7 @@ import { saveContentItem, deleteContentItem } from './api'
 import { PLATFORMS, CONTENT_STAGES } from './contentMeta'
 import type { ContentPlatform, ContentStatus } from './contentMeta'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { SuccessOverlay } from '../lib/SuccessOverlay'
 
 export function ContentItemForm() {
   const { id } = useParams()
@@ -28,6 +29,7 @@ export function ContentItemForm() {
   const [saving, setSaving] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   useEffect(() => {
     if (!item) return
@@ -82,7 +84,7 @@ export function ContentItemForm() {
       setError(saveError.message)
       return
     }
-    navigate('/content')
+    setShowSuccess(true)
   }
 
   async function handleDelete() {
@@ -304,6 +306,10 @@ export function ContentItemForm() {
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
         />
+      )}
+
+      {showSuccess && (
+        <SuccessOverlay message="คอนเทนต์ถูกบันทึกแล้ว" durationMs={1200} onDone={() => navigate('/content')} />
       )}
     </div>
   )
