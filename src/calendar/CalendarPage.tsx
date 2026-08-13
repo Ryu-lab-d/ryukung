@@ -1,8 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useCalendarOrders, type CalendarOrder } from './useCalendarOrders'
 import { useHolidays } from './useHolidays'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+
+function holidayNoteDraftKey(dateKey: string | null): string | null {
+  return dateKey ? `calendar-holiday-note:${dateKey}` : null
+}
 
 const WEEKDAY_LABELS = ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
 const MONTH_LABELS = [
@@ -44,6 +49,13 @@ export function CalendarPage() {
   const [holidayNote, setHolidayNote] = useState('')
   const [confirmRemoveHoliday, setConfirmRemoveHoliday] = useState(false)
 
+  useEffect(() => {
+    const key = holidayNoteDraftKey(selectedKey)
+    setHolidayNote((key ? loadFormDraft<string>(key) : null) ?? '')
+  }, [selectedKey])
+
+  useFormDraft(holidayNoteDraftKey(selectedKey), holidayNote)
+
   const year = viewDate.getFullYear()
   const month = viewDate.getMonth()
 
@@ -72,6 +84,7 @@ export function CalendarPage() {
     if (!selectedKey) return
     await addHoliday(selectedKey, holidayNote.trim() || null)
     setHolidayNote('')
+    clearFormDraft(holidayNoteDraftKey(selectedKey))
   }
 
   async function handleRemoveHoliday() {

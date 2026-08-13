@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 const CHANNELS = [
   { value: '', label: 'ไม่ระบุ' },
@@ -12,24 +13,29 @@ const CHANNELS = [
   { value: 'other', label: 'อื่นๆ' },
 ] as const
 
+type CustomerDraft = { name: string; phone: string; email: string; channel: string; channelHandle: string; note: string }
+
 export function CustomerForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { customers, save, remove } = useCustomers()
   const existing = customers.find((c) => c.id === id)
 
-  const [name, setName] = useState('')
-  const [phone, setPhone] = useState('')
-  const [email, setEmail] = useState('')
-  const [channel, setChannel] = useState('')
-  const [channelHandle, setChannelHandle] = useState('')
-  const [note, setNote] = useState('')
+  const draftKey = `customer-form:${id ?? 'new'}`
+  const [draft] = useState(() => loadFormDraft<CustomerDraft>(draftKey))
+
+  const [name, setName] = useState(draft?.name ?? '')
+  const [phone, setPhone] = useState(draft?.phone ?? '')
+  const [email, setEmail] = useState(draft?.email ?? '')
+  const [channel, setChannel] = useState(draft?.channel ?? '')
+  const [channelHandle, setChannelHandle] = useState(draft?.channelHandle ?? '')
+  const [note, setNote] = useState(draft?.note ?? '')
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
-    if (existing) {
+    if (existing && !draft) {
       setName(existing.name)
       setPhone(existing.phone ?? '')
       setEmail(existing.email ?? '')
@@ -37,7 +43,9 @@ export function CustomerForm() {
       setChannelHandle(existing.channel_handle ?? '')
       setNote(existing.note ?? '')
     }
-  }, [existing])
+  }, [existing, draft])
+
+  useFormDraft(draftKey, { name, phone, email, channel, channelHandle, note })
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -53,6 +61,7 @@ export function CustomerForm() {
     })
     setBusy(false)
     if (error) { setError('บันทึกไม่สำเร็จ: ' + error.message); return }
+    clearFormDraft(draftKey)
     navigate(`/customers/${id ?? data?.id}`)
   }
 

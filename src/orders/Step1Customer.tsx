@@ -3,19 +3,26 @@ import { useFormContext } from 'react-hook-form'
 import { useCustomers } from '../customers/useCustomers'
 import { useAddresses } from '../customers/useAddresses'
 import type { OrderFormValues } from './schema'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
-export function Step1Customer() {
+type NewCustomerDraft = { newName: string; newPhone: string; newEmail: string }
+
+export function Step1Customer({ orderId }: { orderId: string | null }) {
   const { watch, setValue } = useFormContext<OrderFormValues>()
   const customerId = watch('customer_id')
   const { customers, save: saveCustomer } = useCustomers()
   const { addresses } = useAddresses(customerId)
   const [search, setSearch] = useState('')
-  const [creatingNew, setCreatingNew] = useState(false)
-  const [newName, setNewName] = useState('')
-  const [newPhone, setNewPhone] = useState('')
-  const [newEmail, setNewEmail] = useState('')
+  const draftKey = orderId ? `new-customer-form:${orderId}` : null
+  const [newCustomerDraft] = useState(() => (draftKey ? loadFormDraft<NewCustomerDraft>(draftKey) : null))
+  const [creatingNew, setCreatingNew] = useState(() => !!newCustomerDraft?.newName || !!newCustomerDraft?.newEmail)
+  const [newName, setNewName] = useState(newCustomerDraft?.newName ?? '')
+  const [newPhone, setNewPhone] = useState(newCustomerDraft?.newPhone ?? '')
+  const [newEmail, setNewEmail] = useState(newCustomerDraft?.newEmail ?? '')
   const [emailDraft, setEmailDraft] = useState('')
   const [savingEmail, setSavingEmail] = useState(false)
+
+  useFormDraft(draftKey, { newName, newPhone, newEmail })
 
   const selected = customers.find((c) => c.id === customerId)
 
@@ -52,6 +59,7 @@ export function Step1Customer() {
       setNewName('')
       setNewPhone('')
       setNewEmail('')
+      if (draftKey) clearFormDraft(draftKey)
     }
   }
 
@@ -146,7 +154,17 @@ export function Step1Customer() {
             >
               บันทึกลูกค้าใหม่
             </button>
-            <button type="button" onClick={() => setCreatingNew(false)} className="rounded-lg border border-stone-300 text-stone-600 px-4 py-2.5 text-sm">
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingNew(false)
+                setNewName('')
+                setNewPhone('')
+                setNewEmail('')
+                if (draftKey) clearFormDraft(draftKey)
+              }}
+              className="rounded-lg border border-stone-300 text-stone-600 px-4 py-2.5 text-sm"
+            >
               ยกเลิก
             </button>
           </div>

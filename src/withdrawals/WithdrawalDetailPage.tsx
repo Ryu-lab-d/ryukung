@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useWithdrawal } from './useWithdrawal'
 import { settleWithdrawal, reopenWithdrawal, deleteWithdrawal } from './api'
 import { computeWithdrawalTotals } from './withdrawalMath'
 import { formatBaht } from '../lib/money'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type SettleRow = { qty_sold: string; amount_collected: string; amountTouched: boolean }
 
@@ -12,12 +13,21 @@ export function WithdrawalDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { withdrawal, items, loading, reload } = useWithdrawal(id ?? null)
-  const [rows, setRows] = useState<SettleRow[]>([])
+  const draftKey = id ? `withdrawal-detail:${id}` : null
+  const [draft] = useState(() => (draftKey ? loadFormDraft<{ rows: SettleRow[] }>(draftKey) : null))
+  const [rows, setRows] = useState<SettleRow[]>(draft?.rows ?? [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const skippedInitialSync = useRef(false)
 
   useEffect(() => {
+    // ถ้ามีร่างที่กู้คืนมา ให้ข้ามการเซ็ตค่าจาก items ครั้งแรกครั้งเดียว (ไม่งั้นข้อมูลที่พิมพ์ค้างไว้จะถูกทับ)
+    // ครั้งต่อๆ ไป (เช่น หลังปิดรอบ/แก้ไขผลขายแล้ว items เปลี่ยนจริง) ให้ sync จาก items ตามปกติ
+    if (draft && !skippedInitialSync.current) {
+      skippedInitialSync.current = true
+      return
+    }
     setRows(
       items.map((it) => ({
         qty_sold: it.qty_sold === null ? '' : String(it.qty_sold),
@@ -25,7 +35,9 @@ export function WithdrawalDetailPage() {
         amountTouched: it.amount_collected !== null,
       }))
     )
-  }, [items])
+  }, [items, draft])
+
+  useFormDraft(draftKey, { rows })
 
   function updateQtySold(index: number, value: string) {
     setRows((prev) =>
@@ -58,6 +70,7 @@ export function WithdrawalDetailPage() {
       setError(settleError.message)
       return
     }
+    if (draftKey) clearFormDraft(draftKey)
     await reload()
   }
 

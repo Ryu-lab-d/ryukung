@@ -5,24 +5,31 @@ import { useUnansweredQuestions } from './useUnansweredQuestions'
 import { ChatBot } from '../public/ChatBot'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type Faq = { keywords: string[]; answer: string }
+type ChatbotDraft = { faqs: Faq[]; lineUrl: string }
+
+const DRAFT_KEY = 'chatbot-settings-form'
 
 export function ChatbotManagementPage() {
   const { settings, loading, save } = useSettings()
   const { questions, loading: questionsLoading, remove: removeQuestion } = useUnansweredQuestions()
-  const [faqs, setFaqs] = useState<Faq[]>([])
-  const [lineUrl, setLineUrl] = useState('')
+  const [draft] = useState(() => loadFormDraft<ChatbotDraft>(DRAFT_KEY))
+  const [faqs, setFaqs] = useState<Faq[]>(draft?.faqs ?? [])
+  const [lineUrl, setLineUrl] = useState(draft?.lineUrl ?? '')
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !draft) {
       setFaqs(settings.faqs)
       setLineUrl(settings.line_url ?? '')
     }
-  }, [settings])
+  }, [settings, draft])
+
+  useFormDraft(DRAFT_KEY, { faqs, lineUrl })
 
   if (loading || !settings) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
@@ -53,6 +60,7 @@ export function ChatbotManagementPage() {
     setBusy(true)
     const { error } = await save({ faqs, line_url: lineUrl.trim() || null })
     setBusy(false)
+    if (!error) clearFormDraft(DRAFT_KEY)
     setMessage(error ? 'บันทึกไม่สำเร็จ: ' + error.message : 'บันทึกแล้ว')
   }
 

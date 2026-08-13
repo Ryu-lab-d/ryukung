@@ -6,24 +6,43 @@ import { PLATFORMS, CONTENT_STAGES } from './contentMeta'
 import type { ContentPlatform, ContentStatus } from './contentMeta'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+
+type ContentDraft = {
+  title: string
+  platforms: ContentPlatform[]
+  status: ContentStatus
+  idea: string
+  hook: string
+  goal: string
+  caption: string
+  hashtags: string
+  editingStyle: string
+  referenceUrl: string
+  note: string
+  postDate: string
+}
 
 export function ContentItemForm() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { item, loading } = useContentItem(id ?? null)
 
-  const [title, setTitle] = useState('')
-  const [platforms, setPlatforms] = useState<ContentPlatform[]>([])
-  const [status, setStatus] = useState<ContentStatus>('idea')
-  const [idea, setIdea] = useState('')
-  const [hook, setHook] = useState('')
-  const [goal, setGoal] = useState('')
-  const [caption, setCaption] = useState('')
-  const [hashtags, setHashtags] = useState('')
-  const [editingStyle, setEditingStyle] = useState('')
-  const [referenceUrl, setReferenceUrl] = useState('')
-  const [note, setNote] = useState('')
-  const [postDate, setPostDate] = useState('')
+  const draftKey = `content-form:${id ?? 'new'}`
+  const [draft] = useState(() => loadFormDraft<ContentDraft>(draftKey))
+
+  const [title, setTitle] = useState(draft?.title ?? '')
+  const [platforms, setPlatforms] = useState<ContentPlatform[]>(draft?.platforms ?? [])
+  const [status, setStatus] = useState<ContentStatus>(draft?.status ?? 'idea')
+  const [idea, setIdea] = useState(draft?.idea ?? '')
+  const [hook, setHook] = useState(draft?.hook ?? '')
+  const [goal, setGoal] = useState(draft?.goal ?? '')
+  const [caption, setCaption] = useState(draft?.caption ?? '')
+  const [hashtags, setHashtags] = useState(draft?.hashtags ?? '')
+  const [editingStyle, setEditingStyle] = useState(draft?.editingStyle ?? '')
+  const [referenceUrl, setReferenceUrl] = useState(draft?.referenceUrl ?? '')
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [postDate, setPostDate] = useState(draft?.postDate ?? '')
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -32,7 +51,7 @@ export function ContentItemForm() {
   const [showSuccess, setShowSuccess] = useState(false)
 
   useEffect(() => {
-    if (!item) return
+    if (!item || draft) return
     setTitle(item.title)
     setPlatforms(item.platforms)
     setStatus(item.status)
@@ -45,7 +64,11 @@ export function ContentItemForm() {
     setReferenceUrl(item.reference_url ?? '')
     setNote(item.note ?? '')
     setPostDate(item.post_date ?? '')
-  }, [item])
+  }, [item, draft])
+
+  useFormDraft(draftKey, {
+    title, platforms, status, idea, hook, goal, caption, hashtags, editingStyle, referenceUrl, note, postDate,
+  })
 
   function togglePlatform(p: ContentPlatform) {
     setPlatforms((prev) => (prev.includes(p) ? prev.filter((x) => x !== p) : [...prev, p]))
@@ -84,6 +107,7 @@ export function ContentItemForm() {
       setError(saveError.message)
       return
     }
+    clearFormDraft(draftKey)
     setShowSuccess(true)
   }
 
@@ -272,7 +296,11 @@ export function ContentItemForm() {
       {error && <p className="text-sm text-red-600">{error}</p>}
 
       <div className="flex gap-2 pt-1">
-        <button type="button" onClick={() => navigate('/content')} className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium">
+        <button
+          type="button"
+          onClick={() => { clearFormDraft(draftKey); navigate('/content') }}
+          className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium"
+        >
           ยกเลิก
         </button>
         <button

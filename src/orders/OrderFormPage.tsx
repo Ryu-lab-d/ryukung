@@ -153,7 +153,7 @@ export function OrderFormPage() {
           ))}
         </div>
 
-        {step === 1 && <Step1Customer />}
+        {step === 1 && <Step1Customer orderId={orderId} />}
         {step === 2 && <Step2Products />}
         {step === 3 && <Step3Fulfillment />}
 

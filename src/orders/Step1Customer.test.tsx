@@ -40,7 +40,7 @@ function Wrapper({ customerId }: { customerId: string | null }) {
   })
   return (
     <FormProvider {...methods}>
-      <Step1Customer />
+      <Step1Customer orderId="o1" />
     </FormProvider>
   )
 }
@@ -72,5 +72,31 @@ describe('ขั้นตอนเลือก/สร้างลูกค้า
     render(<Wrapper customerId="c1" />)
     expect(screen.getByText(/has-email@example\.com/)).toBeInTheDocument()
     expect(screen.queryByText(/จำเป็นสำหรับแจ้งเตือนออเดอร์/)).not.toBeInTheDocument()
+  })
+
+  it('พิมพ์ข้อมูลลูกค้าใหม่ค้างไว้แล้วสลับหน้าไปมา (unmount/remount) ข้อมูลที่พิมพ์ยังอยู่', async () => {
+    localStorage.clear()
+    const { unmount } = render(<Wrapper customerId={null} />)
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มลูกค้าใหม่' }))
+    await userEvent.type(screen.getByPlaceholderText('ชื่อลูกค้า'), 'ลูกค้าทดสอบ')
+    unmount()
+
+    render(<Wrapper customerId={null} />)
+    expect(screen.getByDisplayValue('ลูกค้าทดสอบ')).toBeInTheDocument()
+    localStorage.clear()
+  })
+
+  it('สร้างลูกค้าใหม่สำเร็จแล้ว ล้างร่างที่บันทึกไว้ ไม่ให้ค้างมาโผล่ครั้งหน้า', async () => {
+    localStorage.clear()
+    const { unmount } = render(<Wrapper customerId={null} />)
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มลูกค้าใหม่' }))
+    await userEvent.type(screen.getByPlaceholderText('ชื่อลูกค้า'), 'ลูกค้าทดสอบ')
+    await userEvent.type(screen.getByPlaceholderText(/อีเมล/), 'test@example.com')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึกลูกค้าใหม่' }))
+    unmount()
+
+    render(<Wrapper customerId={null} />)
+    expect(screen.queryByText('ลูกค้าใหม่')).not.toBeInTheDocument()
+    localStorage.clear()
   })
 })

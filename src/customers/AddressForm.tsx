@@ -1,6 +1,9 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useAddresses } from './useAddresses'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+
+type AddressDraft = { label: string; recipientName: string; recipientPhone: string; addressText: string; isDefault: boolean }
 
 export function AddressForm() {
   const { id: customerId, addressId } = useParams()
@@ -8,23 +11,28 @@ export function AddressForm() {
   const { addresses, save } = useAddresses(customerId ?? null)
   const existing = addresses.find((a) => a.id === addressId)
 
-  const [label, setLabel] = useState('บ้าน')
-  const [recipientName, setRecipientName] = useState('')
-  const [recipientPhone, setRecipientPhone] = useState('')
-  const [addressText, setAddressText] = useState('')
-  const [isDefault, setIsDefault] = useState(false)
+  const draftKey = `address-form:${customerId}:${addressId ?? 'new'}`
+  const [draft] = useState(() => loadFormDraft<AddressDraft>(draftKey))
+
+  const [label, setLabel] = useState(draft?.label ?? 'บ้าน')
+  const [recipientName, setRecipientName] = useState(draft?.recipientName ?? '')
+  const [recipientPhone, setRecipientPhone] = useState(draft?.recipientPhone ?? '')
+  const [addressText, setAddressText] = useState(draft?.addressText ?? '')
+  const [isDefault, setIsDefault] = useState(draft?.isDefault ?? false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (existing) {
+    if (existing && !draft) {
       setLabel(existing.label)
       setRecipientName(existing.recipient_name ?? '')
       setRecipientPhone(existing.recipient_phone ?? '')
       setAddressText(existing.address_text)
       setIsDefault(existing.is_default)
     }
-  }, [existing])
+  }, [existing, draft])
+
+  useFormDraft(draftKey, { label, recipientName, recipientPhone, addressText, isDefault })
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -39,6 +47,7 @@ export function AddressForm() {
     })
     setBusy(false)
     if (error) { setError('บันทึกไม่สำเร็จ: ' + error.message); return }
+    clearFormDraft(draftKey)
     navigate(`/customers/${customerId}`)
   }
 

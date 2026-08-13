@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { useStaffMembers } from './useStaffMembers'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมัติ', active: 'ใช้งานได้', revoked: 'ถูกระงับ' }
 const STATUS_COLOR: Record<string, string> = {
@@ -11,16 +12,20 @@ const STATUS_COLOR: Record<string, string> = {
 }
 
 const JOIN_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}/staff/join`
+const DRAFT_KEY = 'staff-invite-form'
 
 export function StaffManagementSection() {
   const { members, loading, invite, setStatus, remove } = useStaffMembers()
-  const [email, setEmail] = useState('')
-  const [displayName, setDisplayName] = useState('')
+  const [draft] = useState(() => loadFormDraft<{ email: string; displayName: string }>(DRAFT_KEY))
+  const [email, setEmail] = useState(draft?.email ?? '')
+  const [displayName, setDisplayName] = useState(draft?.displayName ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
+
+  useFormDraft(DRAFT_KEY, { email, displayName })
 
   async function handleInvite(e: FormEvent) {
     e.preventDefault()
@@ -34,6 +39,7 @@ export function StaffManagementSection() {
     }
     setEmail('')
     setDisplayName('')
+    clearFormDraft(DRAFT_KEY)
     setMessage(`เชิญ ${email} แล้ว — ส่งลิงก์สมัครให้พนักงานคนนี้เพื่อยืนยันตัวตนต่อได้เลย`)
   }
 

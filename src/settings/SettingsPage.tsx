@@ -3,21 +3,27 @@ import { Link } from 'react-router-dom'
 import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
 import { StaffManagementSection } from '../staff/StaffManagementSection'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type Draft = Omit<Settings, 'id'>
 
+const DRAFT_KEY = 'settings-form'
+
 export function SettingsPage() {
   const { settings, loading, save, uploadLogo } = useSettings()
-  const [draft, setDraft] = useState<Draft | null>(null)
+  const [restoredDraft] = useState(() => loadFormDraft<Draft>(DRAFT_KEY))
+  const [draft, setDraft] = useState<Draft | null>(restoredDraft)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   useEffect(() => {
-    if (settings) {
+    if (settings && !restoredDraft) {
       const { id: _id, ...rest } = settings
       setDraft(rest)
     }
-  }, [settings])
+  }, [settings, restoredDraft])
+
+  useFormDraft(draft ? DRAFT_KEY : null, draft)
 
   if (loading || !draft) {
     return <div className="p-4 text-stone-500">กำลังโหลด...</div>
@@ -35,6 +41,7 @@ export function SettingsPage() {
     setBusy(true)
     const { error } = await save(values)
     setBusy(false)
+    if (!error) clearFormDraft(DRAFT_KEY)
     setMessage(error ? 'บันทึกไม่สำเร็จ: ' + error.message : 'บันทึกแล้ว')
   }
 

@@ -5,6 +5,7 @@ import { useCategories } from '../products/useCategories'
 import { ProductCard } from '../products/ProductCard'
 import { createWithdrawal } from './api'
 import { formatBaht } from '../lib/money'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type SelectedItem = {
   product_id: string | null
@@ -15,23 +16,36 @@ type SelectedItem = {
   qty_out: number
 }
 
+type WithdrawalDraft = {
+  withdrawnAt: string
+  location: string
+  note: string
+  items: SelectedItem[]
+  discountPerUnit: string
+}
+
 function todayDateInputValue(): string {
   return new Date().toLocaleDateString('en-CA')
 }
+
+const DRAFT_KEY = 'withdrawal-form:new'
 
 export function NewWithdrawalPage() {
   const navigate = useNavigate()
   const { products } = useProducts()
   const { categories } = useCategories()
+  const [draft] = useState(() => loadFormDraft<WithdrawalDraft>(DRAFT_KEY))
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [withdrawnAt, setWithdrawnAt] = useState(todayDateInputValue())
-  const [location, setLocation] = useState('')
-  const [note, setNote] = useState('')
-  const [items, setItems] = useState<SelectedItem[]>([])
-  const [discountPerUnit, setDiscountPerUnit] = useState('')
+  const [withdrawnAt, setWithdrawnAt] = useState(draft?.withdrawnAt ?? todayDateInputValue())
+  const [location, setLocation] = useState(draft?.location ?? '')
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [items, setItems] = useState<SelectedItem[]>(draft?.items ?? [])
+  const [discountPerUnit, setDiscountPerUnit] = useState(draft?.discountPerUnit ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  useFormDraft(DRAFT_KEY, { withdrawnAt, location, note, items, discountPerUnit })
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -95,6 +109,7 @@ export function NewWithdrawalPage() {
       setError(saveError.message)
       return
     }
+    clearFormDraft(DRAFT_KEY)
     navigate(`/withdrawals/${id}`)
   }
 

@@ -11,6 +11,7 @@ import { claimPayment } from '../lib/paymentClaim'
 import { AddToCalendarButton } from './AddToCalendarButton'
 import { ShareOrderButton } from './ShareOrderButton'
 import { productImageUrl } from '../products/ProductCard'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
@@ -533,9 +534,10 @@ function AddressSavedOverlay({ onDone }: { onDone: () => void }) {
 
 export function PublicOrderPage() {
   const { token } = useParams()
+  const nameDraftKey = token ? `public-order-name:${token}` : null
   const [order, setOrder] = useState<PublicOrderView | null | undefined>(undefined)
   const [customerName, setCustomerName] = useState<string | null>(null)
-  const [nameInput, setNameInput] = useState('')
+  const [nameInput, setNameInput] = useState(() => (nameDraftKey ? loadFormDraft<string>(nameDraftKey) : null) ?? '')
   const [revealing, setRevealing] = useState(false)
   const [shake, setShake] = useState(false)
   const [nameError, setNameError] = useState(false)
@@ -547,6 +549,8 @@ export function PublicOrderPage() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
+
+  useFormDraft(nameDraftKey, nameInput)
 
   const fetchOrder = useCallback(() => {
     if (!token) return
@@ -576,6 +580,7 @@ export function PublicOrderPage() {
       // ไม่มีข้อมูลอะไรให้หลุดอยู่แล้วเพราะ order เป็น null
       setCustomerName(typed)
       setRevealing(true)
+      clearFormDraft(nameDraftKey)
       setTimeout(() => setRevealing(false), 700)
       return
     }
@@ -598,6 +603,7 @@ export function PublicOrderPage() {
 
     setCustomerName(typed)
     setRevealing(true)
+    clearFormDraft(nameDraftKey)
     // หน่วงสั้นๆ ให้รู้สึกเหมือนระบบกำลังเปิดออเดอร์ให้ ข้อมูลจริงโหลดเสร็จรอไว้อยู่แล้วเบื้องหลัง
     setTimeout(() => setRevealing(false), 700)
   }

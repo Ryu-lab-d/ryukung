@@ -9,8 +9,21 @@ import { useIngredients } from '../ingredients/useIngredients'
 import { useProductIngredients } from './useProductIngredients'
 import { saveProductIngredients } from './api'
 import { formatBaht } from '../lib/money'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type RecipeRow = { ingredient_id: string; qty_per_unit: string }
+
+type ProductDraft = {
+  name: string
+  categoryId: string
+  price: string
+  cost: string
+  unit: string
+  note: string
+  isActive: boolean
+  imagePath: string | null
+  recipeRows: RecipeRow[]
+}
 
 export function ProductForm() {
   const { id } = useParams()
@@ -22,22 +35,25 @@ export function ProductForm() {
   const { rows: savedRecipeRows } = useProductIngredients(id ?? null)
   const existing = products.find((p) => p.id === id)
 
-  const [name, setName] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [price, setPrice] = useState('0')
-  const [cost, setCost] = useState('0')
-  const [unit, setUnit] = useState('ชิ้น')
-  const [note, setNote] = useState('')
-  const [isActive, setIsActive] = useState(true)
-  const [imagePath, setImagePath] = useState<string | null>(null)
+  const draftKey = `product-form:${id ?? 'new'}`
+  const [draft] = useState(() => loadFormDraft<ProductDraft>(draftKey))
+
+  const [name, setName] = useState(draft?.name ?? '')
+  const [categoryId, setCategoryId] = useState(draft?.categoryId ?? '')
+  const [price, setPrice] = useState(draft?.price ?? '0')
+  const [cost, setCost] = useState(draft?.cost ?? '0')
+  const [unit, setUnit] = useState(draft?.unit ?? 'ชิ้น')
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [isActive, setIsActive] = useState(draft?.isActive ?? true)
+  const [imagePath, setImagePath] = useState<string | null>(draft?.imagePath ?? null)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
-  const [recipeRows, setRecipeRows] = useState<RecipeRow[]>([])
+  const [recipeRows, setRecipeRows] = useState<RecipeRow[]>(draft?.recipeRows ?? [])
 
   useEffect(() => {
-    if (existing) {
+    if (existing && !draft) {
       setName(existing.name)
       setCategoryId(existing.category_id ?? '')
       setPrice(String(existing.price))
@@ -47,13 +63,15 @@ export function ProductForm() {
       setIsActive(existing.is_active)
       setImagePath(existing.image_path)
     }
-  }, [existing])
+  }, [existing, draft])
 
   useEffect(() => {
-    if (savedRecipeRows.length > 0) {
+    if (savedRecipeRows.length > 0 && !draft) {
       setRecipeRows(savedRecipeRows.map((r) => ({ ingredient_id: r.ingredient_id, qty_per_unit: String(r.qty_per_unit) })))
     }
-  }, [savedRecipeRows])
+  }, [savedRecipeRows, draft])
+
+  useFormDraft(draftKey, { name, categoryId, price, cost, unit, note, isActive, imagePath, recipeRows })
 
   function addRecipeRow() {
     setRecipeRows((prev) => [...prev, { ingredient_id: '', qty_per_unit: '' }])
@@ -115,6 +133,7 @@ export function ProductForm() {
     )
     setBusy(false)
     if (recipeError) { setError('บันทึกสูตรไม่สำเร็จ: ' + recipeError.message); return }
+    clearFormDraft(draftKey)
     navigate('/products')
   }
 

@@ -1,35 +1,15 @@
-import { useEffect } from 'react'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
-const PREFIX = 'ryukung-order-draft:'
-
-export function saveDraftToLocalStorage<T>(orderId: string, draft: T) {
-  try {
-    localStorage.setItem(PREFIX + orderId, JSON.stringify(draft))
-  } catch {
-    // localStorage เต็มหรือถูกปิดใช้งาน — ยอมเสียฟีเจอร์นี้ไปโดยไม่ทำให้แอปพัง
-  }
-}
+const PREFIX = 'order-draft:'
 
 export function loadDraftFromLocalStorage<T>(orderId: string): T | null {
-  try {
-    const raw = localStorage.getItem(PREFIX + orderId)
-    return raw ? (JSON.parse(raw) as T) : null
-  } catch {
-    return null
-  }
+  return loadFormDraft<T>(PREFIX + orderId)
 }
 
 export function clearDraftFromLocalStorage(orderId: string) {
-  try {
-    localStorage.removeItem(PREFIX + orderId)
-  } catch {
-    // เหตุผลเดียวกับด้านบน
-  }
+  clearFormDraft(PREFIX + orderId)
 }
 
 export function useOrderDraftAutosave<T>(orderId: string | null, draft: T) {
-  useEffect(() => {
-    if (!orderId) return
-    saveDraftToLocalStorage(orderId, draft)
-  }, [orderId, draft])
+  useFormDraft(orderId ? PREFIX + orderId : null, draft)
 }

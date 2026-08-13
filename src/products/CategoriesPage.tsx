@@ -1,10 +1,15 @@
 import { useState, type FormEvent } from 'react'
 import { useCategories } from './useCategories'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+
+const DRAFT_KEY = 'category-form:new'
 
 export function CategoriesPage() {
   const { categories, save } = useCategories()
-  const [newName, setNewName] = useState('')
+  const [newName, setNewName] = useState(() => loadFormDraft<string>(DRAFT_KEY) ?? '')
   const [error, setError] = useState<string | null>(null)
+
+  useFormDraft(DRAFT_KEY, newName)
 
   async function handleAdd(e: FormEvent) {
     e.preventDefault()
@@ -12,6 +17,7 @@ export function CategoriesPage() {
     const { error } = await save(null, { name: newName.trim(), sort_order: categories.length })
     if (error) { setError(error.message); return }
     setNewName('')
+    clearFormDraft(DRAFT_KEY)
   }
 
   async function move(id: string, direction: -1 | 1) {

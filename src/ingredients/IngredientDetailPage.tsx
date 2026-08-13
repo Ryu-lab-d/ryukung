@@ -7,6 +7,9 @@ import { RestockModal } from './RestockModal'
 import { AdjustStockModal } from './AdjustStockModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+
+type IngredientDetailDraft = { name: string; unit: string; lowStockThreshold: string; note: string; isActive: boolean }
 
 const REASON_LABELS: Record<string, string> = {
   order_confirm: 'ยืนยันออเดอร์',
@@ -24,11 +27,14 @@ export function IngredientDetailPage() {
   const { ingredient, loading, reload } = useIngredient(id ?? null)
   const { movements, loading: movementsLoading, reload: reloadMovements } = useIngredientMovements(id ?? null)
 
-  const [name, setName] = useState('')
-  const [unit, setUnit] = useState('')
-  const [lowStockThreshold, setLowStockThreshold] = useState('0')
-  const [note, setNote] = useState('')
-  const [isActive, setIsActive] = useState(true)
+  const draftKey = id ? `ingredient-detail:${id}` : null
+  const [draft] = useState(() => (draftKey ? loadFormDraft<IngredientDetailDraft>(draftKey) : null))
+
+  const [name, setName] = useState(draft?.name ?? '')
+  const [unit, setUnit] = useState(draft?.unit ?? '')
+  const [lowStockThreshold, setLowStockThreshold] = useState(draft?.lowStockThreshold ?? '0')
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [isActive, setIsActive] = useState(draft?.isActive ?? true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
@@ -38,13 +44,15 @@ export function IngredientDetailPage() {
   const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
-    if (!ingredient) return
+    if (!ingredient || draft) return
     setName(ingredient.name)
     setUnit(ingredient.unit)
     setLowStockThreshold(String(ingredient.low_stock_threshold))
     setNote(ingredient.note ?? '')
     setIsActive(ingredient.is_active)
-  }, [ingredient])
+  }, [ingredient, draft])
+
+  useFormDraft(draftKey, { name, unit, lowStockThreshold, note, isActive })
 
   async function handleSave() {
     if (!id) return
@@ -66,6 +74,7 @@ export function IngredientDetailPage() {
       setError(saveError.message)
       return
     }
+    if (draftKey) clearFormDraft(draftKey)
     setShowSuccess(true)
   }
 

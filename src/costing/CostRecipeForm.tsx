@@ -5,9 +5,20 @@ import { saveCostRecipe, deleteCostRecipe } from './api'
 import { computeRecipeCost, ingredientCost } from './costMath'
 import { formatBaht } from '../lib/money'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 
 type IngredientRow = { name: string; purchase_qty: string; purchase_unit: string; purchase_price: string; qty_used: string }
 type LaborRow = { label: string; amount: string }
+
+type RecipeDraft = {
+  name: string
+  wasteOverheadPercent: string
+  profitPercent: string
+  yieldQty: string
+  note: string
+  ingredientRows: IngredientRow[]
+  laborRows: LaborRow[]
+}
 
 const emptyIngredient: IngredientRow = { name: '', purchase_qty: '', purchase_unit: 'กรัม', purchase_price: '', qty_used: '' }
 
@@ -16,19 +27,22 @@ export function CostRecipeForm() {
   const navigate = useNavigate()
   const { recipe, ingredients: loadedIngredients, labor: loadedLabor, loading } = useCostRecipe(id ?? null)
 
-  const [name, setName] = useState('')
-  const [wasteOverheadPercent, setWasteOverheadPercent] = useState('0')
-  const [profitPercent, setProfitPercent] = useState('30')
-  const [yieldQty, setYieldQty] = useState('1')
-  const [note, setNote] = useState('')
-  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>([{ ...emptyIngredient }])
-  const [laborRows, setLaborRows] = useState<LaborRow[]>([])
+  const draftKey = `cost-recipe-form:${id ?? 'new'}`
+  const [draft] = useState(() => loadFormDraft<RecipeDraft>(draftKey))
+
+  const [name, setName] = useState(draft?.name ?? '')
+  const [wasteOverheadPercent, setWasteOverheadPercent] = useState(draft?.wasteOverheadPercent ?? '0')
+  const [profitPercent, setProfitPercent] = useState(draft?.profitPercent ?? '30')
+  const [yieldQty, setYieldQty] = useState(draft?.yieldQty ?? '1')
+  const [note, setNote] = useState(draft?.note ?? '')
+  const [ingredientRows, setIngredientRows] = useState<IngredientRow[]>(draft?.ingredientRows ?? [{ ...emptyIngredient }])
+  const [laborRows, setLaborRows] = useState<LaborRow[]>(draft?.laborRows ?? [])
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   useEffect(() => {
-    if (!recipe) return
+    if (!recipe || draft) return
     setName(recipe.name)
     setWasteOverheadPercent(String(recipe.waste_overhead_percent))
     setProfitPercent(String(recipe.profit_percent))
@@ -46,7 +60,9 @@ export function CostRecipeForm() {
         : [{ ...emptyIngredient }]
     )
     setLaborRows(loadedLabor.map((l) => ({ label: l.label, amount: String(l.amount) })))
-  }, [recipe, loadedIngredients, loadedLabor])
+  }, [recipe, loadedIngredients, loadedLabor, draft])
+
+  useFormDraft(draftKey, { name, wasteOverheadPercent, profitPercent, yieldQty, note, ingredientRows, laborRows })
 
   const calc = useMemo(
     () =>
@@ -111,6 +127,7 @@ export function CostRecipeForm() {
       setError(saveError.message)
       return
     }
+    clearFormDraft(draftKey)
     navigate(`/costing/${savedId}/edit`)
   }
 
