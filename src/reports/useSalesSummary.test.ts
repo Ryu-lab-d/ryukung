@@ -9,7 +9,7 @@ function order(items: { product_name: string; qty: number; line_total: number }[
     items_total: 0,
     items_cost_total: 0,
     grand_total: 0,
-    order_items: items,
+    order_items: items.map((it) => ({ product_id: null, unit_cost: 0, ...it })),
   }
 }
 

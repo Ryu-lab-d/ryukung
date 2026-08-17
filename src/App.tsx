@@ -32,6 +32,7 @@ import { ContentItemForm } from './content/ContentItemForm'
 import { ContentStatsPage } from './content/ContentStatsPage'
 import { IngredientsPage } from './ingredients/IngredientsPage'
 import { IngredientDetailPage } from './ingredients/IngredientDetailPage'
+import { ExpensesPage } from './reports/ExpensesPage'
 
 /** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
 function OwnerOnlyRoute({ children }: { children: ReactNode }) {
@@ -65,6 +66,7 @@ function AuthenticatedApp() {
             <Route path="/customers/:id/addresses/new" element={<AddressForm />} />
             <Route path="/customers/:id/addresses/:addressId/edit" element={<AddressForm />} />
             <Route path="/summary" element={<SalesSummaryPage />} />
+            <Route path="/expenses" element={<ExpensesPage />} />
             <Route path="/costing" element={<CostRecipesPage />} />
             <Route path="/costing/new" element={<CostRecipeForm />} />
             <Route path="/costing/:id/edit" element={<CostRecipeForm />} />

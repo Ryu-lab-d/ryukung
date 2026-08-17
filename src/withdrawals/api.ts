@@ -12,11 +12,12 @@ export async function createWithdrawal(params: {
   withdrawnAt: string
   location: string | null
   note: string | null
+  withdrawnBy: string | null
   items: WithdrawalItemInput[]
 }): Promise<{ id: string | null; error: { message: string } | null }> {
   const { data: withdrawal, error } = await supabase
     .from('stock_withdrawals')
-    .insert({ withdrawn_at: params.withdrawnAt, location: params.location, note: params.note })
+    .insert({ withdrawn_at: params.withdrawnAt, location: params.location, note: params.note, withdrawn_by: params.withdrawnBy })
     .select()
     .single()
   if (error || !withdrawal) return { id: null, error: { message: error?.message ?? 'บันทึกไม่สำเร็จ' } }

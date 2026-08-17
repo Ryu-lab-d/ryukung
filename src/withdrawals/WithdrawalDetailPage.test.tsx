@@ -51,6 +51,21 @@ beforeEach(() => {
 })
 
 describe('WithdrawalDetailPage — ยังไม่ปิดรอบ', () => {
+  it('แสดงชื่อผู้เบิกที่ผูกไว้', async () => {
+    withdrawalOverride = {
+      ...withdrawalOverride,
+      withdrawn_by: 's2',
+      staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
+    }
+    renderPage()
+    expect(await screen.findByText('👤 ผู้เบิก: น้องริว')).toBeInTheDocument()
+  })
+
+  it('ไม่ได้ผูกผู้เบิกไว้ แสดง "ไม่ระบุ"', async () => {
+    renderPage()
+    expect(await screen.findByText('👤 ผู้เบิก: ไม่ระบุ')).toBeInTheDocument()
+  })
+
   it('กรอกจำนวนที่ขายได้ ระบบเดาจำนวนเงินให้อัตโนมัติจากราคาสินค้า แต่ยังแก้ไขเองได้', async () => {
     renderPage()
     const qtySoldInput = await screen.findByLabelText('ขายได้กี่ชิ้น')

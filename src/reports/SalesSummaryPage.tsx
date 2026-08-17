@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { rangeToDates, type RangeKey } from './dateRange'
 import { useSalesSummary } from './useSalesSummary'
 import { useSalesTrend } from './useSalesTrend'
+import { useExpenses } from './useExpenses'
+import { useAllProductIngredients } from './useAllProductIngredients'
+import { computeProductProfitability } from './productProfitability'
+import { useIngredients } from '../ingredients/useIngredients'
 import { formatBaht } from '../lib/money'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
@@ -12,10 +17,22 @@ export function SalesSummaryPage() {
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const { from, to } = useMemo(() => rangeToDates(rangeKey, customFrom, customTo), [rangeKey, customFrom, customTo])
-  const { orders, loading, sales, cost, profit, profitPercent, avgOrder, topProducts } = useSalesSummary(from, to)
+  const { orders, loading, sales, cost, profit, profitPercent, avgOrder } = useSalesSummary(from, to)
   const { trend, loading: trendLoading } = useSalesTrend(TREND_DAYS)
+  const { expenses, loading: expensesLoading } = useExpenses(from, to)
+  const { ingredients } = useIngredients()
+  const { links: productIngredients } = useAllProductIngredients()
+
+  const ingredientCostById = useMemo(() => new Map(ingredients.map((i) => [i.id, i.cost_per_unit])), [ingredients])
+  const productProfits = useMemo(
+    () => computeProductProfitability(orders, productIngredients, ingredientCostById),
+    [orders, productIngredients, ingredientCostById]
+  )
+  const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0)
+  const netProfit = profit - totalExpenses
 
   const profitIsPositive = profit >= 0
+  const netProfitIsPositive = netProfit >= 0
 
   return (
     <div className="p-4 space-y-5 max-w-2xl mx-auto">
@@ -104,16 +121,51 @@ export function SalesSummaryPage() {
             กำไรนี้คำนวณจากต้นทุนที่กรอกเองต่อสินค้า ยังไม่ใช่ต้นทุนจริงจากสูตรและราคาวัตถุดิบ
           </p>
 
+          {/* กำไรสุทธิ — หักรายจ่ายอื่นๆ (ค่าเช่า บรรจุภัณฑ์ ฯลฯ) ออกจากกำไรขั้นต้นด้านบน แยกการ์ดต่างหากเพื่อไม่ปนกับตัวเลขที่ผูกกับ spec เดิม */}
+          <div
+            className={
+              'rounded-2xl p-4 space-y-2 border ' +
+              (netProfitIsPositive ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200')
+            }
+          >
+            <div className="flex items-center justify-between">
+              <p className={'text-xs uppercase tracking-wide ' + (netProfitIsPositive ? 'text-emerald-700' : 'text-red-700')}>
+                กำไรสุทธิ (หักรายจ่ายอื่นๆ แล้ว)
+              </p>
+              <Link to="/expenses" className="text-xs text-stone-500 underline shrink-0">
+                💸 จัดการรายจ่าย →
+              </Link>
+            </div>
+            <p className={'text-2xl font-bold ' + (netProfitIsPositive ? 'text-emerald-800' : 'text-red-800')}>
+              {expensesLoading ? '...' : formatBaht(netProfit)}
+            </p>
+            <p className="text-xs text-stone-500">
+              รายจ่ายอื่นๆ ในช่วงนี้ {expensesLoading ? '...' : formatBaht(totalExpenses)}
+            </p>
+          </div>
+
           <div className="space-y-1">
-            <h2 className="text-sm font-semibold text-stone-500">สินค้าขายดีในช่วงนี้</h2>
-            {topProducts.length === 0 && <p className="text-sm text-stone-400">ไม่มีสินค้าขายในช่วงที่เลือก</p>}
+            <h2 className="text-sm font-semibold text-stone-500">สินค้าขายดีในช่วงนี้ (เรียงตามกำไร)</h2>
+            {productProfits.length === 0 && <p className="text-sm text-stone-400">ไม่มีสินค้าขายในช่วงที่เลือก</p>}
             <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
-              {topProducts.slice(0, 5).map((p, i) => (
-                <div key={p.name} className="flex items-center gap-3 text-sm px-3 py-2.5">
+              {productProfits.slice(0, 5).map((p, i) => (
+                <div key={p.productId ?? p.name} className="flex items-center gap-3 text-sm px-3 py-2.5">
                   <span className="text-stone-400 font-semibold w-4 shrink-0">{i + 1}</span>
-                  <span className="flex-1 text-stone-700 truncate">{p.name}</span>
-                  <span className="text-stone-500 tabular-nums">{p.qty} ชิ้น</span>
-                  <span className="font-medium tabular-nums w-20 text-right">{formatBaht(p.revenue)}</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-stone-700 truncate">{p.name}</p>
+                    <p className="text-xs text-stone-400">
+                      {p.qty} ชิ้น · {formatBaht(p.revenue)} บาท ·{' '}
+                      <span className={p.costSource === 'recipe' ? 'text-stone-500' : 'text-amber-600'}>
+                        {p.costSource === 'recipe' ? 'ต้นทุนจากสูตร' : 'ต้นทุนประมาณการ'}
+                      </span>
+                    </p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className={'font-medium tabular-nums ' + (p.profit >= 0 ? 'text-green-700' : 'text-red-700')}>
+                      {formatBaht(p.profit)}
+                    </p>
+                    <p className="text-xs text-stone-400">{p.marginPercent.toFixed(0)}%</p>
+                  </div>
                 </div>
               ))}
             </div>

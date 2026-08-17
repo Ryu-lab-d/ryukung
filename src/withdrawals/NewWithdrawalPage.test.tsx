@@ -11,6 +11,13 @@ const products = [
 vi.mock('../products/useProducts', () => ({ useProducts: () => ({ products, loading: false }) }))
 vi.mock('../products/useCategories', () => ({ useCategories: () => ({ categories: [], loading: false }) }))
 
+const staffMembers = [
+  { id: 's1', user_id: 'u1', email: 'ryu@example.com', display_name: 'น้องริว', role: 'owner', status: 'active', created_at: '' },
+  { id: 's2', user_id: 'u2', email: 'staff@example.com', display_name: null, role: 'staff', status: 'active', created_at: '' },
+  { id: 's3', user_id: 'u3', email: 'pending@example.com', display_name: 'รอสิทธิ์', role: 'staff', status: 'pending', created_at: '' },
+]
+vi.mock('../staff/useStaffMembers', () => ({ useStaffMembers: () => ({ members: staffMembers, loading: false }) }))
+
 const createWithdrawal = vi.fn()
 vi.mock('./api', () => ({ createWithdrawal: (...args: unknown[]) => createWithdrawal(...args) }))
 
@@ -66,6 +73,31 @@ describe('NewWithdrawalPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
     expect(await screen.findByText('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')).toBeInTheDocument()
     expect(createWithdrawal).not.toHaveBeenCalled()
+  })
+
+  it('ตัวเลือกผู้เบิกแสดงเฉพาะพนักงานที่ status active เท่านั้น ไม่รวมที่ยัง pending', () => {
+    renderPage()
+    const select = screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)')
+    expect(select).toHaveTextContent('น้องริว (เจ้าของร้าน)')
+    expect(select).toHaveTextContent('staff@example.com')
+    expect(select).not.toHaveTextContent('รอสิทธิ์')
+  })
+
+  it('เลือกผู้เบิกไว้ กดเริ่มเบิกของ ส่ง withdrawnBy ไปด้วย', async () => {
+    createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
+    renderPage()
+    await userEvent.click(screen.getByText('คุกกี้'))
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    expect(createWithdrawal).toHaveBeenCalledWith(expect.objectContaining({ withdrawnBy: 's2' }))
+  })
+
+  it('ไม่เลือกผู้เบิก ส่ง withdrawnBy เป็น null', async () => {
+    createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
+    renderPage()
+    await userEvent.click(screen.getByText('คุกกี้'))
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    expect(createWithdrawal).toHaveBeenCalledWith(expect.objectContaining({ withdrawnBy: null }))
   })
 })
 

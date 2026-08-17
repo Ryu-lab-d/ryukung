@@ -35,12 +35,15 @@ describe('WithdrawalsPage', () => {
         location: 'โรงเรียน',
         status: 'open',
         settled_at: null,
+        withdrawn_by: 'staff1',
+        staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
         items: [{ qty_out: 20, qty_sold: null, amount_collected: null, unit_cost: 15 }],
       },
     ]
     renderPage()
     expect(screen.getByText('กำลังขาย')).toBeInTheDocument()
     expect(screen.getByText(/เบิกไป 20 ชิ้น/)).toBeInTheDocument()
+    expect(screen.getByText(/น้องริว/)).toBeInTheDocument()
   })
 
   it('รายการที่ปิดรอบแล้ว แสดงยอดขายและกำไรที่คำนวณจากข้อมูลจริง', () => {
@@ -51,6 +54,8 @@ describe('WithdrawalsPage', () => {
         location: null,
         status: 'settled',
         settled_at: '2026-08-09T12:00:00Z',
+        withdrawn_by: null,
+        staff_members: null,
         items: [{ qty_out: 20, qty_sold: 18, amount_collected: 720, unit_cost: 15 }],
       },
     ]
@@ -59,6 +64,7 @@ describe('WithdrawalsPage', () => {
     expect(screen.getByText(/ขายได้ 18\/20 ชิ้น \(90%\)/)).toBeInTheDocument()
     // กำไร = รายรับ 720 - ต้นทุน (20*15=300) = 420
     expect(screen.getByText(/กำไร 420\.00/)).toBeInTheDocument()
+    expect(screen.getByText('👤 ไม่ระบุผู้เบิก')).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /ขายได้ 18\/20/ })
     expect(link).toHaveAttribute('href', '/withdrawals/w2')
   })

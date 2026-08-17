@@ -6,6 +6,7 @@ import { ProductCard } from '../products/ProductCard'
 import { createWithdrawal } from './api'
 import { formatBaht } from '../lib/money'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { useStaffMembers } from '../staff/useStaffMembers'
 
 type SelectedItem = {
   product_id: string | null
@@ -22,6 +23,7 @@ type WithdrawalDraft = {
   note: string
   items: SelectedItem[]
   discountPerUnit: string
+  withdrawnBy: string
 }
 
 function todayDateInputValue(): string {
@@ -34,6 +36,8 @@ export function NewWithdrawalPage() {
   const navigate = useNavigate()
   const { products } = useProducts()
   const { categories } = useCategories()
+  const { members } = useStaffMembers()
+  const activeStaff = members.filter((m) => m.status === 'active')
   const [draft] = useState(() => loadFormDraft<WithdrawalDraft>(DRAFT_KEY))
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
@@ -42,10 +46,11 @@ export function NewWithdrawalPage() {
   const [note, setNote] = useState(draft?.note ?? '')
   const [items, setItems] = useState<SelectedItem[]>(draft?.items ?? [])
   const [discountPerUnit, setDiscountPerUnit] = useState(draft?.discountPerUnit ?? '')
+  const [withdrawnBy, setWithdrawnBy] = useState(draft?.withdrawnBy ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useFormDraft(DRAFT_KEY, { withdrawnAt, location, note, items, discountPerUnit })
+  useFormDraft(DRAFT_KEY, { withdrawnAt, location, note, items, discountPerUnit, withdrawnBy })
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -94,6 +99,7 @@ export function NewWithdrawalPage() {
       withdrawnAt,
       location: location.trim() || null,
       note: note.trim() || null,
+      withdrawnBy: withdrawnBy || null,
       items: items
         .filter((it) => it.qty_out > 0)
         .map((it) => ({
@@ -140,6 +146,22 @@ export function NewWithdrawalPage() {
             placeholder="เช่น โรงเรียน"
             className="w-full rounded-lg border border-stone-300 px-3 py-2"
           />
+        </div>
+        <div className="space-y-1 col-span-2">
+          <label htmlFor="withdrawn-by" className="text-sm text-stone-600">ผู้เบิกไปขาย (ไม่บังคับ)</label>
+          <select
+            id="withdrawn-by"
+            value={withdrawnBy}
+            onChange={(e) => setWithdrawnBy(e.target.value)}
+            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+          >
+            <option value="">ไม่ระบุ</option>
+            {activeStaff.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.display_name ?? m.email}{m.role === 'owner' ? ' (เจ้าของร้าน)' : ''}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="space-y-1 col-span-2">
           <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (ไม่บังคับ)</label>

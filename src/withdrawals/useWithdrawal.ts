@@ -8,6 +8,8 @@ export type Withdrawal = {
   note: string | null
   status: string
   settled_at: string | null
+  withdrawn_by: string | null
+  staff_members: { display_name: string | null; email: string } | null
 }
 
 export type WithdrawalItem = {
@@ -33,7 +35,7 @@ export function useWithdrawal(id: string | null) {
     }
     setLoading(true)
     const [{ data: w }, { data: it }] = await Promise.all([
-      supabase.from('stock_withdrawals').select('*').eq('id', id).single(),
+      supabase.from('stock_withdrawals').select('*, staff_members(display_name, email)').eq('id', id).single(),
       supabase.from('stock_withdrawal_items').select('*').eq('withdrawal_id', id).order('sort_order'),
     ])
     setWithdrawal(w as Withdrawal | null)

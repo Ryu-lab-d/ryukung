@@ -47,6 +47,9 @@ export function WithdrawalsPage() {
                     {STATUS_LABEL[w.status]}
                   </span>
                 </div>
+                <p className="text-xs text-stone-400">
+                  👤 {w.staff_members?.display_name ?? w.staff_members?.email ?? 'ไม่ระบุผู้เบิก'}
+                </p>
                 {w.status === 'settled' ? (
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">

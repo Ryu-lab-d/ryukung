@@ -8,7 +8,7 @@ export type SalesOrder = {
   items_total: number
   items_cost_total: number
   grand_total: number
-  order_items: { product_name: string; qty: number; line_total: number }[]
+  order_items: { product_id: string | null; product_name: string; qty: number; line_total: number; unit_cost: number }[]
 }
 
 export type TopProduct = { name: string; qty: number; revenue: number }
@@ -35,7 +35,7 @@ export function useSalesSummary(from: string, to: string) {
     setLoading(true)
     supabase
       .from('orders')
-      .select('id, order_no, created_at, items_total, items_cost_total, grand_total, order_items(product_name, qty, line_total)')
+      .select('id, order_no, created_at, items_total, items_cost_total, grand_total, order_items(product_id, product_name, qty, line_total, unit_cost)')
       .eq('is_draft', false)
       .neq('work_status', 'cancelled')
       .gte('created_at', from)
