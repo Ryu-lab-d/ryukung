@@ -21,10 +21,8 @@ export async function saveIngredient(id: string | null, input: IngredientInput):
 export type RecipeUsageRow = { id: string; productName: string; qtyPerUnit: number }
 
 /**
- * หาว่าสูตรสินค้าไหนใช้วัตถุดิบนี้อยู่บ้าง พร้อมจำนวนที่ใช้ปัจจุบัน — ใช้เตือน+แก้ไขให้ตรงกัน ก่อนเปลี่ยน "หน่วย"
- * ของวัตถุดิบที่ถูกใช้ในสูตรแล้ว เพราะ qty_per_unit ในสูตรเดิมถูกกรอกมาตามหน่วยเก่า เปลี่ยนหน่วยแล้วตัวเลขนั้น
- * จะไม่ถูกแปลงตามให้อัตโนมัติ (ระบบไม่มีการแปลงหน่วยใดๆ เลย เช่นไม่รู้ว่า 1 ฟองหนักกี่กรัม คำนวณต้นทุน/ตัดสต็อก
- * จากตัวเลขดิบตรงๆ) จึงให้เจ้าของร้านกรอกจำนวนใหม่ (ตามหน่วยใหม่) เองต่อสินค้าแต่ละตัวตรงนี้เลย แล้วบันทึกพร้อมกันทีเดียว
+ * หาว่าสูตรสินค้าไหนใช้วัตถุดิบนี้อยู่บ้าง พร้อมจำนวนที่ใช้ปัจจุบัน — ใช้แสดงตัวอย่างก่อน-หลังตอนแปลงหน่วย
+ * (ดู convertIngredientUnit) ไม่ได้ใช้อัปเดตข้อมูลจริง แค่ดึงมาโชว์ preview ให้เจ้าของร้านตรวจสอบก่อนยืนยัน
  */
 export async function getRecipeUsageForIngredient(id: string): Promise<{ rows: RecipeUsageRow[] }> {
   const { data } = await supabase.from('product_ingredients').select('id, qty_per_unit, products(name)').eq('ingredient_id', id)
@@ -34,13 +32,14 @@ export async function getRecipeUsageForIngredient(id: string): Promise<{ rows: R
   return { rows }
 }
 
-/** บันทึกจำนวนที่ใช้ใหม่ (qty_per_unit) ของหลายสูตรพร้อมกัน — ใช้ตอนแก้สูตรให้ตรงกับหน่วยใหม่ของวัตถุดิบ */
-export async function updateRecipeQuantities(rows: { id: string; qty_per_unit: number }[]): Promise<{ error: { message: string } | null }> {
-  for (const row of rows) {
-    const { error } = await supabase.from('product_ingredients').update({ qty_per_unit: row.qty_per_unit }).eq('id', row.id)
-    if (error) return { error: { message: error.message } }
-  }
-  return { error: null }
+/**
+ * แปลงหน่วยวัตถุดิบแบบอัตโนมัติ — อัปเดตจำนวนที่ใช้ในทุกสูตร + สต็อกคงเหลือ + ต้นทุนเฉลี่ย พร้อมกันแบบ atomic
+ * ผ่าน RPC เดียว (ดู supabase/migrations/20260818150000_convert_ingredient_unit.sql) factor = "1 หน่วยเดิม
+ * เท่ากับกี่หน่วยใหม่" — คำนวณเองได้ถ้าหน่วยอยู่ในหมวดเดียวกัน (ดู unitConversion.ts) หรือมาจากคำตอบเจ้าของร้าน
+ */
+export async function convertIngredientUnit(id: string, newUnit: string, factor: number): Promise<{ error: { message: string } | null }> {
+  const { error } = await supabase.rpc('convert_ingredient_unit', { p_ingredient_id: id, p_new_unit: newUnit, p_factor: factor })
+  return { error: error ? { message: error.message } : null }
 }
 
 /** กันลบวัตถุดิบที่ถูกใช้ในสูตรสินค้าอยู่แล้ว (เช็กฝั่ง client ก่อน ให้ error อ่านง่ายกว่าปล่อยให้ FK constraint เด้ง) */

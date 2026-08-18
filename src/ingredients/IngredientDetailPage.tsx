@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useIngredient } from './useIngredients'
 import { useIngredientMovements } from './useIngredientMovements'
-import { saveIngredient, deleteIngredient, getRecipeUsageForIngredient, updateRecipeQuantities, type RecipeUsageRow } from './api'
+import { saveIngredient, deleteIngredient, getRecipeUsageForIngredient, type RecipeUsageRow } from './api'
 import { RestockModal } from './RestockModal'
 import { AdjustStockModal } from './AdjustStockModal'
-import { UnitChangeFixModal } from './UnitChangeFixModal'
+import { UnitConversionModal } from './UnitConversionModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
@@ -44,7 +44,7 @@ export function IngredientDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [originalUnit, setOriginalUnit] = useState<string | null>(null)
-  const [unitChangeFix, setUnitChangeFix] = useState<{ rows: RecipeUsageRow[] } | null>(null)
+  const [unitConversion, setUnitConversion] = useState<{ rows: RecipeUsageRow[] } | null>(null)
   const [checkingUnitUsage, setCheckingUnitUsage] = useState(false)
 
   useEffect(() => {
@@ -67,30 +67,22 @@ export function IngredientDetailPage() {
       return
     }
     const trimmedUnit = unit.trim() || 'กรัม'
-    // เปลี่ยนหน่วยของวัตถุดิบที่ใช้ในสูตรอยู่แล้ว — ระบบไม่แปลง "จำนวนที่ใช้" ในสูตรเดิมให้อัตโนมัติ
-    // ต้องให้กรอกจำนวนใหม่ตามหน่วยใหม่ก่อนเสมอ ไม่งั้นต้นทุน/สต็อกของสินค้าที่ใช้วัตถุดิบนี้จะผิดทันทีแบบไม่มีใครรู้ตัว
+    // เปลี่ยนหน่วยวัตถุดิบ — ต้องแปลงสต็อกคงเหลือ/ต้นทุนเฉลี่ย/จำนวนที่ใช้ในทุกสูตรให้อัตโนมัติเสมอ (ไม่ใช่แค่ตอนมีสูตรใช้อยู่
+    // เพราะสต็อกคงเหลือกับต้นทุนเฉลี่ยของวัตถุดิบเองก็อิงหน่วยเดิมอยู่ดี ต่อให้ยังไม่มีสูตรไหนอ้างถึงเลยก็ตาม)
     if (originalUnit && trimmedUnit !== originalUnit) {
       setCheckingUnitUsage(true)
       const { rows } = await getRecipeUsageForIngredient(id)
       setCheckingUnitUsage(false)
-      if (rows.length > 0) {
-        setUnitChangeFix({ rows })
-        return
-      }
+      setUnitConversion({ rows })
+      return
     }
     await doSave(trimmedUnit)
   }
 
-  async function handleConfirmUnitFix(updated: { id: string; qty_per_unit: number }[]) {
-    setUnitChangeFix(null)
-    setSaving(true)
-    const { error: updateError } = await updateRecipeQuantities(updated)
-    if (updateError) {
-      setSaving(false)
-      setError('แก้จำนวนในสูตรไม่สำเร็จ: ' + updateError.message + ' — ยังไม่ได้เปลี่ยนหน่วยวัตถุดิบ ลองใหม่อีกครั้ง')
-      return
-    }
-    await doSave(unit.trim() || 'กรัม')
+  async function handleConversionDone() {
+    setUnitConversion(null)
+    if (draftKey) clearFormDraft(draftKey)
+    await reload()
   }
 
   async function doSave(trimmedUnit: string) {
@@ -296,12 +288,16 @@ export function IngredientDetailPage() {
         />
       )}
 
-      {unitChangeFix && (
-        <UnitChangeFixModal
+      {unitConversion && (
+        <UnitConversionModal
+          ingredientId={ingredient.id}
+          oldUnit={originalUnit ?? ingredient.unit}
           newUnit={unit.trim() || 'กรัม'}
-          rows={unitChangeFix.rows}
-          onCancel={() => setUnitChangeFix(null)}
-          onConfirm={(updated) => void handleConfirmUnitFix(updated)}
+          rows={unitConversion.rows}
+          stockQty={ingredient.stock_qty}
+          costPerUnit={ingredient.cost_per_unit}
+          onCancel={() => setUnitConversion(null)}
+          onConfirmed={() => void handleConversionDone()}
         />
       )}
 
