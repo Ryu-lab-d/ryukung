@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useWithdrawal } from './useWithdrawal'
-import { settleWithdrawal, reopenWithdrawal, deleteWithdrawal } from './api'
+import { settleWithdrawal, reopenWithdrawal, deleteWithdrawal, markWagePaid, markProceedsReceived } from './api'
 import { computeWithdrawalTotals } from './withdrawalMath'
 import { formatBaht } from '../lib/money'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
@@ -54,6 +54,16 @@ export function WithdrawalDetailPage() {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, amount_collected: value, amountTouched: true } : r)))
   }
 
+  function markAllSoldOut() {
+    setRows((prev) =>
+      prev.map((r, i) => {
+        const it = items[i]
+        if (!it || it.is_wage) return r
+        return { qty_sold: String(it.qty_out), amount_collected: String(it.qty_out * it.unit_price), amountTouched: false }
+      })
+    )
+  }
+
   async function handleSettle() {
     if (!withdrawal) return
     setSaving(true)
@@ -87,10 +97,23 @@ export function WithdrawalDetailPage() {
     navigate('/withdrawals')
   }
 
+  async function handleToggleWagePaid() {
+    if (!withdrawal) return
+    await markWagePaid(withdrawal.id, !withdrawal.wage_paid)
+    await reload()
+  }
+
+  async function handleToggleProceedsReceived() {
+    if (!withdrawal) return
+    await markProceedsReceived(withdrawal.id, !withdrawal.proceeds_received)
+    await reload()
+  }
+
   if (loading || !withdrawal) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
 
   const totals = computeWithdrawalTotals(items)
   const isSettled = withdrawal.status === 'settled'
+  const wageItem = items.find((it) => it.is_wage) ?? null
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto pb-24">
@@ -109,8 +132,48 @@ export function WithdrawalDetailPage() {
         {withdrawal.note && <p className="text-sm text-stone-500 mt-0.5">{withdrawal.note}</p>}
       </div>
 
+      {withdrawal.wage_type && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex items-center justify-between gap-2">
+          <div>
+            <p className="text-xs text-amber-700">ค่าจ้างผู้เบิก</p>
+            <p className="text-sm font-medium text-amber-900">
+              {withdrawal.wage_type === 'cash'
+                ? `💵 ${formatBaht(withdrawal.wage_cash_amount ?? 0)} บาท`
+                : `🍪 ${wageItem?.product_name ?? ''} × ${wageItem?.qty_out ?? 0}`}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => void handleToggleWagePaid()}
+            className={
+              'rounded-lg px-3 py-1.5 text-xs font-medium shrink-0 ' +
+              (withdrawal.wage_paid ? 'bg-green-100 text-green-700' : 'bg-white border border-amber-300 text-amber-700')
+            }
+          >
+            {withdrawal.wage_paid ? 'จ่ายค่าจ้างแล้ว ✓' : 'ยังไม่จ่าย'}
+          </button>
+        </div>
+      )}
+
+      {!isSettled && items.some((it) => !it.is_wage) && (
+        <button
+          type="button"
+          onClick={markAllSoldOut}
+          className="w-full rounded-lg border border-stone-300 text-stone-700 text-sm font-medium py-2"
+        >
+          🙌 ขายหมดทุกชิ้น
+        </button>
+      )}
+
       <div className="space-y-2">
-        {items.map((it, i) => (
+        {wageItem && (
+          <p className="text-xs text-stone-400 px-1">
+            🍪 จ่ายเป็นค่าจ้าง: {wageItem.product_name} × {wageItem.qty_out} (ไม่นับเป็นของที่ขาย)
+          </p>
+        )}
+        {items.filter((it) => !it.is_wage).map((it) => {
+          const i = items.indexOf(it)
+          return (
           <div key={it.id} className="rounded-lg border border-stone-200 p-3 space-y-2">
             <div className="flex justify-between text-sm">
               <span className="font-medium">{it.product_name}</span>
@@ -151,8 +214,24 @@ export function WithdrawalDetailPage() {
               </div>
             )}
           </div>
-        ))}
+          )
+        })}
       </div>
+
+      {isSettled && totals.revenue > 0 && (
+        <button
+          type="button"
+          onClick={() => void handleToggleProceedsReceived()}
+          className={
+            'w-full rounded-lg px-3 py-2.5 text-sm font-medium ' +
+            (withdrawal.proceeds_received
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-50 border border-red-300 text-red-700')
+          }
+        >
+          {withdrawal.proceeds_received ? '✅ ได้รับเงินจากผู้เบิกแล้ว (กดยกเลิกถ้ากดผิด)' : '⚠️ ยังไม่ได้รับเงิน — กดยืนยันเมื่อได้รับแล้ว'}
+        </button>
+      )}
 
       {isSettled && (
         <div className="rounded-2xl bg-stone-900 text-white p-5 space-y-2">

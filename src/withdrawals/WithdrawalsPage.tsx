@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useWithdrawals } from './useWithdrawals'
 import { computeWithdrawalTotals } from './withdrawalMath'
 import { formatBaht } from '../lib/money'
+import { useAuth } from '../auth/AuthProvider'
+import { useStaffMembers } from '../staff/useStaffMembers'
 
 const STATUS_LABEL: Record<string, string> = { open: 'กำลังขาย', settled: 'ปิดรอบแล้ว' }
 const STATUS_COLOR: Record<string, string> = {
@@ -11,6 +14,15 @@ const STATUS_COLOR: Record<string, string> = {
 
 export function WithdrawalsPage() {
   const { withdrawals, loading } = useWithdrawals()
+  const { session } = useAuth()
+  const { members } = useStaffMembers()
+  const myStaffId = members.find((m) => m.user_id === session?.user.id)?.id ?? null
+  const [mineOnly, setMineOnly] = useState(false)
+
+  const visibleWithdrawals = mineOnly && myStaffId ? withdrawals.filter((w) => w.withdrawn_by === myStaffId) : withdrawals
+
+  const unpaid = withdrawals.filter((w) => w.status === 'settled' && !w.proceeds_received && computeWithdrawalTotals(w.items).revenue > 0)
+  const unpaidTotal = unpaid.reduce((sum, w) => sum + computeWithdrawalTotals(w.items).revenue, 0)
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
@@ -24,14 +36,35 @@ export function WithdrawalsPage() {
         บันทึกตอนเอาสินค้าที่ทำไว้ไปขายนอกร้าน (เช่น ที่โรงเรียน) แล้วกลับมาปิดรอบใส่ว่าขายได้กี่ชิ้น ได้เงินเท่าไหร่
       </p>
 
+      {unpaid.length > 0 && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
+          <p className="text-sm font-medium text-orange-800">
+            💰 ยังไม่เก็บเงิน {unpaid.length} รายการ รวม {formatBaht(unpaidTotal)} บาท
+          </p>
+        </div>
+      )}
+
+      {myStaffId && (
+        <button
+          type="button"
+          onClick={() => setMineOnly((v) => !v)}
+          className={'rounded-full px-3 py-1.5 text-sm ' + (mineOnly ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+        >
+          ของฉันเท่านั้น
+        </button>
+      )}
+
       {loading ? (
         <p className="text-stone-500">กำลังโหลด...</p>
-      ) : withdrawals.length === 0 ? (
-        <p className="text-sm text-stone-400">ยังไม่เคยเบิกของเลย กด "+ เบิกของใหม่" เพื่อเริ่มรายการแรก</p>
+      ) : visibleWithdrawals.length === 0 ? (
+        <p className="text-sm text-stone-400">
+          {mineOnly ? 'ยังไม่มีรายการเบิกของของคุณ' : 'ยังไม่เคยเบิกของเลย กด "+ เบิกของใหม่" เพื่อเริ่มรายการแรก'}
+        </p>
       ) : (
         <div className="space-y-2">
-          {withdrawals.map((w) => {
+          {visibleWithdrawals.map((w) => {
             const totals = computeWithdrawalTotals(w.items)
+            const isUnpaid = w.status === 'settled' && !w.proceeds_received && totals.revenue > 0
             return (
               <Link
                 key={w.id}
@@ -43,9 +76,14 @@ export function WithdrawalsPage() {
                     {new Date(w.withdrawn_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
                     {w.location && <span className="text-stone-500"> · {w.location}</span>}
                   </p>
-                  <span className={'text-xs rounded-full px-2 py-0.5 shrink-0 ' + STATUS_COLOR[w.status]}>
-                    {STATUS_LABEL[w.status]}
-                  </span>
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    {isUnpaid && (
+                      <span className="text-xs rounded-full px-2 py-0.5 bg-red-100 text-red-700">ยังไม่เก็บเงิน</span>
+                    )}
+                    <span className={'text-xs rounded-full px-2 py-0.5 ' + STATUS_COLOR[w.status]}>
+                      {STATUS_LABEL[w.status]}
+                    </span>
+                  </div>
                 </div>
                 <p className="text-xs text-stone-400">
                   👤 {w.staff_members?.display_name ?? w.staff_members?.email ?? 'ไม่ระบุผู้เบิก'}

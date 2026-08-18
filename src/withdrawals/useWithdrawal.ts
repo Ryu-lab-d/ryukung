@@ -10,6 +10,12 @@ export type Withdrawal = {
   settled_at: string | null
   withdrawn_by: string | null
   staff_members: { display_name: string | null; email: string } | null
+  wage_type: 'cash' | 'product' | null
+  wage_cash_amount: number | null
+  wage_paid: boolean
+  wage_paid_at: string | null
+  proceeds_received: boolean
+  proceeds_received_at: string | null
 }
 
 export type WithdrawalItem = {
@@ -21,6 +27,7 @@ export type WithdrawalItem = {
   qty_out: number
   qty_sold: number | null
   amount_collected: number | null
+  is_wage: boolean
 }
 
 export function useWithdrawal(id: string | null) {

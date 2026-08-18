@@ -6,23 +6,48 @@ export type WithdrawalItemInput = {
   unit_price: number
   unit_cost: number
   qty_out: number
+  is_wage?: boolean
 }
+
+export type WithdrawalWageInput =
+  | { type: 'cash'; amount: number }
+  | { type: 'product'; productId: string; productName: string; unitCost: number; qty: number }
 
 export async function createWithdrawal(params: {
   withdrawnAt: string
   location: string | null
   note: string | null
   withdrawnBy: string | null
+  wage: WithdrawalWageInput | null
   items: WithdrawalItemInput[]
 }): Promise<{ id: string | null; error: { message: string } | null }> {
   const { data: withdrawal, error } = await supabase
     .from('stock_withdrawals')
-    .insert({ withdrawn_at: params.withdrawnAt, location: params.location, note: params.note, withdrawn_by: params.withdrawnBy })
+    .insert({
+      withdrawn_at: params.withdrawnAt,
+      location: params.location,
+      note: params.note,
+      withdrawn_by: params.withdrawnBy,
+      wage_type: params.wage?.type ?? null,
+      wage_cash_amount: params.wage?.type === 'cash' ? params.wage.amount : null,
+    })
     .select()
     .single()
   if (error || !withdrawal) return { id: null, error: { message: error?.message ?? 'บันทึกไม่สำเร็จ' } }
 
-  const rows = params.items.map((it, i) => ({ ...it, withdrawal_id: withdrawal.id, sort_order: i }))
+  const items = [...params.items]
+  if (params.wage?.type === 'product') {
+    items.push({
+      product_id: params.wage.productId,
+      product_name: params.wage.productName,
+      unit_price: 0,
+      unit_cost: params.wage.unitCost,
+      qty_out: params.wage.qty,
+      is_wage: true,
+    })
+  }
+
+  const rows = items.map((it, i) => ({ ...it, withdrawal_id: withdrawal.id, sort_order: i }))
   const { error: itemsError } = await supabase.from('stock_withdrawal_items').insert(rows)
   if (itemsError) return { id: null, error: { message: itemsError.message } }
 
@@ -57,5 +82,24 @@ export async function reopenWithdrawal(withdrawalId: string): Promise<{ error: {
 
 export async function deleteWithdrawal(withdrawalId: string): Promise<{ error: { message: string } | null }> {
   const { error } = await supabase.from('stock_withdrawals').delete().eq('id', withdrawalId)
+  return { error: error ? { message: error.message } : null }
+}
+
+export async function markWagePaid(withdrawalId: string, paid: boolean): Promise<{ error: { message: string } | null }> {
+  const { error } = await supabase
+    .from('stock_withdrawals')
+    .update({ wage_paid: paid, wage_paid_at: paid ? new Date().toISOString() : null })
+    .eq('id', withdrawalId)
+  return { error: error ? { message: error.message } : null }
+}
+
+export async function markProceedsReceived(
+  withdrawalId: string,
+  received: boolean
+): Promise<{ error: { message: string } | null }> {
+  const { error } = await supabase
+    .from('stock_withdrawals')
+    .update({ proceeds_received: received, proceeds_received_at: received ? new Date().toISOString() : null })
+    .eq('id', withdrawalId)
   return { error: error ? { message: error.message } : null }
 }

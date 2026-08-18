@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useProducts } from '../products/useProducts'
 import { useCategories } from '../products/useCategories'
 import { ProductCard } from '../products/ProductCard'
-import { createWithdrawal } from './api'
+import { createWithdrawal, type WithdrawalWageInput } from './api'
 import { formatBaht } from '../lib/money'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { useStaffMembers } from '../staff/useStaffMembers'
@@ -24,6 +24,10 @@ type WithdrawalDraft = {
   items: SelectedItem[]
   discountPerUnit: string
   withdrawnBy: string
+  wageType: '' | 'cash' | 'product'
+  wageCashAmount: string
+  wageProductId: string
+  wageProductQty: string
 }
 
 function todayDateInputValue(): string {
@@ -47,10 +51,25 @@ export function NewWithdrawalPage() {
   const [items, setItems] = useState<SelectedItem[]>(draft?.items ?? [])
   const [discountPerUnit, setDiscountPerUnit] = useState(draft?.discountPerUnit ?? '')
   const [withdrawnBy, setWithdrawnBy] = useState(draft?.withdrawnBy ?? '')
+  const [wageType, setWageType] = useState<'' | 'cash' | 'product'>(draft?.wageType ?? '')
+  const [wageCashAmount, setWageCashAmount] = useState(draft?.wageCashAmount ?? '30')
+  const [wageProductId, setWageProductId] = useState(draft?.wageProductId ?? '')
+  const [wageProductQty, setWageProductQty] = useState(draft?.wageProductQty ?? '1')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  useFormDraft(DRAFT_KEY, { withdrawnAt, location, note, items, discountPerUnit, withdrawnBy })
+  useFormDraft(DRAFT_KEY, {
+    withdrawnAt,
+    location,
+    note,
+    items,
+    discountPerUnit,
+    withdrawnBy,
+    wageType,
+    wageCashAmount,
+    wageProductId,
+    wageProductQty,
+  })
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -94,12 +113,21 @@ export function NewWithdrawalPage() {
       setError('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')
       return
     }
+    let wage: WithdrawalWageInput | null = null
+    if (withdrawnBy && wageType === 'cash' && Number(wageCashAmount) > 0) {
+      wage = { type: 'cash', amount: Number(wageCashAmount) }
+    } else if (withdrawnBy && wageType === 'product' && wageProductId) {
+      const p = products.find((pr) => pr.id === wageProductId)
+      if (p) wage = { type: 'product', productId: p.id, productName: p.name, unitCost: p.cost, qty: Number(wageProductQty) || 1 }
+    }
+
     setSaving(true)
     const { id, error: saveError } = await createWithdrawal({
       withdrawnAt,
       location: location.trim() || null,
       note: note.trim() || null,
       withdrawnBy: withdrawnBy || null,
+      wage,
       items: items
         .filter((it) => it.qty_out > 0)
         .map((it) => ({
@@ -163,6 +191,65 @@ export function NewWithdrawalPage() {
             ))}
           </select>
         </div>
+        {withdrawnBy && (
+          <div className="space-y-2 col-span-2">
+            <label className="text-sm text-stone-600">ค่าจ้างผู้เบิก (ไม่บังคับ)</label>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setWageType(wageType === 'cash' ? '' : 'cash')}
+                className={'rounded-full px-3 py-1.5 text-sm ' + (wageType === 'cash' ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+              >
+                💵 เงินสด
+              </button>
+              <button
+                type="button"
+                onClick={() => setWageType(wageType === 'product' ? '' : 'product')}
+                className={'rounded-full px-3 py-1.5 text-sm ' + (wageType === 'product' ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+              >
+                🍪 สินค้า
+              </button>
+            </div>
+            {wageType === 'cash' && (
+              <input
+                type="number"
+                inputMode="decimal"
+                min="0"
+                placeholder="30"
+                value={wageCashAmount}
+                onChange={(e) => setWageCashAmount(e.target.value)}
+                aria-label="จำนวนเงินค่าจ้าง (บาท)"
+                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+              />
+            )}
+            {wageType === 'product' && (
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={wageProductId}
+                  onChange={(e) => setWageProductId(e.target.value)}
+                  aria-label="สินค้าที่จ่ายเป็นค่าจ้าง"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                >
+                  <option value="">เลือกสินค้า</option>
+                  {products.filter((p) => p.is_active).map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  inputMode="numeric"
+                  min="1"
+                  step="1"
+                  placeholder="จำนวน"
+                  value={wageProductQty}
+                  onChange={(e) => setWageProductQty(e.target.value)}
+                  aria-label="จำนวนสินค้าที่จ่ายเป็นค่าจ้าง"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+          </div>
+        )}
         <div className="space-y-1 col-span-2">
           <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (ไม่บังคับ)</label>
           <input

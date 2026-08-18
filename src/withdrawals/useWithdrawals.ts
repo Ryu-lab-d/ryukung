@@ -9,7 +9,8 @@ export type WithdrawalListItem = {
   settled_at: string | null
   withdrawn_by: string | null
   staff_members: { display_name: string | null; email: string } | null
-  items: { qty_out: number; qty_sold: number | null; amount_collected: number | null; unit_cost: number }[]
+  proceeds_received: boolean
+  items: { qty_out: number; qty_sold: number | null; amount_collected: number | null; unit_cost: number; is_wage: boolean }[]
 }
 
 export function useWithdrawals() {
@@ -21,7 +22,7 @@ export function useWithdrawals() {
     const { data } = await supabase
       .from('stock_withdrawals')
       .select(
-        'id, withdrawn_at, location, status, settled_at, withdrawn_by, staff_members(display_name, email), stock_withdrawal_items(qty_out, qty_sold, amount_collected, unit_cost)'
+        'id, withdrawn_at, location, status, settled_at, withdrawn_by, proceeds_received, staff_members(display_name, email), stock_withdrawal_items(qty_out, qty_sold, amount_collected, unit_cost, is_wage)'
       )
       .order('withdrawn_at', { ascending: false })
 
@@ -34,11 +35,13 @@ export function useWithdrawals() {
         settled_at: w.settled_at,
         withdrawn_by: w.withdrawn_by,
         staff_members: w.staff_members,
+        proceeds_received: w.proceeds_received,
         items: (w.stock_withdrawal_items ?? []).map((it: any) => ({
           qty_out: Number(it.qty_out),
           qty_sold: it.qty_sold === null ? null : Number(it.qty_sold),
           amount_collected: it.amount_collected === null ? null : Number(it.amount_collected),
           unit_cost: Number(it.unit_cost),
+          is_wage: it.is_wage,
         })),
       }))
     )

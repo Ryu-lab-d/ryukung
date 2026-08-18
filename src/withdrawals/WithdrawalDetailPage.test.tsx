@@ -15,10 +15,14 @@ vi.mock('./useWithdrawal', () => ({
 const settleWithdrawal = vi.fn()
 const reopenWithdrawal = vi.fn()
 const deleteWithdrawal = vi.fn()
+const markWagePaid = vi.fn()
+const markProceedsReceived = vi.fn()
 vi.mock('./api', () => ({
   settleWithdrawal: (...args: unknown[]) => settleWithdrawal(...args),
   reopenWithdrawal: (...args: unknown[]) => reopenWithdrawal(...args),
   deleteWithdrawal: (...args: unknown[]) => deleteWithdrawal(...args),
+  markWagePaid: (...args: unknown[]) => markWagePaid(...args),
+  markProceedsReceived: (...args: unknown[]) => markProceedsReceived(...args),
 }))
 
 const navigate = vi.fn()
@@ -46,6 +50,8 @@ beforeEach(() => {
   settleWithdrawal.mockReset()
   reopenWithdrawal.mockReset()
   deleteWithdrawal.mockReset()
+  markWagePaid.mockReset()
+  markProceedsReceived.mockReset()
   navigate.mockReset()
   reload.mockReset()
 })
@@ -87,6 +93,49 @@ describe('WithdrawalDetailPage — ยังไม่ปิดรอบ', () => 
     expect(settleWithdrawal).toHaveBeenCalledWith('w1', [{ id: 'i1', qty_sold: 18, amount_collected: 720 }])
     expect(reload).toHaveBeenCalled()
   })
+
+  it('กด "ขายหมดทุกชิ้น" กรอกจำนวนขายได้/เงินที่ได้ให้อัตโนมัติทุกแถว', async () => {
+    itemsOverride = [
+      { id: 'i1', product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty_out: 20, qty_sold: null, amount_collected: null },
+      { id: 'i2', product_id: 'p2', product_name: 'บราวนี่', unit_price: 60, unit_cost: 25, qty_out: 5, qty_sold: null, amount_collected: null },
+    ]
+    renderPage()
+    await userEvent.click(await screen.findByRole('button', { name: '🙌 ขายหมดทุกชิ้น' }))
+    const qtyInputs = screen.getAllByLabelText('ขายได้กี่ชิ้น') as HTMLInputElement[]
+    const amountInputs = screen.getAllByLabelText('ได้เงินเท่าไหร่ (บาท)') as HTMLInputElement[]
+    expect(qtyInputs[0].value).toBe('20')
+    expect(amountInputs[0].value).toBe('800') // 20*40
+    expect(qtyInputs[1].value).toBe('5')
+    expect(amountInputs[1].value).toBe('300') // 5*60
+  })
+})
+
+describe('WithdrawalDetailPage — ค่าจ้างผู้เบิก', () => {
+  it('ตั้งค่าจ้างเป็นเงินสด แสดงจำนวนเงินและปุ่มติ๊กจ่ายแล้ว', async () => {
+    withdrawalOverride = { ...withdrawalOverride, wage_type: 'cash', wage_cash_amount: 30, wage_paid: false }
+    renderPage()
+    expect(await screen.findByText('💵 30.00 บาท')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'ยังไม่จ่าย' }))
+    expect(markWagePaid).toHaveBeenCalledWith('w1', true)
+  })
+
+  it('ตั้งค่าจ้างเป็นสินค้า แสดงชื่อสินค้าและจำนวน และแถวนั้นไม่โผล่ในฟอร์มกรอกยอดขาย', async () => {
+    withdrawalOverride = { ...withdrawalOverride, wage_type: 'product', wage_paid: true }
+    itemsOverride = [
+      { id: 'i1', product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty_out: 20, qty_sold: null, amount_collected: null, is_wage: false },
+      { id: 'i2', product_id: 'p1', product_name: 'คุกกี้', unit_price: 0, unit_cost: 15, qty_out: 1, qty_sold: null, amount_collected: null, is_wage: true },
+    ]
+    renderPage()
+    expect(await screen.findByText('🍪 คุกกี้ × 1')).toBeInTheDocument()
+    expect(screen.getByText('จ่ายค่าจ้างแล้ว ✓')).toBeInTheDocument()
+    expect(screen.getAllByLabelText('ขายได้กี่ชิ้น')).toHaveLength(1) // แถว wage ไม่มีช่องกรอกยอดขาย
+  })
+
+  it('ไม่ได้ตั้งค่าจ้างไว้ ไม่แสดงการ์ดค่าจ้าง', async () => {
+    renderPage()
+    await screen.findByText('👤 ผู้เบิก: ไม่ระบุ')
+    expect(screen.queryByText('ค่าจ้างผู้เบิก')).not.toBeInTheDocument()
+  })
 })
 
 describe('WithdrawalDetailPage — ปิดรอบแล้ว', () => {
@@ -110,6 +159,22 @@ describe('WithdrawalDetailPage — ปิดรอบแล้ว', () => {
     renderPage()
     await userEvent.click(await screen.findByRole('button', { name: 'แก้ไขผลขาย' }))
     expect(reopenWithdrawal).toHaveBeenCalledWith('w1')
+  })
+
+  it('ปิดรอบแล้วมีรายรับ แต่ยังไม่ได้รับเงิน แสดงปุ่มเตือน กดแล้วเรียก markProceedsReceived', async () => {
+    withdrawalOverride = { ...withdrawalOverride, proceeds_received: false }
+    renderPage()
+    const btn = await screen.findByRole('button', { name: /ยังไม่ได้รับเงิน/ })
+    await userEvent.click(btn)
+    expect(markProceedsReceived).toHaveBeenCalledWith('w1', true)
+  })
+
+  it('ได้รับเงินแล้ว แสดงปุ่มยืนยันสีเขียว กดซ้ำยกเลิกได้', async () => {
+    withdrawalOverride = { ...withdrawalOverride, proceeds_received: true }
+    renderPage()
+    const btn = await screen.findByRole('button', { name: /ได้รับเงินจากผู้เบิกแล้ว/ })
+    await userEvent.click(btn)
+    expect(markProceedsReceived).toHaveBeenCalledWith('w1', false)
   })
 })
 
