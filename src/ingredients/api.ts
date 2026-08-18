@@ -18,17 +18,29 @@ export async function saveIngredient(id: string | null, input: IngredientInput):
   return { id: data.id as string, error: null }
 }
 
+export type RecipeUsageRow = { id: string; productName: string; qtyPerUnit: number }
+
 /**
- * หาว่าสูตรสินค้าไหนใช้วัตถุดิบนี้อยู่บ้าง — ใช้เตือนก่อนเปลี่ยน "หน่วย" ของวัตถุดิบที่ถูกใช้ในสูตรแล้ว
- * เพราะ qty_per_unit ในสูตรเดิมถูกกรอกมาตามหน่วยเก่า เปลี่ยนหน่วยแล้วตัวเลขนั้นจะไม่ถูกแปลงตามให้อัตโนมัติ
- * (ระบบไม่มีการแปลงหน่วยใดๆ เลย คำนวณต้นทุน/ตัดสต็อกจากตัวเลขดิบตรงๆ) ต้นทุน/สต็อกของสินค้านั้นจะผิดทันทีถ้าไม่ไปแก้สูตรตาม
+ * หาว่าสูตรสินค้าไหนใช้วัตถุดิบนี้อยู่บ้าง พร้อมจำนวนที่ใช้ปัจจุบัน — ใช้เตือน+แก้ไขให้ตรงกัน ก่อนเปลี่ยน "หน่วย"
+ * ของวัตถุดิบที่ถูกใช้ในสูตรแล้ว เพราะ qty_per_unit ในสูตรเดิมถูกกรอกมาตามหน่วยเก่า เปลี่ยนหน่วยแล้วตัวเลขนั้น
+ * จะไม่ถูกแปลงตามให้อัตโนมัติ (ระบบไม่มีการแปลงหน่วยใดๆ เลย เช่นไม่รู้ว่า 1 ฟองหนักกี่กรัม คำนวณต้นทุน/ตัดสต็อก
+ * จากตัวเลขดิบตรงๆ) จึงให้เจ้าของร้านกรอกจำนวนใหม่ (ตามหน่วยใหม่) เองต่อสินค้าแต่ละตัวตรงนี้เลย แล้วบันทึกพร้อมกันทีเดียว
  */
-export async function getRecipeUsageForIngredient(id: string): Promise<{ productNames: string[] }> {
-  const { data } = await supabase.from('product_ingredients').select('products(name)').eq('ingredient_id', id)
-  const productNames = (data ?? [])
-    .map((row: any) => row.products?.name as string | undefined)
-    .filter((name): name is string => Boolean(name))
-  return { productNames }
+export async function getRecipeUsageForIngredient(id: string): Promise<{ rows: RecipeUsageRow[] }> {
+  const { data } = await supabase.from('product_ingredients').select('id, qty_per_unit, products(name)').eq('ingredient_id', id)
+  const rows = (data ?? [])
+    .map((row: any) => ({ id: row.id as string, productName: row.products?.name as string | undefined, qtyPerUnit: Number(row.qty_per_unit) }))
+    .filter((row): row is RecipeUsageRow => Boolean(row.productName))
+  return { rows }
+}
+
+/** บันทึกจำนวนที่ใช้ใหม่ (qty_per_unit) ของหลายสูตรพร้อมกัน — ใช้ตอนแก้สูตรให้ตรงกับหน่วยใหม่ของวัตถุดิบ */
+export async function updateRecipeQuantities(rows: { id: string; qty_per_unit: number }[]): Promise<{ error: { message: string } | null }> {
+  for (const row of rows) {
+    const { error } = await supabase.from('product_ingredients').update({ qty_per_unit: row.qty_per_unit }).eq('id', row.id)
+    if (error) return { error: { message: error.message } }
+  }
+  return { error: null }
 }
 
 /** กันลบวัตถุดิบที่ถูกใช้ในสูตรสินค้าอยู่แล้ว (เช็กฝั่ง client ก่อน ให้ error อ่านง่ายกว่าปล่อยให้ FK constraint เด้ง) */

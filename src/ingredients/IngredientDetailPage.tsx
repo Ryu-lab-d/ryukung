@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useIngredient } from './useIngredients'
 import { useIngredientMovements } from './useIngredientMovements'
-import { saveIngredient, deleteIngredient, getRecipeUsageForIngredient } from './api'
+import { saveIngredient, deleteIngredient, getRecipeUsageForIngredient, updateRecipeQuantities, type RecipeUsageRow } from './api'
 import { RestockModal } from './RestockModal'
 import { AdjustStockModal } from './AdjustStockModal'
+import { UnitChangeFixModal } from './UnitChangeFixModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
@@ -43,7 +44,7 @@ export function IngredientDetailPage() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [originalUnit, setOriginalUnit] = useState<string | null>(null)
-  const [unitChangeWarning, setUnitChangeWarning] = useState<{ productNames: string[] } | null>(null)
+  const [unitChangeFix, setUnitChangeFix] = useState<{ rows: RecipeUsageRow[] } | null>(null)
   const [checkingUnitUsage, setCheckingUnitUsage] = useState(false)
 
   useEffect(() => {
@@ -67,17 +68,29 @@ export function IngredientDetailPage() {
     }
     const trimmedUnit = unit.trim() || 'กรัม'
     // เปลี่ยนหน่วยของวัตถุดิบที่ใช้ในสูตรอยู่แล้ว — ระบบไม่แปลง "จำนวนที่ใช้" ในสูตรเดิมให้อัตโนมัติ
-    // ต้องเตือนก่อนเสมอ ไม่งั้นต้นทุน/สต็อกของสินค้าที่ใช้วัตถุดิบนี้จะผิดทันทีแบบไม่มีใครรู้ตัว
+    // ต้องให้กรอกจำนวนใหม่ตามหน่วยใหม่ก่อนเสมอ ไม่งั้นต้นทุน/สต็อกของสินค้าที่ใช้วัตถุดิบนี้จะผิดทันทีแบบไม่มีใครรู้ตัว
     if (originalUnit && trimmedUnit !== originalUnit) {
       setCheckingUnitUsage(true)
-      const { productNames } = await getRecipeUsageForIngredient(id)
+      const { rows } = await getRecipeUsageForIngredient(id)
       setCheckingUnitUsage(false)
-      if (productNames.length > 0) {
-        setUnitChangeWarning({ productNames })
+      if (rows.length > 0) {
+        setUnitChangeFix({ rows })
         return
       }
     }
     await doSave(trimmedUnit)
+  }
+
+  async function handleConfirmUnitFix(updated: { id: string; qty_per_unit: number }[]) {
+    setUnitChangeFix(null)
+    setSaving(true)
+    const { error: updateError } = await updateRecipeQuantities(updated)
+    if (updateError) {
+      setSaving(false)
+      setError('แก้จำนวนในสูตรไม่สำเร็จ: ' + updateError.message + ' — ยังไม่ได้เปลี่ยนหน่วยวัตถุดิบ ลองใหม่อีกครั้ง')
+      return
+    }
+    await doSave(unit.trim() || 'กรัม')
   }
 
   async function doSave(trimmedUnit: string) {
@@ -283,21 +296,12 @@ export function IngredientDetailPage() {
         />
       )}
 
-      {unitChangeWarning && (
-        <ConfirmDialog
-          title="⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว"
-          message={
-            `วัตถุดิบนี้ถูกใช้ในสูตรของ ${unitChangeWarning.productNames.length} สินค้าแล้ว (${unitChangeWarning.productNames.join(', ')}) ` +
-            `ระบบไม่แปลง "จำนวนที่ใช้" ในสูตรเดิมให้อัตโนมัติเวลาเปลี่ยนหน่วย ต้นทุนและการตัดสต็อกของสินค้าเหล่านี้จะผิดทันที ` +
-            `ถ้าไม่ไปแก้จำนวนที่ใช้ในแต่ละสูตรให้ตรงกับหน่วยใหม่ด้วยตัวเอง`
-          }
-          confirmLabel="เข้าใจแล้ว บันทึกต่อ"
-          cancelLabel="ยกเลิก"
-          onConfirm={() => {
-            setUnitChangeWarning(null)
-            void doSave(unit.trim() || 'กรัม')
-          }}
-          onCancel={() => setUnitChangeWarning(null)}
+      {unitChangeFix && (
+        <UnitChangeFixModal
+          newUnit={unit.trim() || 'กรัม'}
+          rows={unitChangeFix.rows}
+          onCancel={() => setUnitChangeFix(null)}
+          onConfirm={(updated) => void handleConfirmUnitFix(updated)}
         />
       )}
 
