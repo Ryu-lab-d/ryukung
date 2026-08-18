@@ -113,8 +113,12 @@ export function NewWithdrawalPage() {
       setError('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')
       return
     }
+    if (withdrawnBy && wageType === 'cash' && (Number(wageCashAmount) < 1 || Number(wageCashAmount) > 30)) {
+      setError('ค่าจ้างเงินสดต้องอยู่ระหว่าง 1-30 บาท')
+      return
+    }
     let wage: WithdrawalWageInput | null = null
-    if (withdrawnBy && wageType === 'cash' && Number(wageCashAmount) > 0) {
+    if (withdrawnBy && wageType === 'cash' && Number(wageCashAmount) >= 1 && Number(wageCashAmount) <= 30) {
       wage = { type: 'cash', amount: Number(wageCashAmount) }
     } else if (withdrawnBy && wageType === 'product' && wageProductId) {
       const p = products.find((pr) => pr.id === wageProductId)
@@ -211,16 +215,21 @@ export function NewWithdrawalPage() {
               </button>
             </div>
             {wageType === 'cash' && (
-              <input
-                type="number"
-                inputMode="decimal"
-                min="0"
-                placeholder="30"
-                value={wageCashAmount}
-                onChange={(e) => setWageCashAmount(e.target.value)}
-                aria-label="จำนวนเงินค่าจ้าง (บาท)"
-                className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-              />
+              <div className="space-y-0.5">
+                <input
+                  type="number"
+                  inputMode="decimal"
+                  min="1"
+                  max="30"
+                  step="1"
+                  placeholder="30"
+                  value={wageCashAmount}
+                  onChange={(e) => setWageCashAmount(e.target.value)}
+                  aria-label="จำนวนเงินค่าจ้าง (บาท)"
+                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+                />
+                <p className="text-xs text-stone-400">ตั้งได้ 1-30 บาท</p>
+              </div>
             )}
             {wageType === 'product' && (
               <div className="grid grid-cols-2 gap-2">

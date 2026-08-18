@@ -37,10 +37,26 @@ export function WithdrawalsPage() {
       </p>
 
       {unpaid.length > 0 && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 p-3">
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 space-y-2">
           <p className="text-sm font-medium text-orange-800">
             💰 ยังไม่เก็บเงิน {unpaid.length} รายการ รวม {formatBaht(unpaidTotal)} บาท
           </p>
+          <ul className="space-y-1">
+            {unpaid.map((w) => (
+              <li key={w.id}>
+                <Link to={`/withdrawals/${w.id}`} className="flex justify-between text-sm text-orange-900">
+                  <span>
+                    👤 {w.staff_members?.display_name ?? w.staff_members?.email ?? 'ไม่ระบุผู้เบิก'}
+                    <span className="text-orange-600">
+                      {' '}
+                      · {new Date(w.withdrawn_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </span>
+                  <span className="font-medium">{formatBaht(computeWithdrawalTotals(w.items).revenue)} บาท</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

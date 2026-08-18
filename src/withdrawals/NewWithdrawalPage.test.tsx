@@ -133,6 +133,19 @@ describe('NewWithdrawalPage — ค่าจ้างผู้เบิก', () 
     )
   })
 
+  it('ตั้งค่าจ้างเงินสดเกิน 30 บาท ขึ้น error ไม่ยิง createWithdrawal', async () => {
+    renderPage()
+    await userEvent.click(screen.getByText('คุกกี้'))
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
+    const amountInput = screen.getByLabelText('จำนวนเงินค่าจ้าง (บาท)')
+    await userEvent.clear(amountInput)
+    await userEvent.type(amountInput, '50')
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    expect(await screen.findByText('ค่าจ้างเงินสดต้องอยู่ระหว่าง 1-30 บาท')).toBeInTheDocument()
+    expect(createWithdrawal).not.toHaveBeenCalled()
+  })
+
   it('เลือกผู้เบิกแต่ไม่ได้ตั้งค่าจ้าง ส่ง wage เป็น null', async () => {
     createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
     renderPage()

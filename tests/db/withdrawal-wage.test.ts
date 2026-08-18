@@ -106,13 +106,23 @@ describe('เบิกของ — จ่ายค่าจ้าง / รั�
     expect(received.data!.proceeds_received_at).not.toBeNull()
   })
 
-  it('wage_type ที่ไม่อยู่ใน enum ใส่ไม่ได้ / wage_cash_amount ติดลบใส่ไม่ได้', async () => {
+  it('wage_type ที่ไม่อยู่ใน enum ใส่ไม่ได้ / wage_cash_amount ต้องอยู่ระหว่าง 1-30 บาทเท่านั้น', async () => {
     const db = await signedInClient()
     const bad1 = await db.from('stock_withdrawals').insert({ wage_type: 'ไม่มีจริง' })
     expect(bad1.error).not.toBeNull()
 
-    const bad2 = await db.from('stock_withdrawals').insert({ wage_type: 'cash', wage_cash_amount: -5 })
-    expect(bad2.error).not.toBeNull()
+    const negative = await db.from('stock_withdrawals').insert({ wage_type: 'cash', wage_cash_amount: -5 })
+    expect(negative.error).not.toBeNull()
+
+    const tooHigh = await db.from('stock_withdrawals').insert({ wage_type: 'cash', wage_cash_amount: 31 })
+    expect(tooHigh.error).not.toBeNull()
+
+    const tooLow = await db.from('stock_withdrawals').insert({ wage_type: 'cash', wage_cash_amount: 0.5 })
+    expect(tooLow.error).not.toBeNull()
+
+    const ok = await db.from('stock_withdrawals').insert({ wage_type: 'cash', wage_cash_amount: 30 }).select().single()
+    expect(ok.error).toBeNull()
+    cleanupIds.withdrawals.push(ok.data!.id)
   })
 })
 

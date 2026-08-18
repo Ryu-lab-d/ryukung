@@ -89,7 +89,7 @@ describe('WithdrawalsPage', () => {
 })
 
 describe('WithdrawalsPage — เงินค้างเก็บ', () => {
-  it('ปิดรอบแล้วแต่ยังไม่ได้รับเงิน แสดง banner และ badge ต่อแถว', () => {
+  it('ปิดรอบแล้วแต่ยังไม่ได้รับเงิน แสดง banner พร้อมชื่อผู้เบิกและจำนวนเงินที่ค้าง และ badge ต่อแถว', () => {
     withdrawalsOverride = [
       {
         id: 'w3',
@@ -97,14 +97,15 @@ describe('WithdrawalsPage — เงินค้างเก็บ', () => {
         location: null,
         status: 'settled',
         settled_at: '2026-08-09T12:00:00Z',
-        withdrawn_by: null,
-        staff_members: null,
+        withdrawn_by: 's2',
+        staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
         proceeds_received: false,
         items: [{ qty_out: 20, qty_sold: 18, amount_collected: 720, unit_cost: 15, is_wage: false }],
       },
     ]
     renderPage()
     expect(screen.getByText(/ยังไม่เก็บเงิน 1 รายการ รวม 720\.00 บาท/)).toBeInTheDocument()
+    expect(screen.getAllByText(/น้องริว/).length).toBeGreaterThan(0) // ระบุชื่อผู้ที่ยังไม่จ่ายในสรุปด้านบน
     expect(screen.getByText('ยังไม่เก็บเงิน')).toBeInTheDocument()
   })
 
