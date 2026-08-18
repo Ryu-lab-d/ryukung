@@ -8,6 +8,7 @@ export type StaffMember = {
   display_name: string | null
   role: 'owner' | 'staff'
   status: 'pending' | 'active' | 'revoked'
+  allowed_pages: string[]
   created_at: string
 }
 
@@ -44,5 +45,11 @@ export function useStaffMembers() {
     return { error: error ? { message: error.message } : null }
   }
 
-  return { members, loading, invite, setStatus, remove, reload: load }
+  async function setAllowedPages(id: string, pages: string[]) {
+    const { error } = await supabase.from('staff_members').update({ allowed_pages: pages }).eq('id', id)
+    if (!error) await load()
+    return { error: error ? { message: error.message } : null }
+  }
+
+  return { members, loading, invite, setStatus, remove, setAllowedPages, reload: load }
 }

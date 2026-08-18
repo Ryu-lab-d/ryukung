@@ -6,15 +6,16 @@ import { StaffManagementSection } from './StaffManagementSection'
 const invite = vi.fn()
 const setStatus = vi.fn()
 const remove = vi.fn()
+const setAllowedPages = vi.fn()
 
 const members = [
-  { id: '1', user_id: 'o1', email: 'owner@ryukung.com', display_name: 'เจ้าของร้าน', role: 'owner' as const, status: 'active' as const, created_at: '2026-01-01' },
-  { id: '2', user_id: null, email: 'pending@ryukung.com', display_name: 'รอสมัคร', role: 'staff' as const, status: 'pending' as const, created_at: '2026-01-01' },
-  { id: '3', user_id: 's1', email: 'active@ryukung.com', display_name: 'พนักงานใช้งานได้', role: 'staff' as const, status: 'active' as const, created_at: '2026-01-01' },
+  { id: '1', user_id: 'o1', email: 'owner@ryukung.com', display_name: 'เจ้าของร้าน', role: 'owner' as const, status: 'active' as const, allowed_pages: [], created_at: '2026-01-01' },
+  { id: '2', user_id: null, email: 'pending@ryukung.com', display_name: 'รอสมัคร', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
+  { id: '3', user_id: 's1', email: 'active@ryukung.com', display_name: 'พนักงานใช้งานได้', role: 'staff' as const, status: 'active' as const, allowed_pages: ['orders', 'customers'], created_at: '2026-01-01' },
 ]
 
 vi.mock('./useStaffMembers', () => ({
-  useStaffMembers: () => ({ members, loading: false, invite, setStatus, remove, reload: vi.fn() }),
+  useStaffMembers: () => ({ members, loading: false, invite, setStatus, remove, setAllowedPages, reload: vi.fn() }),
 }))
 
 describe('ส่วนจัดการพนักงานในหน้าตั้งค่า', () => {
@@ -44,5 +45,28 @@ describe('ส่วนจัดการพนักงานในหน้า�
     const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
     await userEvent.click(within(activeRow).getByRole('button', { name: 'ระงับ' }))
     expect(setStatus).toHaveBeenCalledWith('3', 'revoked')
+  })
+
+  it('ปุ่ม "🔑 สิทธิ์" โผล่เฉพาะพนักงานที่ active และไม่ใช่ owner เท่านั้น', () => {
+    render(<StaffManagementSection />)
+    const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
+    expect(within(activeRow).getByRole('button', { name: '🔑 สิทธิ์' })).toBeInTheDocument()
+
+    const pendingRow = screen.getByText('รอสมัคร').closest('div')!.parentElement!
+    expect(within(pendingRow).queryByRole('button', { name: '🔑 สิทธิ์' })).not.toBeInTheDocument()
+
+    const ownerRow = screen.getByText('เจ้าของร้าน').closest('div')!.parentElement!
+    expect(within(ownerRow).queryByRole('button', { name: '🔑 สิทธิ์' })).not.toBeInTheDocument()
+  })
+
+  it('กด "🔑 สิทธิ์" เปิดโมดัลสิทธิ์ของคนนั้น แล้วบันทึกเรียก setAllowedPages ถูกคน', async () => {
+    setAllowedPages.mockResolvedValue({ error: null })
+    render(<StaffManagementSection />)
+    const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
+    await userEvent.click(within(activeRow).getByRole('button', { name: '🔑 สิทธิ์' }))
+
+    expect(screen.getByText('สิทธิ์การเข้าถึง')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(setAllowedPages).toHaveBeenCalledWith('3', ['orders', 'customers'])
   })
 })

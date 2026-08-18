@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export type StaffRole = 'owner' | 'staff'
 export type StaffState = 'pending' | 'active' | 'revoked'
-export type StaffStatus = { role: StaffRole; state: StaffState } | null
+export type StaffStatus = { role: StaffRole; state: StaffState; allowedPages: string[] } | null
 
 type AuthValue = {
   session: Session | null
@@ -45,18 +45,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ;(async () => {
       const { data } = await supabase
         .from('staff_members')
-        .select('role, status')
+        .select('role, status, allowed_pages')
         .eq('user_id', session.user.id)
         .maybeSingle()
       if (cancelled) return
 
       if (data) {
-        setStaffStatus({ role: data.role, state: data.status })
+        setStaffStatus({ role: data.role, state: data.status, allowedPages: data.allowed_pages ?? [] })
       } else {
         // ล็อกอินสำเร็จ (ยืนยันอีเมลแล้ว) แต่ยังไม่มีแถวสิทธิ์เลย — เพิ่งสมัครพนักงานครั้งแรก ผูกสิทธิ์อัตโนมัติ
         const displayName = (session.user.user_metadata?.display_name as string | undefined) ?? null
         const { data: claimed } = await supabase.rpc('claim_staff_invite', { p_display_name: displayName })
-        if (!cancelled) setStaffStatus(claimed ? { role: 'staff', state: claimed as StaffState } : null)
+        if (claimed) {
+          // re-select แถวสดหลัง claim เพื่อได้ allowed_pages ที่ backfill มาจาก DB default ถูกต้อง (RPC คืนแค่ status)
+          const { data: fresh } = await supabase
+            .from('staff_members')
+            .select('role, status, allowed_pages')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
+          if (!cancelled) {
+            setStaffStatus(fresh ? { role: fresh.role, state: fresh.status, allowedPages: fresh.allowed_pages ?? [] } : null)
+          }
+        } else if (!cancelled) {
+          setStaffStatus(null)
+        }
       }
       if (!cancelled) setStaffLoading(false)
     })()

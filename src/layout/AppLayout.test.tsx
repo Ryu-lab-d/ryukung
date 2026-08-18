@@ -13,7 +13,7 @@ describe('โครงหน้าเว็บ', () => {
     useAuthMock.mockReturnValue({
       session: { user: { email: 'ryu@example.com' } },
       loading: false,
-      staffStatus: { role: 'owner', state: 'active' },
+      staffStatus: { role: 'owner', state: 'active', allowedPages: [] },
       signIn: vi.fn(),
       signOut: vi.fn(),
     })
@@ -31,7 +31,11 @@ describe('โครงหน้าเว็บ', () => {
     useAuthMock.mockReturnValue({
       session: { user: { email: 'staff@example.com' } },
       loading: false,
-      staffStatus: { role: 'staff', state: 'active' },
+      staffStatus: {
+        role: 'staff',
+        state: 'active',
+        allowedPages: ['orders', 'content', 'products', 'customers', 'costing', 'summary'],
+      },
       signIn: vi.fn(),
       signOut: vi.fn(),
     })
@@ -44,6 +48,27 @@ describe('โครงหน้าเว็บ', () => {
       expect(screen.getAllByText(label).length).toBeGreaterThan(0)
     }
     expect(screen.queryByText('ตั้งค่า')).not.toBeInTheDocument()
+  })
+
+  it('พนักงานที่มีสิทธิ์บางหน้า เห็นเมนูตรงตามสิทธิ์เท่านั้น', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { email: 'staff@example.com' } },
+      loading: false,
+      staffStatus: { role: 'staff', state: 'active', allowedPages: ['orders', 'customers'] },
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+    })
+    render(
+      <MemoryRouter>
+        <AppLayout><div>เนื้อหา</div></AppLayout>
+      </MemoryRouter>
+    )
+    for (const label of ['ออเดอร์', 'ลูกค้า']) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0)
+    }
+    for (const label of ['คอนเทนต์', 'สินค้า', 'ต้นทุน', 'สรุปยอด', 'ตั้งค่า']) {
+      expect(screen.queryByText(label)).not.toBeInTheDocument()
+    }
   })
 
   it('แสดงเนื้อหาที่ส่งเข้ามา', () => {

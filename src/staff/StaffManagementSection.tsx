@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { useStaffMembers } from './useStaffMembers'
+import { useStaffMembers, type StaffMember } from './useStaffMembers'
+import { StaffPermissionsModal } from './StaffPermissionsModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
@@ -15,7 +16,7 @@ const JOIN_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}
 const DRAFT_KEY = 'staff-invite-form'
 
 export function StaffManagementSection() {
-  const { members, loading, invite, setStatus, remove } = useStaffMembers()
+  const { members, loading, invite, setStatus, remove, setAllowedPages } = useStaffMembers()
   const [draft] = useState(() => loadFormDraft<{ email: string; displayName: string }>(DRAFT_KEY))
   const [email, setEmail] = useState(draft?.email ?? '')
   const [displayName, setDisplayName] = useState(draft?.displayName ?? '')
@@ -24,6 +25,7 @@ export function StaffManagementSection() {
   const [message, setMessage] = useState<string | null>(null)
   const [removeTarget, setRemoveTarget] = useState<string | null>(null)
   const [linkCopied, setLinkCopied] = useState(false)
+  const [permissionsTarget, setPermissionsTarget] = useState<StaffMember | null>(null)
 
   useFormDraft(DRAFT_KEY, { email, displayName })
 
@@ -124,6 +126,11 @@ export function StaffManagementSection() {
                         ระงับ
                       </button>
                     )}
+                    {m.status === 'active' && (
+                      <button type="button" onClick={() => setPermissionsTarget(m)} className="text-xs rounded-lg bg-stone-200 text-stone-700 px-2.5 py-1.5 font-medium">
+                        🔑 สิทธิ์
+                      </button>
+                    )}
                     <button type="button" onClick={() => setRemoveTarget(m.id)} className="text-xs rounded-lg bg-red-600 text-white px-2.5 py-1.5 font-medium">
                       ลบ
                     </button>
@@ -147,6 +154,14 @@ export function StaffManagementSection() {
       )}
 
       {message && <Toast message={message} onDone={() => setMessage(null)} />}
+
+      {permissionsTarget && (
+        <StaffPermissionsModal
+          member={permissionsTarget}
+          onClose={() => setPermissionsTarget(null)}
+          onSave={setAllowedPages}
+        />
+      )}
     </section>
   )
 }

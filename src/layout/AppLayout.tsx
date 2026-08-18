@@ -6,7 +6,12 @@ import { useAuth } from '../auth/AuthProvider'
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
   // พนักงาน (ไม่ใช่เจ้าของร้าน) มองไม่เห็นเมนู "ตั้งค่า" เลย เพราะเป็นส่วนที่แก้ไขไม่ได้อยู่แล้ว (RLS กันไว้)
-  const visibleItems = NAV_ITEMS.filter((item) => !('ownerOnly' in item && item.ownerOnly) || staffStatus?.role === 'owner')
+  // เมนูอื่นๆ กรองตามสิทธิ์รายหน้าที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน (allowedPages)
+  const visibleItems = NAV_ITEMS.filter((item) => {
+    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner'
+    if ('page' in item && item.page) return staffStatus?.role === 'owner' || (staffStatus?.allowedPages?.includes(item.page) ?? false)
+    return true
+  })
 
   return (
     <div className="min-h-screen bg-stone-50 lg:flex">
