@@ -253,6 +253,11 @@ export function ProductForm() {
               placeholder="จำนวนที่ใช้"
               className="w-24 shrink-0 rounded-lg border border-stone-300 px-2 py-2 text-sm"
             />
+            {row.ingredient_id && (
+              <span className="shrink-0 text-xs text-stone-500 w-10">
+                {ingredients.find((ing) => ing.id === row.ingredient_id)?.unit}
+              </span>
+            )}
             <button type="button" onClick={() => removeRecipeRow(i)} className="shrink-0 text-red-600 text-sm px-1">
               ลบ
             </button>

@@ -92,6 +92,15 @@ describe('ProductForm — สูตร/วัตถุดิบที่ใช�
     expect(saveProductIngredients).toHaveBeenCalledWith('new-id', [{ ingredient_id: 'ing1', qty_per_unit: 100 }])
   })
 
+  it('เลือกวัตถุดิบในแถวสูตรแล้ว แสดงหน่วยของวัตถุดิบนั้นไว้ข้างช่องจำนวน กันกรอกผิดหน่วย', async () => {
+    ingredientsOverride = [{ id: 'ing1', name: 'แป้งสาลี', unit: 'กรัม', cost_per_unit: 0.5 }]
+    renderNew()
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มวัตถุดิบ' }))
+    expect(screen.queryByText('กรัม')).not.toBeInTheDocument()
+    await userEvent.selectOptions(screen.getByLabelText('วัตถุดิบแถวที่ 1'), 'ing1')
+    expect(screen.getByText('กรัม')).toBeInTheDocument()
+  })
+
   it('เลือกวัตถุดิบไว้แต่ไม่กรอกจำนวน กดบันทึกขึ้น error ไม่เรียก save', async () => {
     ingredientsOverride = [{ id: 'ing1', name: 'แป้งสาลี', unit: 'กรัม', cost_per_unit: 0.5 }]
     renderNew()

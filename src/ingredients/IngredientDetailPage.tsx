@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useIngredient } from './useIngredients'
 import { useIngredientMovements } from './useIngredientMovements'
-import { saveIngredient, deleteIngredient } from './api'
+import { saveIngredient, deleteIngredient, getRecipeUsageForIngredient } from './api'
 import { RestockModal } from './RestockModal'
 import { AdjustStockModal } from './AdjustStockModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
@@ -42,9 +42,14 @@ export function IngredientDetailPage() {
   const [showAdjust, setShowAdjust] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [originalUnit, setOriginalUnit] = useState<string | null>(null)
+  const [unitChangeWarning, setUnitChangeWarning] = useState<{ productNames: string[] } | null>(null)
+  const [checkingUnitUsage, setCheckingUnitUsage] = useState(false)
 
   useEffect(() => {
-    if (!ingredient || draft) return
+    if (!ingredient) return
+    setOriginalUnit(ingredient.unit)
+    if (draft) return
     setName(ingredient.name)
     setUnit(ingredient.unit)
     setLowStockThreshold(String(ingredient.low_stock_threshold))
@@ -60,11 +65,28 @@ export function IngredientDetailPage() {
       setError('กรุณาใส่ชื่อวัตถุดิบ')
       return
     }
+    const trimmedUnit = unit.trim() || 'กรัม'
+    // เปลี่ยนหน่วยของวัตถุดิบที่ใช้ในสูตรอยู่แล้ว — ระบบไม่แปลง "จำนวนที่ใช้" ในสูตรเดิมให้อัตโนมัติ
+    // ต้องเตือนก่อนเสมอ ไม่งั้นต้นทุน/สต็อกของสินค้าที่ใช้วัตถุดิบนี้จะผิดทันทีแบบไม่มีใครรู้ตัว
+    if (originalUnit && trimmedUnit !== originalUnit) {
+      setCheckingUnitUsage(true)
+      const { productNames } = await getRecipeUsageForIngredient(id)
+      setCheckingUnitUsage(false)
+      if (productNames.length > 0) {
+        setUnitChangeWarning({ productNames })
+        return
+      }
+    }
+    await doSave(trimmedUnit)
+  }
+
+  async function doSave(trimmedUnit: string) {
+    if (!id) return
     setSaving(true)
     setError(null)
     const { error: saveError } = await saveIngredient(id, {
       name: name.trim(),
-      unit: unit.trim() || 'กรัม',
+      unit: trimmedUnit,
       low_stock_threshold: Number(lowStockThreshold) || 0,
       note: note.trim() || null,
       is_active: isActive,
@@ -75,6 +97,7 @@ export function IngredientDetailPage() {
       return
     }
     if (draftKey) clearFormDraft(draftKey)
+    setOriginalUnit(trimmedUnit)
     setShowSuccess(true)
   }
 
@@ -178,10 +201,10 @@ export function IngredientDetailPage() {
         <button
           type="button"
           onClick={() => void handleSave()}
-          disabled={saving}
+          disabled={saving || checkingUnitUsage}
           className="w-full rounded-lg bg-stone-900 text-white py-2.5 font-medium disabled:opacity-50"
         >
-          {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+          {checkingUnitUsage ? 'กำลังตรวจสอบ...' : saving ? 'กำลังบันทึก...' : 'บันทึก'}
         </button>
       </div>
 
@@ -257,6 +280,24 @@ export function IngredientDetailPage() {
           busy={deleting}
           onConfirm={handleDelete}
           onCancel={() => setShowDeleteConfirm(false)}
+        />
+      )}
+
+      {unitChangeWarning && (
+        <ConfirmDialog
+          title="⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว"
+          message={
+            `วัตถุดิบนี้ถูกใช้ในสูตรของ ${unitChangeWarning.productNames.length} สินค้าแล้ว (${unitChangeWarning.productNames.join(', ')}) ` +
+            `ระบบไม่แปลง "จำนวนที่ใช้" ในสูตรเดิมให้อัตโนมัติเวลาเปลี่ยนหน่วย ต้นทุนและการตัดสต็อกของสินค้าเหล่านี้จะผิดทันที ` +
+            `ถ้าไม่ไปแก้จำนวนที่ใช้ในแต่ละสูตรให้ตรงกับหน่วยใหม่ด้วยตัวเอง`
+          }
+          confirmLabel="เข้าใจแล้ว บันทึกต่อ"
+          cancelLabel="ยกเลิก"
+          onConfirm={() => {
+            setUnitChangeWarning(null)
+            void doSave(unit.trim() || 'กรัม')
+          }}
+          onCancel={() => setUnitChangeWarning(null)}
         />
       )}
 

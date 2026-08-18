@@ -18,6 +18,19 @@ export async function saveIngredient(id: string | null, input: IngredientInput):
   return { id: data.id as string, error: null }
 }
 
+/**
+ * หาว่าสูตรสินค้าไหนใช้วัตถุดิบนี้อยู่บ้าง — ใช้เตือนก่อนเปลี่ยน "หน่วย" ของวัตถุดิบที่ถูกใช้ในสูตรแล้ว
+ * เพราะ qty_per_unit ในสูตรเดิมถูกกรอกมาตามหน่วยเก่า เปลี่ยนหน่วยแล้วตัวเลขนั้นจะไม่ถูกแปลงตามให้อัตโนมัติ
+ * (ระบบไม่มีการแปลงหน่วยใดๆ เลย คำนวณต้นทุน/ตัดสต็อกจากตัวเลขดิบตรงๆ) ต้นทุน/สต็อกของสินค้านั้นจะผิดทันทีถ้าไม่ไปแก้สูตรตาม
+ */
+export async function getRecipeUsageForIngredient(id: string): Promise<{ productNames: string[] }> {
+  const { data } = await supabase.from('product_ingredients').select('products(name)').eq('ingredient_id', id)
+  const productNames = (data ?? [])
+    .map((row: any) => row.products?.name as string | undefined)
+    .filter((name): name is string => Boolean(name))
+  return { productNames }
+}
+
 /** กันลบวัตถุดิบที่ถูกใช้ในสูตรสินค้าอยู่แล้ว (เช็กฝั่ง client ก่อน ให้ error อ่านง่ายกว่าปล่อยให้ FK constraint เด้ง) */
 export async function deleteIngredient(id: string): Promise<{ error: { message: string } | null }> {
   const { count } = await supabase

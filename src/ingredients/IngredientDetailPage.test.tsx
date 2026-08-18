@@ -22,9 +22,11 @@ vi.mock('./useIngredientMovements', () => ({
 
 const saveIngredient = vi.fn()
 const deleteIngredient = vi.fn()
+const getRecipeUsageForIngredient = vi.fn()
 vi.mock('./api', () => ({
   saveIngredient: (...args: unknown[]) => saveIngredient(...args),
   deleteIngredient: (...args: unknown[]) => deleteIngredient(...args),
+  getRecipeUsageForIngredient: (...args: unknown[]) => getRecipeUsageForIngredient(...args),
 }))
 
 vi.mock('./RestockModal', () => ({
@@ -88,6 +90,8 @@ beforeEach(() => {
   reloadMovements.mockReset()
   saveIngredient.mockReset()
   deleteIngredient.mockReset()
+  getRecipeUsageForIngredient.mockReset()
+  getRecipeUsageForIngredient.mockResolvedValue({ productNames: [] })
   navigate.mockReset()
 })
 
@@ -176,5 +180,77 @@ describe('IngredientDetailPage', () => {
     await userEvent.click(screen.getByRole('button', { name: 'ลบถาวร' }))
     expect(await screen.findByText('วัตถุดิบนี้ถูกใช้ในสูตรสินค้าแล้ว ลบไม่ได้ ให้ปิดใช้งานแทน')).toBeInTheDocument()
     expect(navigate).not.toHaveBeenCalled()
+  })
+})
+
+describe('IngredientDetailPage — เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว', () => {
+  it('เปลี่ยนหน่วยของวัตถุดิบที่ไม่มีสูตรไหนใช้ บันทึกได้เลยไม่มีคำเตือน', async () => {
+    ingredientOverride = baseIngredient({ unit: 'กรัม' })
+    getRecipeUsageForIngredient.mockResolvedValue({ productNames: [] })
+    saveIngredient.mockResolvedValue({ id: 'i1', error: null })
+    renderPage()
+    const unitInput = screen.getByLabelText('หน่วย')
+    await userEvent.clear(unitInput)
+    await userEvent.type(unitInput, 'ฟอง')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(getRecipeUsageForIngredient).toHaveBeenCalledWith('i1')
+    expect(await screen.findByText('บันทึกแล้ว')).toBeInTheDocument()
+    expect(saveIngredient).toHaveBeenCalledWith('i1', expect.objectContaining({ unit: 'ฟอง' }))
+  })
+
+  it('เปลี่ยนหน่วยของวัตถุดิบที่ถูกใช้ในสูตรแล้ว ขึ้นคำเตือนก่อน ไม่บันทึกทันที', async () => {
+    ingredientOverride = baseIngredient({ unit: 'กรัม' })
+    getRecipeUsageForIngredient.mockResolvedValue({ productNames: ['คุกกี้ช็อกโกแลต', 'บราวนี่'] })
+    renderPage()
+    const unitInput = screen.getByLabelText('หน่วย')
+    await userEvent.clear(unitInput)
+    await userEvent.type(unitInput, 'ฟอง')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+
+    expect(await screen.findByText('⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว')).toBeInTheDocument()
+    expect(screen.getByText(/คุกกี้ช็อกโกแลต, บราวนี่/)).toBeInTheDocument()
+    expect(saveIngredient).not.toHaveBeenCalled()
+  })
+
+  it('กด "เข้าใจแล้ว บันทึกต่อ" ในคำเตือน ถึงจะบันทึกจริง', async () => {
+    ingredientOverride = baseIngredient({ unit: 'กรัม' })
+    getRecipeUsageForIngredient.mockResolvedValue({ productNames: ['คุกกี้ช็อกโกแลต'] })
+    saveIngredient.mockResolvedValue({ id: 'i1', error: null })
+    renderPage()
+    const unitInput = screen.getByLabelText('หน่วย')
+    await userEvent.clear(unitInput)
+    await userEvent.type(unitInput, 'ฟอง')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    await screen.findByText('⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว')
+
+    await userEvent.click(screen.getByRole('button', { name: 'เข้าใจแล้ว บันทึกต่อ' }))
+    expect(saveIngredient).toHaveBeenCalledWith('i1', expect.objectContaining({ unit: 'ฟอง' }))
+  })
+
+  it('กด "ยกเลิก" ในคำเตือน ไม่บันทึกอะไรเลย', async () => {
+    ingredientOverride = baseIngredient({ unit: 'กรัม' })
+    getRecipeUsageForIngredient.mockResolvedValue({ productNames: ['คุกกี้ช็อกโกแลต'] })
+    renderPage()
+    const unitInput = screen.getByLabelText('หน่วย')
+    await userEvent.clear(unitInput)
+    await userEvent.type(unitInput, 'ฟอง')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    await screen.findByText('⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว')
+
+    await userEvent.click(screen.getByRole('button', { name: 'ยกเลิก' }))
+    expect(screen.queryByText('⚠️ เปลี่ยนหน่วยวัตถุดิบที่ใช้ในสูตรอยู่แล้ว')).not.toBeInTheDocument()
+    expect(saveIngredient).not.toHaveBeenCalled()
+  })
+
+  it('ไม่ได้แก้หน่วยเลย ไม่ต้องเช็คการใช้งานเลย บันทึกได้ปกติ', async () => {
+    ingredientOverride = baseIngredient({ unit: 'กรัม', name: 'แป้งสาลี' })
+    saveIngredient.mockResolvedValue({ id: 'i1', error: null })
+    renderPage()
+    const nameInput = screen.getByLabelText('ชื่อวัตถุดิบ')
+    await userEvent.clear(nameInput)
+    await userEvent.type(nameInput, 'แป้งเค้ก')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(getRecipeUsageForIngredient).not.toHaveBeenCalled()
+    expect(saveIngredient).toHaveBeenCalledWith('i1', expect.objectContaining({ unit: 'กรัม' }))
   })
 })
