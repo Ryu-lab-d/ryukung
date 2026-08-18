@@ -35,6 +35,9 @@ export function WithdrawalsPage() {
       <p className="text-sm text-stone-500">
         บันทึกตอนเอาสินค้าที่ทำไว้ไปขายนอกร้าน (เช่น ที่โรงเรียน) แล้วกลับมาปิดรอบใส่ว่าขายได้กี่ชิ้น ได้เงินเท่าไหร่
       </p>
+      {import.meta.env.VITE_SHEETS_WITHDRAWAL_WEBHOOK_URL && (
+        <p className="text-xs text-green-700">📄 ทุกรายการเบิกของ (ทั้งตอนเริ่มเบิกและตอนปิดรอบ) ถูกบันทึกลง Google Sheets ให้อัตโนมัติ</p>
+      )}
 
       {unpaid.length > 0 && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 space-y-2">

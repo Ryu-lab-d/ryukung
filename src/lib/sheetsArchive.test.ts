@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { archiveOrderToSheets, type ArchiveOrderPayload } from './sheetsArchive'
+import { archiveOrderToSheets, logWithdrawalToSheets, type ArchiveOrderPayload, type WithdrawalSheetPayload } from './sheetsArchive'
 
 const payload: ArchiveOrderPayload = {
   order_no: 'RYB-000001',
@@ -57,5 +57,61 @@ describe('archiveOrderToSheets', () => {
     vi.mocked(fetch).mockRejectedValue(new Error('network down'))
     const { error } = await archiveOrderToSheets(payload)
     expect(error).toContain('network down')
+  })
+})
+
+const withdrawalPayload: WithdrawalSheetPayload = {
+  event: 'created',
+  withdrawal_id: 'w1',
+  withdrawn_at: '2026-08-18',
+  location: 'โรงเรียน',
+  withdrawn_by: 'น้องริว',
+  items_summary: 'คุกกี้ x20',
+  qty_out_total: 20,
+  qty_sold_total: null,
+  revenue: null,
+  cost: 300,
+  profit: null,
+  wage_summary: 'เงินสด 30 บาท',
+  wage_paid: false,
+  status: 'open',
+}
+
+describe('logWithdrawalToSheets', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn())
+  })
+  afterEach(() => {
+    vi.unstubAllEnvs()
+    vi.unstubAllGlobals()
+  })
+
+  it('ยังไม่ได้ตั้งค่า webhook ไว้ ข้ามไปเฉยๆ ไม่เรียก fetch เลย', async () => {
+    vi.stubEnv('VITE_SHEETS_WITHDRAWAL_WEBHOOK_URL', '')
+    const { error } = await logWithdrawalToSheets(withdrawalPayload)
+    expect(error).toBeNull()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('ตั้งค่า webhook ไว้ ส่ง POST ไปพร้อม payload แบบ text/plain กัน CORS preflight', async () => {
+    vi.stubEnv('VITE_SHEETS_WITHDRAWAL_WEBHOOK_URL', 'https://script.google.com/macros/s/yyy/exec')
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 200 }))
+    const { error } = await logWithdrawalToSheets(withdrawalPayload)
+    expect(error).toBeNull()
+    expect(fetch).toHaveBeenCalledWith(
+      'https://script.google.com/macros/s/yyy/exec',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(withdrawalPayload),
+      })
+    )
+  })
+
+  it('webhook ตอบกลับ error (HTTP ไม่ok) คืนข้อความ error ที่มีสถานะ', async () => {
+    vi.stubEnv('VITE_SHEETS_WITHDRAWAL_WEBHOOK_URL', 'https://script.google.com/macros/s/yyy/exec')
+    vi.mocked(fetch).mockResolvedValue(new Response(null, { status: 500 }))
+    const { error } = await logWithdrawalToSheets(withdrawalPayload)
+    expect(error).toContain('500')
   })
 })

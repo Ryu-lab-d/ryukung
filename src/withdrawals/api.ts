@@ -1,4 +1,6 @@
 import { supabase } from '../lib/supabase'
+import { logWithdrawalToSheets } from '../lib/sheetsArchive'
+import { computeWithdrawalTotals } from './withdrawalMath'
 
 export type WithdrawalItemInput = {
   product_id: string | null
@@ -51,7 +53,40 @@ export async function createWithdrawal(params: {
   const { error: itemsError } = await supabase.from('stock_withdrawal_items').insert(rows)
   if (itemsError) return { id: null, error: { message: itemsError.message } }
 
+  let withdrawnByName: string | null = null
+  if (params.withdrawnBy) {
+    const { data: staff } = await supabase
+      .from('staff_members')
+      .select('display_name, email')
+      .eq('id', params.withdrawnBy)
+      .maybeSingle()
+    withdrawnByName = staff?.display_name ?? staff?.email ?? null
+  }
+
+  // บันทึกลง Google Sheets แบบไม่บล็อกการเบิก — ถ้าไม่สำเร็จ (หรือไม่ได้ตั้งค่า webhook ไว้) ยังเบิกของได้ตามปกติ
+  await logWithdrawalToSheets({
+    event: 'created',
+    withdrawal_id: withdrawal.id as string,
+    withdrawn_at: params.withdrawnAt,
+    location: params.location,
+    withdrawn_by: withdrawnByName,
+    items_summary: items.map((it) => `${it.product_name} x${it.qty_out}${it.is_wage ? ' (ค่าจ้าง)' : ''}`).join(', '),
+    qty_out_total: items.reduce((sum, it) => sum + it.qty_out, 0),
+    qty_sold_total: null,
+    revenue: null,
+    cost: items.reduce((sum, it) => sum + it.unit_cost * it.qty_out, 0),
+    profit: null,
+    wage_summary: wageSummaryFromInput(params.wage),
+    wage_paid: false,
+    status: 'open',
+  })
+
   return { id: withdrawal.id as string, error: null }
+}
+
+function wageSummaryFromInput(wage: WithdrawalWageInput | null): string | null {
+  if (!wage) return null
+  return wage.type === 'cash' ? `เงินสด ${wage.amount} บาท` : `${wage.productName} x${wage.qty}`
 }
 
 export async function settleWithdrawal(
@@ -69,7 +104,56 @@ export async function settleWithdrawal(
     .from('stock_withdrawals')
     .update({ status: 'settled', settled_at: new Date().toISOString() })
     .eq('id', withdrawalId)
-  return { error: error ? { message: error.message } : null }
+  if (error) return { error: { message: error.message } }
+
+  await logSettledWithdrawalToSheets(withdrawalId)
+  return { error: null }
+}
+
+/** ดึงข้อมูลฉบับเต็มหลังปิดรอบสำเร็จมาบันทึกลง Google Sheets แบบไม่บล็อกการปิดรอบ — พลาดแค่ไม่มีข้อมูลชุดนี้ใน Sheets เฉยๆ */
+async function logSettledWithdrawalToSheets(withdrawalId: string): Promise<void> {
+  const [{ data: withdrawal }, { data: items }] = await Promise.all([
+    supabase.from('stock_withdrawals').select('*, staff_members(display_name, email)').eq('id', withdrawalId).single(),
+    supabase.from('stock_withdrawal_items').select('*').eq('withdrawal_id', withdrawalId),
+  ])
+  if (!withdrawal || !items) return
+
+  const totals = computeWithdrawalTotals(
+    items.map((it) => ({
+      qty_out: Number(it.qty_out),
+      qty_sold: it.qty_sold === null ? null : Number(it.qty_sold),
+      amount_collected: it.amount_collected === null ? null : Number(it.amount_collected),
+      unit_cost: Number(it.unit_cost),
+      is_wage: it.is_wage,
+    }))
+  )
+
+  const wageItem = items.find((it) => it.is_wage)
+  const wageSummary =
+    withdrawal.wage_type === 'cash'
+      ? `เงินสด ${withdrawal.wage_cash_amount} บาท`
+      : withdrawal.wage_type === 'product' && wageItem
+        ? `${wageItem.product_name} x${wageItem.qty_out}`
+        : null
+
+  await logWithdrawalToSheets({
+    event: 'settled',
+    withdrawal_id: withdrawalId,
+    withdrawn_at: withdrawal.withdrawn_at,
+    location: withdrawal.location,
+    withdrawn_by: withdrawal.staff_members?.display_name ?? withdrawal.staff_members?.email ?? null,
+    items_summary: items
+      .map((it) => `${it.product_name} x${it.qty_out}${it.is_wage ? ' (ค่าจ้าง)' : ''}`)
+      .join(', '),
+    qty_out_total: totals.qtyOut,
+    qty_sold_total: totals.qtySold,
+    revenue: totals.revenue,
+    cost: totals.cost,
+    profit: totals.profit,
+    wage_summary: wageSummary,
+    wage_paid: withdrawal.wage_paid,
+    status: 'settled',
+  })
 }
 
 export async function reopenWithdrawal(withdrawalId: string): Promise<{ error: { message: string } | null }> {
