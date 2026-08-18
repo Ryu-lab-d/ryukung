@@ -3,7 +3,8 @@ import { useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
-import { Toast } from '../lib/Toast'
+import { InlineError } from '../lib/InlineError'
+import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { Linkify } from '../lib/Linkify'
 import { ChatBot } from './ChatBot'
 import { PromptPayQR } from './PromptPayQR'
@@ -198,8 +199,8 @@ function AddressEditForm({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3">
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 animate-toast-pop">
         <h2 className="text-lg font-semibold">แก้ไขที่อยู่จัดส่ง</h2>
         <div className="space-y-1">
           <label htmlFor="pub-recipient-name" className="text-sm text-stone-600">ชื่อผู้รับ</label>
@@ -229,7 +230,7 @@ function AddressEditForm({
             className="w-full rounded-lg border border-stone-300 px-3 py-2"
           />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <InlineError message={error} />
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={onCancel} className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium">
             ยกเลิก
@@ -289,7 +290,7 @@ function PaymentInfoPanel({
           {claiming ? 'กำลังส่ง...' : '✅ ยืนยันการชำระเงิน'}
         </button>
       )}
-      {claimError && <p className="text-xs text-red-600 mt-1 text-center">{claimError}</p>}
+      <InlineError message={claimError} className="justify-center mt-1" />
     </>
   )
 }
@@ -503,35 +504,6 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
   )
 }
 
-/** เอฟเฟกต์ยืนยันสำเร็จแบบวาดเครื่องหมายถูก ใช้เฉพาะตอนบันทึกที่อยู่ใหม่สำเร็จ ให้รู้สึกหนักแน่นกว่า Toast ทั่วไป */
-function AddressSavedOverlay({ onDone }: { onDone: () => void }) {
-  useEffect(() => {
-    const t = setTimeout(onDone, 2000)
-    return () => clearTimeout(t)
-  }, [onDone])
-
-  return (
-    <div className="fixed inset-0 bg-black/40 grid place-items-center z-50 p-4">
-      <div className="bg-white rounded-2xl p-6 text-center space-y-2 max-w-xs animate-toast-pop">
-        <svg width="64" height="64" viewBox="0 0 64 64" className="mx-auto">
-          <circle cx="32" cy="32" r="29" fill="none" stroke="#16a34a" strokeWidth="4" className="animate-circle-pop" />
-          <path
-            d="M18 33 L27 42 L46 22"
-            fill="none"
-            stroke="#16a34a"
-            strokeWidth="4"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="animate-check-draw"
-          />
-        </svg>
-        <p className="font-semibold text-stone-900">บันทึกที่อยู่ใหม่เรียบร้อยแล้ว!</p>
-        <p className="text-sm text-stone-500">ทางร้านจะเห็นที่อยู่ใหม่นี้ทันที</p>
-      </div>
-    </div>
-  )
-}
-
 export function PublicOrderPage() {
   const { token } = useParams()
   const nameDraftKey = token ? `public-order-name:${token}` : null
@@ -632,17 +604,25 @@ export function PublicOrderPage() {
           <div className="text-4xl">🥐</div>
           <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
           <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
-          <input
-            autoFocus
-            value={nameInput}
-            onChange={(e) => setNameInput(e.target.value)}
-            placeholder="ชื่อผู้สั่งซื้อ"
-            autoCapitalize="off"
-            autoCorrect="off"
-            autoComplete="off"
-            spellCheck={false}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-center"
-          />
+          <div className="space-y-1.5 text-left">
+            <input
+              autoFocus
+              value={nameInput}
+              onChange={(e) => {
+                setNameInput(e.target.value)
+                if (nameError) setNameError(false)
+              }}
+              placeholder="ชื่อผู้สั่งซื้อ"
+              autoCapitalize="off"
+              autoCorrect="off"
+              autoComplete="off"
+              spellCheck={false}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-center"
+            />
+            {nameError && (
+              <InlineError message="ชื่อไม่ตรงกับที่แจ้งไว้ กรุณาสะกดให้ตรงเป๊ะตามที่คุยในแชท" className="justify-center" />
+            )}
+          </div>
           <button
             type="submit"
             disabled={!nameInput.trim() || order === undefined}
@@ -651,14 +631,6 @@ export function PublicOrderPage() {
             {order === undefined ? 'กำลังโหลดข้อมูล...' : 'ดูรายละเอียดออเดอร์'}
           </button>
         </form>
-
-        {nameError && (
-          <Toast
-            variant="error"
-            message="ชื่อไม่ตรงกับที่แจ้งไว้ กรุณาสะกดให้ตรงเป๊ะตามที่คุยในแชท"
-            onDone={() => setNameError(false)}
-          />
-        )}
       </div>
     )
   }
@@ -824,7 +796,13 @@ export function PublicOrderPage() {
         />
       )}
 
-      {addressSaved && <AddressSavedOverlay onDone={() => setAddressSaved(false)} />}
+      {addressSaved && (
+        <SuccessOverlay
+          message="บันทึกที่อยู่ใหม่เรียบร้อยแล้ว!"
+          submessage="ทางร้านจะเห็นที่อยู่ใหม่นี้ทันที"
+          onDone={() => setAddressSaved(false)}
+        />
+      )}
 
       {!aboutPopupDismissed ? (
         <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={() => setAboutPopupDismissed(true)} />

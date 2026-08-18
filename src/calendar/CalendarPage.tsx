@@ -172,9 +172,9 @@ export function CalendarPage() {
       {loading && <p className="text-sm text-stone-400 text-center">กำลังโหลด...</p>}
 
       {selectedKey && (
-        <div className="fixed inset-0 bg-black/50 grid place-items-end sm:place-items-center p-0 sm:p-4 z-50" onClick={() => setSelectedKey(null)}>
+        <div className="fixed inset-0 bg-black/50 grid place-items-end sm:place-items-center p-0 sm:p-4 z-50 animate-overlay-fade" onClick={() => setSelectedKey(null)}>
           <div
-            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto p-4 space-y-3"
+            className="bg-white rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md max-h-[85vh] overflow-y-auto p-4 space-y-3 animate-toast-pop"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between">

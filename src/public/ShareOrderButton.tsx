@@ -73,8 +73,8 @@ export function ShareOrderButton({ shopName, orderNo }: { shopName: string; orde
       </button>
 
       {manualUrl && (
-        <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50" onClick={() => setManualUrl(null)}>
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade" onClick={() => setManualUrl(null)}>
+          <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 animate-toast-pop" onClick={(e) => e.stopPropagation()}>
             <p className="text-sm font-medium text-stone-900">คัดลอกอัตโนมัติไม่ได้ กดเลือกข้อความแล้วคัดลอกเองได้เลย</p>
             <input
               ref={manualInputRef}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { cancelOrder } from './api'
+import { InlineError } from '../lib/InlineError'
 
 export function CancelOrderDialog({
   orderId,
@@ -30,8 +31,8 @@ export function CancelOrderDialog({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 shadow-lg">
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 shadow-lg animate-toast-pop">
         <h2 className="text-lg font-semibold text-center">แน่ใจนะว่าจะยกเลิกออเดอร์นี้?</h2>
         {hasPayments && (
           <div className="space-y-1">
@@ -52,7 +53,7 @@ export function CancelOrderDialog({
           <label htmlFor="reason" className="text-sm text-stone-600">เหตุผล (ถ้ามี)</label>
           <textarea id="reason" value={reason} onChange={(e) => setReason(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
         </div>
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        <InlineError message={error} />
         <div className="flex gap-2 pt-1">
           <button type="button" onClick={onClose} className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium">ไม่ยกเลิก</button>
           <button type="button" disabled={busy} onClick={handleConfirm} className="flex-1 rounded-lg bg-red-600 text-white py-2.5 font-medium disabled:opacity-50">

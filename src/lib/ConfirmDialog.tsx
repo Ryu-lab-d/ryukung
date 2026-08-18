@@ -21,8 +21,8 @@ export function ConfirmDialog({
   onCancel,
 }: ConfirmDialogProps) {
   return (
-    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50">
-      <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-1 text-center shadow-lg">
+    <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <div className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-1 text-center shadow-lg animate-toast-pop">
         <p className="text-lg font-semibold text-stone-900">{title}</p>
         {message && <p className="text-sm text-stone-600 pt-1">{message}</p>}
         <div className="flex gap-2 pt-4">

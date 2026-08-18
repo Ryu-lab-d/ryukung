@@ -131,6 +131,20 @@ a:focus-visible {
   animation: shake 0.4s ease-in-out;
 }
 
+/* toast แจ้ง error รวมเอฟเฟกต์เด้งเข้า + สั่นเบาๆ ต่อท้ายในตัวเดียว ให้ความรู้สึกเตือนแรงกว่า toast ปกติเล็กน้อย */
+.animate-toast-pop-shake {
+  animation: toast-pop 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), shake 0.4s ease-in-out 0.2s;
+}
+
+/* ข้อความแจ้งกรอกผิดใต้ช่องกรอก ค่อยๆ เลื่อนขึ้นพร้อมจางเข้ามา ให้ความรู้สึกช่วยแก้ไขมากกว่าประกาศเตือนแบบป็อปอัพเต็มจอ */
+@keyframes field-error-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-field-error {
+  animation: field-error-in 0.18s ease-out;
+}
+
 /* วงกลม+เครื่องหมายถูกที่ค่อยๆ วาดตัวเอง ใช้ตอนยืนยันว่าบันทึกที่อยู่ใหม่สำเร็จ */
 @keyframes circle-pop {
   from { transform: scale(0.5); opacity: 0; }
