@@ -10,8 +10,9 @@ const setAllowedPages = vi.fn()
 
 const members = [
   { id: '1', user_id: 'o1', email: 'owner@ryukung.com', display_name: 'เจ้าของร้าน', role: 'owner' as const, status: 'active' as const, allowed_pages: [], created_at: '2026-01-01' },
-  { id: '2', user_id: null, email: 'pending@ryukung.com', display_name: 'รอสมัคร', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
+  { id: '2', user_id: null, email: 'invited@ryukung.com', display_name: 'เชิญไว้ล่วงหน้า', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
   { id: '3', user_id: 's1', email: 'active@ryukung.com', display_name: 'พนักงานใช้งานได้', role: 'staff' as const, status: 'active' as const, allowed_pages: ['orders', 'customers'], created_at: '2026-01-01' },
+  { id: '4', user_id: 's2', email: 'pending@ryukung.com', display_name: 'รออนุมัติจริง', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
 ]
 
 vi.mock('./useStaffMembers', () => ({
@@ -23,6 +24,22 @@ describe('ส่วนจัดการพนักงานในหน้า�
     render(<StaffManagementSection />)
     expect(screen.getByText('รออนุมัติ')).toBeInTheDocument()
     expect(screen.getAllByText('ใช้งานได้').length).toBeGreaterThan(0)
+  })
+
+  it('เชิญไว้ล่วงหน้าแต่ยังไม่มีใครสมัคร (user_id ยังว่าง) แสดงป้าย "รอพนักงานสมัคร" ไม่ใช่ "รออนุมัติ" และไม่มีปุ่มอนุมัติ', () => {
+    render(<StaffManagementSection />)
+    const invitedRow = screen.getByText('เชิญไว้ล่วงหน้า').closest('div')!.parentElement!
+    expect(within(invitedRow).getByText('รอพนักงานสมัคร')).toBeInTheDocument()
+    expect(within(invitedRow).queryByRole('button', { name: 'อนุมัติ' })).not.toBeInTheDocument()
+    expect(within(invitedRow).getByRole('button', { name: 'ยกเลิกคำเชิญ' })).toBeInTheDocument()
+  })
+
+  it('มีคนสมัครจริงแล้ว (มี user_id) รอเจ้าของร้านอนุมัติ แสดงป้าย "รออนุมัติ" พร้อมปุ่มอนุมัติ', async () => {
+    render(<StaffManagementSection />)
+    const realPendingRow = screen.getByText('รออนุมัติจริง').closest('div')!.parentElement!
+    expect(within(realPendingRow).getByText('รออนุมัติ')).toBeInTheDocument()
+    await userEvent.click(within(realPendingRow).getByRole('button', { name: 'อนุมัติ' }))
+    expect(setStatus).toHaveBeenCalledWith('4', 'active')
   })
 
   it('เจ้าของร้าน (owner) ไม่มีปุ่มระงับ/ลบ แก้ไม่ได้', () => {
@@ -40,6 +57,16 @@ describe('ส่วนจัดการพนักงานในหน้า�
     expect(invite).toHaveBeenCalledWith('new@ryukung.com', 'พนักงานใหม่')
   })
 
+  it('เชิญสำเร็จ ข้อความบอกชัดว่าต้องตั้งรหัสผ่านเอง+ยืนยันอีเมล และไม่ต้องกดอนุมัติเพิ่ม', async () => {
+    invite.mockResolvedValue({ error: null })
+    render(<StaffManagementSection />)
+    await userEvent.type(screen.getByPlaceholderText('ชื่อพนักงาน'), 'พนักงานใหม่')
+    await userEvent.type(screen.getByPlaceholderText('อีเมลพนักงาน'), 'new@ryukung.com')
+    await userEvent.click(screen.getByRole('button', { name: '+ เชิญพนักงาน' }))
+    expect(await screen.findByText(/ตั้งรหัสผ่านเอง/)).toBeInTheDocument()
+    expect(screen.getByText(/ไม่ต้องกดอนุมัติอะไรเพิ่ม/)).toBeInTheDocument()
+  })
+
   it('กดระงับพนักงานที่ active เรียก setStatus เป็น revoked', async () => {
     render(<StaffManagementSection />)
     const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
@@ -52,7 +79,7 @@ describe('ส่วนจัดการพนักงานในหน้า�
     const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
     expect(within(activeRow).getByRole('button', { name: '🔑 สิทธิ์' })).toBeInTheDocument()
 
-    const pendingRow = screen.getByText('รอสมัคร').closest('div')!.parentElement!
+    const pendingRow = screen.getByText('เชิญไว้ล่วงหน้า').closest('div')!.parentElement!
     expect(within(pendingRow).queryByRole('button', { name: '🔑 สิทธิ์' })).not.toBeInTheDocument()
 
     const ownerRow = screen.getByText('เจ้าของร้าน').closest('div')!.parentElement!

@@ -33,7 +33,7 @@ export function useStaffMembers() {
     return { error: error ? { message: error.message } : null }
   }
 
-  async function setStatus(id: string, status: 'active' | 'revoked') {
+  async function setStatus(id: string, status: 'pending' | 'active' | 'revoked') {
     const { error } = await supabase.from('staff_members').update({ status }).eq('id', id)
     if (!error) await load()
     return { error: error ? { message: error.message } : null }

@@ -12,6 +12,22 @@ const STATUS_COLOR: Record<string, string> = {
   revoked: 'bg-red-100 text-red-700',
 }
 
+/**
+ * แถวที่ user_id ยังเป็น null คือแค่ "เชิญไว้ล่วงหน้า" ยังไม่มีบัญชีจริงผูกอยู่เลย (พนักงานยังไม่ได้สมัคร)
+ * ต่างจาก "รออนุมัติ" ปกติที่มีคนสมัครจริงแล้วแค่รอเจ้าของร้านกดอนุมัติ — ต้องแยกป้ายให้ชัด กันเข้าใจผิดว่า
+ * ใช้งานได้แล้วทั้งที่ยังไม่มีใครสมัครเลย (บั๊กเดิม: กดอนุมัติแถวที่ยังไม่มีบัญชีจริง ทำให้ยืนยันตัวตนพนักงานจริงไม่ได้)
+ */
+function statusLabel(m: StaffMember): string {
+  if (m.status === 'revoked') return m.user_id === null ? 'ยกเลิกคำเชิญแล้ว' : STATUS_LABEL.revoked
+  if (m.user_id === null) return 'รอพนักงานสมัคร'
+  return STATUS_LABEL[m.status]
+}
+function statusColor(m: StaffMember): string {
+  if (m.status === 'revoked') return STATUS_COLOR.revoked
+  if (m.user_id === null) return 'bg-sky-100 text-sky-700'
+  return STATUS_COLOR[m.status]
+}
+
 const JOIN_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}/staff/join`
 const DRAFT_KEY = 'staff-invite-form'
 
@@ -39,10 +55,14 @@ export function StaffManagementSection() {
       setError(error.message.includes('duplicate') ? 'อีเมลนี้อยู่ในรายชื่อแล้ว' : 'เพิ่มไม่สำเร็จ: ' + error.message)
       return
     }
+    const invitedName = displayName
     setEmail('')
     setDisplayName('')
     clearFormDraft(DRAFT_KEY)
-    setMessage(`เชิญ ${email} แล้ว — ส่งลิงก์สมัครให้พนักงานคนนี้เพื่อยืนยันตัวตนต่อได้เลย`)
+    setMessage(
+      `เชิญ ${email} แล้ว — ส่งลิงก์สมัคร (ปุ่มคัดลอกด้านบน) ให้ ${invitedName} ไปกรอกชื่อ+อีเมลเดียวกันนี้+ตั้งรหัสผ่านเอง ` +
+        `แล้วกดยืนยันอีเมลที่ได้รับก่อนถึงจะเข้าใช้งานได้ทันที ไม่ต้องกดอนุมัติอะไรเพิ่มจากฝั่งเรา`
+    )
   }
 
   async function handleCopyLink() {
@@ -113,23 +133,38 @@ export function StaffManagementSection() {
                 <p className="text-xs text-stone-500 truncate">{m.email}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <span className={'text-xs rounded-full px-2 py-1 font-medium ' + STATUS_COLOR[m.status]}>{STATUS_LABEL[m.status]}</span>
+                <span className={'text-xs rounded-full px-2 py-1 font-medium ' + statusColor(m)}>{statusLabel(m)}</span>
                 {m.role !== 'owner' && (
                   <>
-                    {m.status !== 'active' && (
-                      <button type="button" onClick={() => void setStatus(m.id, 'active')} className="text-xs rounded-lg bg-green-600 text-white px-2.5 py-1.5 font-medium">
-                        อนุมัติ
-                      </button>
-                    )}
-                    {m.status === 'active' && (
-                      <button type="button" onClick={() => void setStatus(m.id, 'revoked')} className="text-xs rounded-lg bg-amber-600 text-white px-2.5 py-1.5 font-medium">
-                        ระงับ
-                      </button>
-                    )}
-                    {m.status === 'active' && (
-                      <button type="button" onClick={() => setPermissionsTarget(m)} className="text-xs rounded-lg bg-stone-200 text-stone-700 px-2.5 py-1.5 font-medium">
-                        🔑 สิทธิ์
-                      </button>
+                    {m.user_id === null ? (
+                      // ยังไม่มีบัญชีจริงผูกอยู่เลย — สลับได้แค่ยกเลิก/เปิดคำเชิญใหม่ ไม่มี "อนุมัติ" เพราะไม่มีบัญชีให้อนุมัติจริงๆ
+                      m.status === 'revoked' ? (
+                        <button type="button" onClick={() => void setStatus(m.id, 'pending')} className="text-xs rounded-lg bg-green-600 text-white px-2.5 py-1.5 font-medium">
+                          เปิดคำเชิญอีกครั้ง
+                        </button>
+                      ) : (
+                        <button type="button" onClick={() => void setStatus(m.id, 'revoked')} className="text-xs rounded-lg bg-amber-600 text-white px-2.5 py-1.5 font-medium">
+                          ยกเลิกคำเชิญ
+                        </button>
+                      )
+                    ) : (
+                      <>
+                        {m.status !== 'active' && (
+                          <button type="button" onClick={() => void setStatus(m.id, 'active')} className="text-xs rounded-lg bg-green-600 text-white px-2.5 py-1.5 font-medium">
+                            อนุมัติ
+                          </button>
+                        )}
+                        {m.status === 'active' && (
+                          <button type="button" onClick={() => void setStatus(m.id, 'revoked')} className="text-xs rounded-lg bg-amber-600 text-white px-2.5 py-1.5 font-medium">
+                            ระงับ
+                          </button>
+                        )}
+                        {m.status === 'active' && (
+                          <button type="button" onClick={() => setPermissionsTarget(m)} className="text-xs rounded-lg bg-stone-200 text-stone-700 px-2.5 py-1.5 font-medium">
+                            🔑 สิทธิ์
+                          </button>
+                        )}
+                      </>
                     )}
                     <button type="button" onClick={() => setRemoveTarget(m.id)} className="text-xs rounded-lg bg-red-600 text-white px-2.5 py-1.5 font-medium">
                       ลบ
