@@ -7,6 +7,7 @@ import { createWithdrawal, type WithdrawalWageInput } from './api'
 import { formatBaht } from '../lib/money'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { useStaffMembers } from '../staff/useStaffMembers'
+import { Toast } from '../lib/Toast'
 
 type SelectedItem = {
   product_id: string | null
@@ -57,6 +58,8 @@ export function NewWithdrawalPage() {
   const [wageProductQty, setWageProductQty] = useState(draft?.wageProductQty ?? '1')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [withdrawnByError, setWithdrawnByError] = useState(false)
+  const [withdrawnByShake, setWithdrawnByShake] = useState(false)
 
   useFormDraft(DRAFT_KEY, {
     withdrawnAt,
@@ -111,6 +114,12 @@ export function NewWithdrawalPage() {
   async function handleSubmit() {
     if (items.length === 0) {
       setError('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')
+      return
+    }
+    if (!withdrawnBy) {
+      setWithdrawnByError(true)
+      setWithdrawnByShake(true)
+      setTimeout(() => setWithdrawnByShake(false), 400)
       return
     }
     if (withdrawnBy && wageType === 'cash' && (Number(wageCashAmount) < 1 || Number(wageCashAmount) > 30)) {
@@ -179,15 +188,20 @@ export function NewWithdrawalPage() {
             className="w-full rounded-lg border border-stone-300 px-3 py-2"
           />
         </div>
-        <div className="space-y-1 col-span-2">
-          <label htmlFor="withdrawn-by" className="text-sm text-stone-600">ผู้เบิกไปขาย (ไม่บังคับ)</label>
+        <div className={'space-y-1 col-span-2' + (withdrawnByShake ? ' animate-shake' : '')}>
+          <label htmlFor="withdrawn-by" className="text-sm text-stone-600">ผู้เบิกไปขาย *</label>
           <select
             id="withdrawn-by"
             value={withdrawnBy}
-            onChange={(e) => setWithdrawnBy(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            onChange={(e) => {
+              setWithdrawnBy(e.target.value)
+              if (e.target.value) setWithdrawnByError(false)
+            }}
+            className={
+              'w-full rounded-lg border px-3 py-2 ' + (withdrawnByError ? 'border-red-400' : 'border-stone-300')
+            }
           >
-            <option value="">ไม่ระบุ</option>
+            <option value="">เลือกผู้เบิก</option>
             {activeStaff.map((m) => (
               <option key={m.id} value={m.id}>
                 {m.display_name ?? m.email}{m.role === 'owner' ? ' (เจ้าของร้าน)' : ''}
@@ -394,6 +408,8 @@ export function NewWithdrawalPage() {
       >
         {saving ? 'กำลังบันทึก...' : 'เริ่มเบิกของ'}
       </button>
+
+      {withdrawnByError && <Toast variant="error" message="กรุณาเลือกผู้เบิก" onDone={() => setWithdrawnByError(false)} />}
     </div>
   )
 }

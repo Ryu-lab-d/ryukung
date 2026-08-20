@@ -49,6 +49,7 @@ describe('NewWithdrawalPage', () => {
     const qtyInput = screen.getByDisplayValue('1')
     await userEvent.clear(qtyInput)
     await userEvent.type(qtyInput, '20')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
 
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
 
@@ -77,7 +78,7 @@ describe('NewWithdrawalPage', () => {
 
   it('ตัวเลือกผู้เบิกแสดงเฉพาะพนักงานที่ status active เท่านั้น ไม่รวมที่ยัง pending', () => {
     renderPage()
-    const select = screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)')
+    const select = screen.getByLabelText('ผู้เบิกไปขาย *')
     expect(select).toHaveTextContent('น้องริว (เจ้าของร้าน)')
     expect(select).toHaveTextContent('staff@example.com')
     expect(select).not.toHaveTextContent('รอสิทธิ์')
@@ -87,17 +88,27 @@ describe('NewWithdrawalPage', () => {
     createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
     expect(createWithdrawal).toHaveBeenCalledWith(expect.objectContaining({ withdrawnBy: 's2' }))
   })
 
-  it('ไม่เลือกผู้เบิก ส่ง withdrawnBy เป็น null', async () => {
-    createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
+  it('ไม่เลือกผู้เบิกแล้วกดเริ่มเบิกของ บังคับเลือกก่อนเสมอ ขึ้นป็อปอัพเตือน ไม่ยิง createWithdrawal', async () => {
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
-    expect(createWithdrawal).toHaveBeenCalledWith(expect.objectContaining({ withdrawnBy: null }))
+    expect(await screen.findByText('กรุณาเลือกผู้เบิก')).toBeInTheDocument()
+    expect(createWithdrawal).not.toHaveBeenCalled()
+  })
+
+  it('ขึ้นป็อปอัพเตือนแล้ว พอเลือกผู้เบิกจากช่อง error หายไป', async () => {
+    renderPage()
+    await userEvent.click(screen.getByText('คุกกี้'))
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
+    await screen.findByText('กรุณาเลือกผู้เบิก')
+
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
+    expect(screen.queryByText('กรุณาเลือกผู้เบิก')).not.toBeInTheDocument()
   })
 })
 
@@ -111,7 +122,7 @@ describe('NewWithdrawalPage — ค่าจ้างผู้เบิก', () 
     createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
     const amountInput = screen.getByLabelText('จำนวนเงินค่าจ้าง (บาท)')
     await userEvent.clear(amountInput)
@@ -124,7 +135,7 @@ describe('NewWithdrawalPage — ค่าจ้างผู้เบิก', () 
     createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: '🍪 สินค้า' }))
     await userEvent.selectOptions(screen.getByLabelText('สินค้าที่จ่ายเป็นค่าจ้าง'), 'p1')
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
@@ -136,7 +147,7 @@ describe('NewWithdrawalPage — ค่าจ้างผู้เบิก', () 
   it('ตั้งค่าจ้างเงินสดเกิน 30 บาท ขึ้น error ไม่ยิง createWithdrawal', async () => {
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
     const amountInput = screen.getByLabelText('จำนวนเงินค่าจ้าง (บาท)')
     await userEvent.clear(amountInput)
@@ -150,7 +161,7 @@ describe('NewWithdrawalPage — ค่าจ้างผู้เบิก', () 
     createWithdrawal.mockResolvedValue({ id: 'w1', error: null })
     renderPage()
     await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย (ไม่บังคับ)'), 's2')
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
     expect(createWithdrawal).toHaveBeenCalledWith(expect.objectContaining({ wage: null }))
   })
@@ -167,6 +178,7 @@ describe('NewWithdrawalPage — ลดราคาต่อชิ้นสำห
     expect(screen.getByLabelText('ราคาขาย/ชิ้น (บาท)')).toHaveValue(30) // 40 - 10
     expect(screen.getByText(/ราคาปกติ 40\.00 → ลดเหลือ 30\.00/)).toBeInTheDocument()
 
+    await userEvent.selectOptions(screen.getByLabelText('ผู้เบิกไปขาย *'), 's2')
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มเบิกของ' }))
     expect(createWithdrawal).toHaveBeenCalledWith(
       expect.objectContaining({ items: [expect.objectContaining({ unit_price: 30 })] })

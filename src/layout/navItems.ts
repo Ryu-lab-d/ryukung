@@ -4,6 +4,7 @@ export const NAV_ITEMS = [
   { path: '/content', label: 'คอนเทนต์', icon: '🎬', page: 'content' },
   { path: '/products', label: 'สินค้า', icon: '🍪', page: 'products' },
   { path: '/customers', label: 'ลูกค้า', icon: '👤', page: 'customers' },
+  { path: '/withdrawals', label: 'เบิกของ', icon: '📦', page: 'withdrawals' },
   { path: '/costing', label: 'ต้นทุน', icon: '💰', page: 'costing' },
   { path: '/summary', label: 'สรุปยอด', icon: '📊', page: 'summary' },
   { path: '/settings', label: 'ตั้งค่า', icon: '⚙️', ownerOnly: true },
