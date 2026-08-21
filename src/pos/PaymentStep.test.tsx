@@ -74,7 +74,8 @@ describe('PaymentStep — เงินสด', () => {
     await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
     await userEvent.click(screen.getByRole('button', { name: '5' }))
     await userEvent.click(screen.getByRole('button', { name: '0' }))
-    expect(screen.getByText('10.00 บาท')).toBeInTheDocument() // ทอน 50-40=10
+    // ไม่โชว์เงินทอนล่วงหน้าตอนนี้ตั้งใจ — เห็นได้หลังกดยืนยันเท่านั้น (ผ่าน onComplete ด้านล่าง)
+    expect(screen.queryByText(/เงินทอน/)).not.toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
 

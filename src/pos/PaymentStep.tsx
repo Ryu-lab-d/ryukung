@@ -140,13 +140,9 @@ export function PaymentStep({
             ✅ รับพอดี {formatBaht(grandTotal)} บาท
           </button>
           <p className="text-sm text-stone-600">เงินที่ลูกค้ายื่นมา</p>
+          {/* ไม่โชว์ยอดเงินทอนล่วงหน้าตอนนี้ตั้งใจ — กดยืนยันรับเงินก่อน แล้วค่อยเห็นเงินทอนในหน้าขายสำเร็จ
+              (SaleComplete.tsx) เพื่อให้ขั้นตอนตรงกับการนับเงินจริงหน้าร้าน: รับเงิน → ยืนยัน → ทอน */}
           <NumericKeypad value={tendered} onChange={setTendered} />
-          <div className="rounded-xl border border-stone-200 p-4 flex items-center justify-between">
-            <span className="text-sm text-stone-500">เงินทอน</span>
-            <span className={'text-2xl font-bold ' + (enoughCash ? 'text-green-700' : 'text-red-600')}>
-              {tendered ? formatBaht(Math.max(change, 0)) : '-'} บาท
-            </span>
-          </div>
           {tendered && !enoughCash && <p className="text-sm text-red-600">เงินที่ยื่นมายังไม่พอ</p>}
           <button
             type="button"

@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { formatBaht } from '../lib/money'
 import type { SaleResult } from './PaymentStep'
 
@@ -11,6 +12,19 @@ export function SaleComplete({
   grandTotal: number
   onNextSale: () => void
 }) {
+  // ประกาศเสียงบอกเงินทอนตอนขายสำเร็จ (จ่ายเงินสดเท่านั้น) — กันพนักงานทอนผิดตอนมัวยุ่งกับลูกค้าคนถัดไป
+  // ไม่รองรับก็แค่ไม่มีเสียง ไม่ทำให้หน้าพัง (เบราว์เซอร์บางตัว/บางเครื่องไม่มี Web Speech API)
+  useEffect(() => {
+    if (result.method !== 'cash' || result.change === null || result.change <= 0) return
+    try {
+      const utterance = new SpeechSynthesisUtterance(`เงินทอน ${Math.round(result.change)} บาท`)
+      utterance.lang = 'th-TH'
+      window.speechSynthesis?.speak(utterance)
+    } catch {
+      // เบราว์เซอร์ไม่รองรับ Web Speech API — ข้ามไปเงียบๆ
+    }
+  }, [result.method, result.change])
+
   return (
     <div className="text-center space-y-4 py-6">
       <svg width="72" height="72" viewBox="0 0 64 64" className="mx-auto">

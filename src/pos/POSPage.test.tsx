@@ -85,3 +85,33 @@ describe('POSPage — flow เต็ม', () => {
     expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
   })
 })
+
+describe('POSPage — ตะกร้ากันหายตอนสลับแท็บ/แอปแล้วกลับมา', () => {
+  it('เลือกสินค้าไว้แล้ว unmount+remount หน้า (จำลองแอปถูกรีโหลด) ตะกร้ายังอยู่ครบ', async () => {
+    const { unmount } = render(<POSPage />)
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
+    unmount()
+
+    render(<POSPage />)
+    expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
+    expect(screen.queryByText('ยังไม่ได้เลือกสินค้า')).not.toBeInTheDocument()
+  })
+
+  it('ขายสำเร็จแล้ว ร่างตะกร้าที่บันทึกไว้ถูกเคลียร์ทิ้ง (unmount กลางทางก็ไม่มีของเก่าค้าง)', async () => {
+    createPOSSale.mockResolvedValue({ orderId: 'order-9', error: null })
+    issueReceipt.mockResolvedValue({ id: 'receipt-9', error: null })
+    const { unmount } = render(<POSPage />)
+
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
+    await userEvent.click(screen.getByRole('button', { name: /💵/ }))
+    await userEvent.click(screen.getByRole('button', { name: /รับพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
+    await screen.findByText('ขายสำเร็จ! 🎉')
+    unmount()
+
+    render(<POSPage />)
+    expect(screen.getByText('ยังไม่ได้เลือกสินค้า')).toBeInTheDocument()
+  })
+})

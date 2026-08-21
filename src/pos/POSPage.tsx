@@ -4,11 +4,14 @@ import { useCategories } from '../products/useCategories'
 import { ProductCard } from '../products/ProductCard'
 import { useSettings } from '../settings/useSettings'
 import { formatBaht } from '../lib/money'
+import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { CartPanel, type CartItem } from './CartPanel'
 import { PaymentStep, type SaleResult } from './PaymentStep'
 import { SaleComplete } from './SaleComplete'
 
 type Step = 'cart' | 'payment' | 'complete'
+
+const CART_DRAFT_KEY = 'pos-cart'
 
 export function POSPage() {
   const { products } = useProducts()
@@ -16,10 +19,13 @@ export function POSPage() {
   const { settings } = useSettings()
   const [search, setSearch] = useState('')
   const [categoryId, setCategoryId] = useState<string | null>(null)
-  const [items, setItems] = useState<CartItem[]>([])
+  // กันตะกร้าหายตอนสลับแท็บ/แอปแล้วกลับมา — บันทึกลง localStorage ทุกครั้งที่เปลี่ยน เหมือนฟอร์มอื่นๆ ในระบบ
+  const [items, setItems] = useState<CartItem[]>(() => loadFormDraft<CartItem[]>(CART_DRAFT_KEY) ?? [])
   const [step, setStep] = useState<Step>('cart')
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null)
   const [completedTotal, setCompletedTotal] = useState(0)
+
+  useFormDraft(CART_DRAFT_KEY, items)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -50,6 +56,9 @@ export function POSPage() {
   }
 
   function handleComplete(result: SaleResult) {
+    // ขายสำเร็จแล้ว เคลียร์ร่างตะกร้าที่บันทึกไว้ทันที กันไม่ให้ค้างเป็นของเก่าถ้าแอปถูกปิด/รีโหลดก่อนกด
+    // "ขายรายการต่อไป" (ไม่งั้นจะดูเหมือนของที่ขายไปแล้วยังค้างอยู่ในตะกร้าตอนเปิดแอปกลับมา)
+    clearFormDraft(CART_DRAFT_KEY)
     setCompletedTotal(items.reduce((sum, it) => sum + it.unit_price * it.qty, 0))
     setSaleResult(result)
     setStep('complete')

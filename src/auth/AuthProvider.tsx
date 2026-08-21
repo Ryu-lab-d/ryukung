@@ -44,6 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => sub.subscription.unsubscribe()
   }, [])
 
+  // ใช้ session?.user.id เป็น dependency แทนทั้ง object session โดยตั้งใจ (ดูท้าย effect) — Supabase รีเฟรช
+  // token อัตโนมัติทุกครั้งที่แท็บกลับมาโฟกัส (เช่น สลับไปแอปอื่นเช็คเบอร์ลูกค้าแล้วกลับมา) ได้ session object
+  // ใหม่ (คนละ reference) ทั้งที่เป็นคนเดิม ถ้าใช้ [session] เฉยๆ effect นี้จะรันซ้ำทุกครั้ง ตั้ง staffLoading
+  // เป็น true ชั่วคราว ทำให้ RequireAuth.tsx โชว์ LoadingScreen แทน children ชั่วครู่ — เท่ากับถอด (unmount)
+  // ทั้งแอปที่ล็อกอินอยู่ทิ้งแล้วสร้างใหม่ (remount) ทุกครั้งที่สลับแท็บกลับมา ข้อมูลที่กรอกค้างไว้ในฟอร์มไหนก็ตาม
+  // หายหมดทันที — นี่คือสาเหตุจริงของบั๊ก "สลับแท็บแล้วข้อมูลหาย" ที่เจอซ้ำๆ ไม่ใช่แค่ที่หน้าสร้างออเดอร์
   useEffect(() => {
     if (!session) {
       setStaffStatus(null)
@@ -85,7 +91,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!cancelled) setStaffLoading(false)
     })()
     return () => { cancelled = true }
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user.id])
 
   const value: AuthValue = {
     session,
