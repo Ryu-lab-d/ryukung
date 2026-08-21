@@ -9,7 +9,7 @@ vi.mock('../auth/AuthProvider', () => ({
   isManagerOrAbove: (role: string | null | undefined) => role === 'owner' || role === 'executive' || role === 'manager',
 }))
 
-// AppLayout เรนเดอร์ WelcomeToast ซึ่งเรียก useSettings จริง — mock กันไม่ให้ยิง network จริงระหว่างเทสต์
+// AppLayout เรนเดอร์ WelcomeOverlay ซึ่งเรียก useSettings จริง — mock กันไม่ให้ยิง network จริงระหว่างเทสต์
 vi.mock('../settings/useSettings', () => ({
   useSettings: () => ({ settings: null, loading: true }),
 }))
