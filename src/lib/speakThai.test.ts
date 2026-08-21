@@ -12,6 +12,7 @@ class FakeUtterance {
 
 describe('speakThai', () => {
   const speak = vi.fn()
+  const cancel = vi.fn()
   const addEventListener = vi.fn()
   let getVoices: ReturnType<typeof vi.fn>
   const originalUtterance = window.SpeechSynthesisUtterance
@@ -19,10 +20,11 @@ describe('speakThai', () => {
 
   beforeEach(() => {
     speak.mockReset()
+    cancel.mockReset()
     addEventListener.mockReset()
     getVoices = vi.fn().mockReturnValue([])
     window.SpeechSynthesisUtterance = FakeUtterance as unknown as typeof SpeechSynthesisUtterance
-    window.speechSynthesis = { speak, getVoices, addEventListener } as unknown as SpeechSynthesis
+    window.speechSynthesis = { speak, cancel, getVoices, addEventListener } as unknown as SpeechSynthesis
   })
 
   afterEach(() => {
@@ -67,6 +69,13 @@ describe('speakThai', () => {
     expect(speak).toHaveBeenCalledTimes(1)
     const spoken = speak.mock.calls[0][0] as FakeUtterance
     expect(spoken.voice).toBe(thaiVoice)
+  })
+
+  it('เคลียร์คิวเก่าด้วย cancel() ก่อนพูดทุกครั้ง กัน Safari ค้างสถานะ speaking แล้วเงียบเสียงทิ้ง', () => {
+    getVoices.mockReturnValue([{ lang: 'th-TH', name: 'Kanya' }])
+    speakThai('เงินทอน 5 บาท')
+    expect(cancel).toHaveBeenCalledTimes(1)
+    expect(cancel.mock.invocationCallOrder[0]).toBeLessThan(speak.mock.invocationCallOrder[0])
   })
 
   it('ไม่มี window.speechSynthesis เลย (เบราว์เซอร์เก่า) ไม่พัง', () => {
