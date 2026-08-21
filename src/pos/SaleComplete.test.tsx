@@ -1,9 +1,14 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { SaleComplete } from './SaleComplete'
 import type { SaleResult } from './PaymentStep'
+
+const speakThai = vi.fn()
+vi.mock('../lib/speakThai', () => ({
+  speakThai: (...args: unknown[]) => speakThai(...args),
+}))
 
 function renderSaleComplete(props: Parameters<typeof SaleComplete>[0]) {
   return render(
@@ -14,52 +19,26 @@ function renderSaleComplete(props: Parameters<typeof SaleComplete>[0]) {
 }
 
 describe('SaleComplete — เสียงประกาศ', () => {
-  const speak = vi.fn()
-  const originalUtterance = window.SpeechSynthesisUtterance
-  const originalSynthesis = window.speechSynthesis
-
   beforeEach(() => {
-    speak.mockReset()
-    class FakeUtterance {
-      text: string
-      lang = ''
-      constructor(text: string) {
-        this.text = text
-      }
-    }
-    window.SpeechSynthesisUtterance = FakeUtterance as unknown as typeof SpeechSynthesisUtterance
-    // @ts-expect-error jsdom ไม่มี Web Speech API จริง — mock แค่ส่วนที่ใช้
-    window.speechSynthesis = { speak }
+    speakThai.mockReset()
   })
 
-  afterEach(() => {
-    window.SpeechSynthesisUtterance = originalUtterance
-    window.speechSynthesis = originalSynthesis
-  })
-
-  it('จ่ายเงินสดมีเงินทอน พูดประกาศยอดเงินทอน', () => {
+  it('จ่ายเงินสดมีเงินทอน พูด "เงินทอน" นำหน้าตัวเลข', () => {
     const result: SaleResult = { orderId: 'order-1', method: 'cash', change: 40, receiptIssued: true }
     renderSaleComplete({ result, grandTotal: 100, onNextSale: vi.fn() })
-    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'เงินทอน 40 บาท' }))
+    expect(speakThai).toHaveBeenCalledWith('เงินทอน 40 บาท')
   })
 
   it('จ่ายเงินสดพอดี (ไม่มีเงินทอน) พูด "รับมาพอดี"', () => {
     const result: SaleResult = { orderId: 'order-2', method: 'cash', change: 0, receiptIssued: true }
     renderSaleComplete({ result, grandTotal: 40, onNextSale: vi.fn() })
-    expect(speak).toHaveBeenCalledWith(expect.objectContaining({ text: 'รับมาพอดี' }))
+    expect(speakThai).toHaveBeenCalledWith('รับมาพอดี')
   })
 
   it('จ่ายพร้อมเพย์ ไม่พูดเรื่องเงินทอน/รับพอดีเลย', () => {
     const result: SaleResult = { orderId: 'order-3', method: 'promptpay', change: null, receiptIssued: true }
     renderSaleComplete({ result, grandTotal: 60, onNextSale: vi.fn() })
-    expect(speak).not.toHaveBeenCalled()
-  })
-
-  it('เบราว์เซอร์ไม่รองรับ Web Speech API ก็ไม่พัง', () => {
-    // @ts-expect-error จำลองเบราว์เซอร์ที่ไม่มี API นี้เลย
-    window.SpeechSynthesisUtterance = undefined
-    const result: SaleResult = { orderId: 'order-4', method: 'cash', change: 20, receiptIssued: true }
-    expect(() => renderSaleComplete({ result, grandTotal: 60, onNextSale: vi.fn() })).not.toThrow()
+    expect(speakThai).not.toHaveBeenCalled()
   })
 })
 

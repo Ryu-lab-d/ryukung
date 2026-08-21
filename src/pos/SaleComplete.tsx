@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { formatBaht } from '../lib/money'
+import { speakThai } from '../lib/speakThai'
 import type { SaleResult } from './PaymentStep'
 
 /** หน้าขายสำเร็จ — ใช้ลุคเดียวกับ SuccessOverlay (วงกลม+เครื่องหมายถูก) แต่ไม่ auto-dismiss เพราะมีปุ่มกดต่อ */
@@ -14,17 +15,10 @@ export function SaleComplete({
   onNextSale: () => void
 }) {
   // ประกาศเสียงตอนขายสำเร็จ (จ่ายเงินสดเท่านั้น) — กันพนักงานทอนผิดตอนมัวยุ่งกับลูกค้าคนถัดไป: รับมาพอดี
-  // ไม่ต้องทอนก็พูดยืนยัน "รับมาพอดี" ไปเลย มีเงินทอนก็บอกจำนวนชัดๆ — ไม่รองรับก็แค่ไม่มีเสียง ไม่ทำให้หน้าพัง
+  // ไม่ต้องทอนก็พูดยืนยัน "รับมาพอดี" ไปเลย มีเงินทอนก็พูดคำว่า "เงินทอน" นำหน้าตัวเลขเสมอ
   useEffect(() => {
     if (result.method !== 'cash' || result.change === null) return
-    const text = result.change > 0 ? `เงินทอน ${Math.round(result.change)} บาท` : 'รับมาพอดี'
-    try {
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'th-TH'
-      window.speechSynthesis?.speak(utterance)
-    } catch {
-      // เบราว์เซอร์ไม่รองรับ Web Speech API — ข้ามไปเงียบๆ
-    }
+    speakThai(result.change > 0 ? `เงินทอน ${Math.round(result.change)} บาท` : 'รับมาพอดี')
   }, [result.method, result.change])
 
   return (
