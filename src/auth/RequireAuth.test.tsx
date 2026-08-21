@@ -7,49 +7,64 @@ vi.mock('./AuthProvider', () => ({
   useAuth: () => useAuthMock(),
 }))
 
-function base(overrides: Partial<ReturnType<typeof useAuthMock>>) {
-  return {
-    session: { user: { id: 'u1', email: 'x@example.com' } },
-    loading: false,
-    staffLoading: false,
-    staffStatus: null,
-    signIn: vi.fn(),
-    signOut: vi.fn(),
-    ...overrides,
-  }
-}
+vi.mock('./LoginPage', () => ({
+  LoginPage: () => <div>หน้าล็อกอิน</div>,
+}))
 
-describe('RequireAuth คุมสิทธิ์เข้าใช้งานตามสถานะพนักงาน', () => {
-  it('ยังไม่มีเซสชันเลย แสดงหน้าล็อกอิน', () => {
-    useAuthMock.mockReturnValue(base({ session: null }))
-    render(<RequireAuth><div>เนื้อหาลับ</div></RequireAuth>)
-    expect(screen.queryByText('เนื้อหาลับ')).not.toBeInTheDocument()
-    expect(screen.getByText('เข้าสู่ระบบ')).toBeInTheDocument()
+describe('RequireAuth', () => {
+  it('กำลังเช็ค session แสดงหน้าจอ "กำลังโหลด..." แบบมีแบรนด์ร้าน', () => {
+    useAuthMock.mockReturnValue({ session: null, loading: true, staffStatus: null, staffLoading: true, signOut: vi.fn() })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
+    expect(screen.getByText('RYUKUNG BAKERY')).toBeInTheDocument()
+    expect(screen.getByText('กำลังโหลด...')).toBeInTheDocument()
+    expect(screen.queryByText('เนื้อหา')).not.toBeInTheDocument()
   })
 
-  it('บัญชีที่ยังรออนุมัติ (pending) เข้าเนื้อหาไม่ได้', () => {
-    useAuthMock.mockReturnValue(base({ staffStatus: { role: 'staff', state: 'pending' } }))
-    render(<RequireAuth><div>เนื้อหาลับ</div></RequireAuth>)
-    expect(screen.queryByText('เนื้อหาลับ')).not.toBeInTheDocument()
+  it('มี session แต่ยังเช็คสิทธิ์พนักงานอยู่ ยังแสดงหน้าจอกำลังโหลด', () => {
+    useAuthMock.mockReturnValue({ session: { user: { id: 'u1' } }, loading: false, staffStatus: null, staffLoading: true, signOut: vi.fn() })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
+    expect(screen.getByText('กำลังโหลด...')).toBeInTheDocument()
+  })
+
+  it('ไม่มี session แสดงหน้าล็อกอิน', () => {
+    useAuthMock.mockReturnValue({ session: null, loading: false, staffStatus: null, staffLoading: false, signOut: vi.fn() })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
+    expect(screen.getByText('หน้าล็อกอิน')).toBeInTheDocument()
+  })
+
+  it('รออนุมัติอยู่ แสดงหน้าจอแจ้งเตือน', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { id: 'u1' } },
+      loading: false,
+      staffStatus: { role: 'staff', state: 'pending', allowedPages: [], displayName: null },
+      staffLoading: false,
+      signOut: vi.fn(),
+    })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
     expect(screen.getByText('รอเจ้าของร้านอนุมัติ')).toBeInTheDocument()
   })
 
-  it('บัญชีที่ถูกระงับ (revoked) เข้าเนื้อหาไม่ได้', () => {
-    useAuthMock.mockReturnValue(base({ staffStatus: { role: 'staff', state: 'revoked' } }))
-    render(<RequireAuth><div>เนื้อหาลับ</div></RequireAuth>)
-    expect(screen.queryByText('เนื้อหาลับ')).not.toBeInTheDocument()
+  it('ถูกระงับสิทธิ์ แสดงหน้าจอแจ้งเตือน', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { id: 'u1' } },
+      loading: false,
+      staffStatus: { role: 'staff', state: 'revoked', allowedPages: [], displayName: null },
+      staffLoading: false,
+      signOut: vi.fn(),
+    })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
     expect(screen.getByText('บัญชีนี้ถูกระงับสิทธิ์แล้ว')).toBeInTheDocument()
   })
 
-  it('มีเซสชันแต่ยังไม่รู้สถานะพนักงาน (กำลังเช็กอยู่) ก็ยังเข้าเนื้อหาไม่ได้', () => {
-    useAuthMock.mockReturnValue(base({ staffStatus: null, staffLoading: true }))
-    render(<RequireAuth><div>เนื้อหาลับ</div></RequireAuth>)
-    expect(screen.queryByText('เนื้อหาลับ')).not.toBeInTheDocument()
-  })
-
-  it('บัญชี active เข้าเนื้อหาได้ปกติ', () => {
-    useAuthMock.mockReturnValue(base({ staffStatus: { role: 'staff', state: 'active' } }))
-    render(<RequireAuth><div>เนื้อหาลับ</div></RequireAuth>)
-    expect(screen.getByText('เนื้อหาลับ')).toBeInTheDocument()
+  it('ผ่านทุกเงื่อนไข แสดงเนื้อหาที่ส่งเข้ามา', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { id: 'u1' } },
+      loading: false,
+      staffStatus: { role: 'staff', state: 'active', allowedPages: [], displayName: null },
+      staffLoading: false,
+      signOut: vi.fn(),
+    })
+    render(<RequireAuth><div>เนื้อหา</div></RequireAuth>)
+    expect(screen.getByText('เนื้อหา')).toBeInTheDocument()
   })
 })

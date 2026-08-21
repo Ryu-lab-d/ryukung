@@ -190,3 +190,21 @@ a:focus-visible {
 .animate-chat-ring {
   animation: chat-ring-pulse 1.6s ease-out 3;
 }
+
+/* หน้าจอ "กำลังโหลด..." ตอนเช็คสิทธิ์เข้าใช้งาน — ไอคอนเต้นเบาๆ */
+@keyframes loading-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-loading-bounce {
+  animation: loading-bounce 1.4s ease-in-out infinite;
+}
+
+/* จุดไข่ปลาวิ่งไล่กันใต้ไอคอนตอนกำลังโหลด */
+@keyframes loading-dot {
+  0%, 80%, 100% { opacity: 0.25; transform: scale(0.75); }
+  40% { opacity: 1; transform: scale(1); }
+}
+.animate-loading-dot {
+  animation: loading-dot 1.2s ease-in-out infinite;
+}
