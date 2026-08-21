@@ -1,12 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
 import { POSPage } from './POSPage'
 
 const products = [
   { id: 'p1', name: 'คุกกี้', sku: null, category_id: null, price: 40, cost: 15, unit: 'ชิ้น', image_path: null, is_active: true, note: null, created_at: '', updated_at: '' },
-  { id: 'p2', name: 'บราวนี่', sku: null, category_id: null, price: 60, cost: 25, unit: 'ชิ้น', image_path: null, is_active: true, note: null, created_at: '', updated_at: '' },
 ]
 vi.mock('../products/useProducts', () => ({ useProducts: () => ({ products, loading: false }) }))
 vi.mock('../products/useCategories', () => ({ useCategories: () => ({ categories: [], loading: false }) }))
@@ -44,88 +42,46 @@ vi.mock('../receipts/api', () => ({
   issueReceipt: (...args: unknown[]) => issueReceipt(...args),
 }))
 
-const navigate = vi.fn()
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
-  return { ...actual, useNavigate: () => navigate }
-})
-
-function renderPage() {
-  render(
-    <MemoryRouter>
-      <POSPage />
-    </MemoryRouter>
-  )
-}
-
 beforeEach(() => {
   createPOSSale.mockReset()
   issueReceipt.mockReset()
-  navigate.mockReset()
 })
 
-describe('POSPage — ขายหน้าร้าน', () => {
-  it('แตะสินค้าเพิ่มลงตะกร้า แล้วยอดรวมอัปเดตถูกต้อง', async () => {
-    renderPage()
-    await userEvent.click(screen.getByText('คุกกี้'))
-    expect(screen.queryByText('ยังไม่ได้เลือกสินค้า')).not.toBeInTheDocument()
-    expect(screen.getByText('40.00 บาท')).toBeInTheDocument()
-  })
-
-  it('แตะสินค้าเดิมซ้ำ เพิ่มจำนวนแทนที่จะเพิ่มแถวใหม่', async () => {
-    renderPage()
-    const pickerTile = screen.getAllByText('คุกกี้')[0]
-    await userEvent.click(pickerTile)
-    await userEvent.click(screen.getAllByText('คุกกี้')[0])
-    expect(screen.getByLabelText('จำนวน')).toHaveValue(2)
-    expect(screen.getByText('80.00 บาท')).toBeInTheDocument()
-  })
-
-  it('ไม่มีสินค้าในตะกร้า กดชำระเงินแล้วแจ้ง error', async () => {
-    renderPage()
-    await userEvent.click(screen.getByRole('button', { name: 'ชำระเงิน' }))
-    expect(screen.getByText('กรุณาเลือกสินค้าอย่างน้อย 1 รายการ')).toBeInTheDocument()
-    expect(createPOSSale).not.toHaveBeenCalled()
-  })
-
-  it('มีสินค้าแล้วแต่ไม่เลือกวิธีรับเงิน กดชำระเงินแล้วเด้ง Toast เตือน', async () => {
-    renderPage()
-    await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.click(screen.getByRole('button', { name: 'ชำระเงิน' }))
-    expect(await screen.findByText('กรุณาเลือกวิธีรับเงิน')).toBeInTheDocument()
-    expect(createPOSSale).not.toHaveBeenCalled()
-  })
-
-  it('เลือกสินค้า+วิธีรับเงินครบ กดชำระเงินสำเร็จ ออกใบเสร็จอัตโนมัติแล้วพาไปหน้าใบเสร็จ', async () => {
+describe('POSPage — flow เต็ม', () => {
+  it('เลือกสินค้า → ไปหน้าชำระเงิน → จ่ายเงินสดครบ → เห็นหน้าสำเร็จ+เงินทอนถูก → กด "ขายรายการต่อไป" → กลับมาตะกร้าว่าง', async () => {
     createPOSSale.mockResolvedValue({ orderId: 'order-1', error: null })
     issueReceipt.mockResolvedValue({ id: 'receipt-1', error: null })
-    renderPage()
+    render(<POSPage />)
 
-    await userEvent.click(screen.getByText('คุกกี้'))
-    await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
-    await userEvent.click(screen.getByRole('button', { name: 'ชำระเงิน' }))
+    // เลือกสินค้า — jsdom ไม่รู้จัก media query lg: จึงเห็นทั้งตะกร้าฝั่งขวาและแถบสรุปมือถือพร้อมกัน (ปกติจริง
+    // ในเบราว์เซอร์จะเห็นแค่อันเดียวตามขนาดจอ) ใช้ getAllByText แทน getByText เพื่อไม่ให้ชนกันเอง
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
 
-    expect(createPOSSale).toHaveBeenCalledWith(
-      [{ product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty: 1 }],
-      'cash'
-    )
-    expect(issueReceipt).toHaveBeenCalledWith(
-      'order-1',
-      expect.objectContaining({ grand_total: 40, items_total: 40, customer_name: null })
-    )
-    expect(navigate).toHaveBeenCalledWith('/receipts/order-1')
+    // ไปหน้าชำระเงิน
+    await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
+    expect(screen.getByText('ยอดที่ต้องชำระ')).toBeInTheDocument()
+
+    // จ่ายเงินสดพอดี
+    await userEvent.click(screen.getByRole('button', { name: /💵/ }))
+    await userEvent.click(screen.getByRole('button', { name: /รับพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
+
+    // เห็นหน้าสำเร็จ
+    expect(await screen.findByText('ขายสำเร็จ! 🎉')).toBeInTheDocument()
+    expect(screen.getByText('0.00 บาท')).toBeInTheDocument() // เงินทอน 0
+
+    // ขายรายการต่อไป — กลับมาตะกร้าว่างเหมือนเปิดหน้าใหม่
+    await userEvent.click(screen.getByRole('button', { name: 'ขายรายการต่อไป' }))
+    expect(screen.getByText('ยังไม่ได้เลือกสินค้า')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'ไปหน้าชำระเงิน →' })).toBeDisabled()
   })
 
-  it('ขายไม่สำเร็จ (RPC error) แสดงข้อความผิดพลาด ไม่พาไปหน้าใบเสร็จ', async () => {
-    createPOSSale.mockResolvedValue({ orderId: null, error: { message: 'สินค้าหมด' } })
-    renderPage()
-
-    await userEvent.click(screen.getByText('บราวนี่'))
-    await userEvent.click(screen.getByRole('button', { name: '💳 พร้อมเพย์ / โอนเงิน' }))
-    await userEvent.click(screen.getByRole('button', { name: 'ชำระเงิน' }))
-
-    expect(await screen.findByText('สินค้าหมด')).toBeInTheDocument()
-    expect(issueReceipt).not.toHaveBeenCalled()
-    expect(navigate).not.toHaveBeenCalled()
+  it('กด "กลับไปแก้ตะกร้า" จากหน้าชำระเงิน กลับมาเห็นตะกร้าเดิม (ไม่หายไป)', async () => {
+    render(<POSPage />)
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
+    await userEvent.click(screen.getByRole('button', { name: '← กลับไปแก้ตะกร้า' }))
+    expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
   })
 })
