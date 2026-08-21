@@ -34,6 +34,7 @@ import { ContentStatsPage } from './content/ContentStatsPage'
 import { IngredientsPage } from './ingredients/IngredientsPage'
 import { IngredientDetailPage } from './ingredients/IngredientDetailPage'
 import { ExpensesPage } from './reports/ExpensesPage'
+import { POSPage } from './pos/POSPage'
 import type { PageKey } from './staff/pages'
 
 /** ตั้งค่าร้าน (รวมจัดการสิทธิ์พนักงาน) เจ้าของร้านเท่านั้นที่เข้าได้ พนักงานเข้ามาจะเด้งกลับหน้าออเดอร์ */
@@ -97,6 +98,7 @@ function AuthenticatedApp() {
           <Routes>
             <Route path="/no-access" element={<NoAccessPage />} />
             <Route path="/" element={<RequirePage page="orders"><OrderBoardPage /></RequirePage>} />
+            <Route path="/pos" element={<RequirePage page="pos"><POSPage /></RequirePage>} />
             <Route path="/calendar" element={<RequirePage page="orders"><CalendarPage /></RequirePage>} />
             <Route path="/orders/new" element={<RequirePage page="orders"><OrderFormPage /></RequirePage>} />
             <Route path="/orders/:id" element={<RequirePage page="orders"><OrderDetailPage /></RequirePage>} />

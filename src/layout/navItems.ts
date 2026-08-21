@@ -1,5 +1,6 @@
 export const NAV_ITEMS = [
   { path: '/', label: 'ออเดอร์', icon: '📋', page: 'orders' },
+  { path: '/pos', label: 'ขายหน้าร้าน', icon: '🛒', page: 'pos' },
   { path: '/calendar', label: 'ปฏิทิน', icon: '📅', page: 'orders' },
   { path: '/content', label: 'คอนเทนต์', icon: '🎬', page: 'content' },
   { path: '/products', label: 'สินค้า', icon: '🍪', page: 'products' },

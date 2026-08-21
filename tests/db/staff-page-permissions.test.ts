@@ -16,7 +16,7 @@ describe('สิทธิ์การเข้าถึงหน้าต่า�
 
     const expectedFullAccess = [
       'orders', 'products', 'customers', 'costing', 'summary',
-      'expenses', 'withdrawals', 'content', 'ingredients', 'promo', 'storage',
+      'expenses', 'withdrawals', 'content', 'ingredients', 'promo', 'storage', 'pos',
     ]
     expect(new Set(ins.data!.allowed_pages)).toEqual(new Set(expectedFullAccess))
   })

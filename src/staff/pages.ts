@@ -1,5 +1,6 @@
 export const STAFF_PAGES = [
   { key: 'orders', label: 'ออเดอร์ & ปฏิทิน' },
+  { key: 'pos', label: 'ขายหน้าร้าน (POS)' },
   { key: 'products', label: 'สินค้า' },
   { key: 'customers', label: 'ลูกค้า' },
   { key: 'costing', label: 'ต้นทุน' },
