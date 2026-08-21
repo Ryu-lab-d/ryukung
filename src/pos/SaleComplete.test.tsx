@@ -1,14 +1,9 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { SaleComplete } from './SaleComplete'
 import type { SaleResult } from './PaymentStep'
-
-const speakThai = vi.fn()
-vi.mock('../lib/speakThai', () => ({
-  speakThai: (...args: unknown[]) => speakThai(...args),
-}))
 
 function renderSaleComplete(props: Parameters<typeof SaleComplete>[0]) {
   return render(
@@ -17,30 +12,6 @@ function renderSaleComplete(props: Parameters<typeof SaleComplete>[0]) {
     </MemoryRouter>
   )
 }
-
-describe('SaleComplete — เสียงประกาศ', () => {
-  beforeEach(() => {
-    speakThai.mockReset()
-  })
-
-  it('จ่ายเงินสดมีเงินทอน พูด "เงินทอน" นำหน้าตัวเลข', () => {
-    const result: SaleResult = { orderId: 'order-1', method: 'cash', change: 40, receiptIssued: true }
-    renderSaleComplete({ result, grandTotal: 100, onNextSale: vi.fn() })
-    expect(speakThai).toHaveBeenCalledWith('เงินทอน 40 บาท')
-  })
-
-  it('จ่ายเงินสดพอดี (ไม่มีเงินทอน) พูด "รับมาพอดี"', () => {
-    const result: SaleResult = { orderId: 'order-2', method: 'cash', change: 0, receiptIssued: true }
-    renderSaleComplete({ result, grandTotal: 40, onNextSale: vi.fn() })
-    expect(speakThai).toHaveBeenCalledWith('รับมาพอดี')
-  })
-
-  it('จ่ายพร้อมเพย์ ไม่พูดเรื่องเงินทอน/รับพอดีเลย', () => {
-    const result: SaleResult = { orderId: 'order-3', method: 'promptpay', change: null, receiptIssued: true }
-    renderSaleComplete({ result, grandTotal: 60, onNextSale: vi.fn() })
-    expect(speakThai).not.toHaveBeenCalled()
-  })
-})
 
 describe('SaleComplete', () => {
   it('จ่ายเงินสดมีเงินทอน แสดงยอดขายและเงินทอนถูกต้อง', () => {

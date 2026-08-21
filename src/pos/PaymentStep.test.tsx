@@ -43,9 +43,15 @@ vi.mock('../public/PromptPayQR', () => ({
   PromptPayQR: ({ amount }: { amount: number }) => <div>QR ปลอม ยอด {amount}</div>,
 }))
 
+const speakThai = vi.fn()
+vi.mock('../lib/speakThai', () => ({
+  speakThai: (...args: unknown[]) => speakThai(...args),
+}))
+
 beforeEach(() => {
   createPOSSale.mockReset()
   issueReceipt.mockReset()
+  speakThai.mockReset()
 })
 
 describe('PaymentStep — เงินสด', () => {
@@ -85,6 +91,21 @@ describe('PaymentStep — เงินสด', () => {
     )
     expect(issueReceipt).toHaveBeenCalledWith('order-1', expect.objectContaining({ grand_total: 40 }))
     expect(onComplete).toHaveBeenCalledWith({ orderId: 'order-1', method: 'cash', change: 10, receiptIssued: true })
+
+    // พูด "เงินทอน" ก่อน await ใดๆ ทั้งหมด (เรียกก่อน createPOSSale) — สำคัญเพราะมือถือบางเครื่อง (เช่น Safari
+    // บน iOS) เงียบเสียงทิ้งถ้าไม่ได้เรียกแบบ synchronous อยู่ใน call stack เดียวกับตอนกดปุ่ม (user gesture)
+    expect(speakThai).toHaveBeenCalledWith('เงินทอน 10 บาท')
+    expect(speakThai.mock.invocationCallOrder[0]).toBeLessThan(createPOSSale.mock.invocationCallOrder[0])
+  })
+
+  it('รับเงินพอดี (ไม่มีเงินทอน) พูด "รับมาพอดี" ทันทีตอนกดยืนยัน', async () => {
+    createPOSSale.mockResolvedValue({ orderId: 'order-1c', error: null })
+    issueReceipt.mockResolvedValue({ id: 'receipt-1c', error: null })
+    render(<PaymentStep items={items} settings={baseSettings} onBack={vi.fn()} onComplete={vi.fn()} />)
+    await userEvent.click(screen.getByRole('button', { name: '💵 เงินสด' }))
+    await userEvent.click(screen.getByRole('button', { name: /รับพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
+    expect(speakThai).toHaveBeenCalledWith('รับมาพอดี')
   })
 
   it('ขายไม่สำเร็จ (RPC error) แสดงข้อความผิดพลาด ไม่เรียก onComplete', async () => {
@@ -118,6 +139,7 @@ describe('PaymentStep — พร้อมเพย์', () => {
     await userEvent.click(screen.getByRole('button', { name: '✅ ยืนยันว่าลูกค้าจ่ายแล้ว' }))
     expect(createPOSSale).toHaveBeenCalledWith(expect.anything(), 'promptpay')
     expect(onComplete).toHaveBeenCalledWith({ orderId: 'order-2', method: 'promptpay', change: null, receiptIssued: true })
+    expect(speakThai).not.toHaveBeenCalled()
   })
 })
 

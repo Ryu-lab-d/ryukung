@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { NumericKeypad } from '../lib/NumericKeypad'
 import { PromptPayQR } from '../public/PromptPayQR'
 import { formatBaht, toNumber } from '../lib/money'
+import { speakThai } from '../lib/speakThai'
 import { createPOSSale, type POSPaymentMethod } from './api'
 import { issueReceipt, type ReceiptSnapshot } from '../receipts/api'
 import type { Settings } from '../settings/useSettings'
@@ -36,6 +37,14 @@ export function PaymentStep({
   const enoughCash = tenderedNum >= grandTotal
 
   async function finalizeSale(paymentMethod: POSPaymentMethod, changeAmount: number | null) {
+    // พูดทันทีตรงนี้ ก่อน await ใดๆ ทั้งหมด — เบราว์เซอร์มือถือหลายตัว (โดยเฉพาะ Safari บน iOS) จะเงียบเสียง
+    // ทิ้งเฉยๆ ถ้า speechSynthesis.speak() ไม่ได้ถูกเรียกแบบ synchronous อยู่ใน call stack เดียวกับตอนที่ผู้ใช้
+    // กดปุ่ม (user gesture) — ถ้าไปเรียกหลัง await เครือข่าย (createPOSSale/issueReceipt) จะถือว่าหลุดจาก
+    // user gesture ไปแล้ว เสียงจะไม่ออกเลยแม้โค้ดรันไม่ error อะไรเลยก็ตาม
+    if (paymentMethod === 'cash' && changeAmount !== null) {
+      speakThai(changeAmount > 0 ? `เงินทอน ${Math.round(changeAmount)} บาท` : 'รับมาพอดี')
+    }
+
     setError(null)
     setSaving(true)
     const { orderId, error: saveError } = await createPOSSale(

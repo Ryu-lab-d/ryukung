@@ -1,10 +1,10 @@
-import { useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { formatBaht } from '../lib/money'
-import { speakThai } from '../lib/speakThai'
 import type { SaleResult } from './PaymentStep'
 
-/** หน้าขายสำเร็จ — ใช้ลุคเดียวกับ SuccessOverlay (วงกลม+เครื่องหมายถูก) แต่ไม่ auto-dismiss เพราะมีปุ่มกดต่อ */
+/** หน้าขายสำเร็จ — ใช้ลุคเดียวกับ SuccessOverlay (วงกลม+เครื่องหมายถูก) แต่ไม่ auto-dismiss เพราะมีปุ่มกดต่อ
+ * เสียงประกาศเงินทอน/รับมาพอดี พูดไปแล้วตั้งแต่ตอนกดยืนยันใน PaymentStep.tsx (ต้องพูดแบบ synchronous ใน
+ * click handler ไม่งั้นมือถือบางเครื่องจะเงียบเสียงทิ้ง — ดูคอมเมนต์ที่ finalizeSale) ไม่ต้องพูดซ้ำที่นี่ */
 export function SaleComplete({
   result,
   grandTotal,
@@ -14,13 +14,6 @@ export function SaleComplete({
   grandTotal: number
   onNextSale: () => void
 }) {
-  // ประกาศเสียงตอนขายสำเร็จ (จ่ายเงินสดเท่านั้น) — กันพนักงานทอนผิดตอนมัวยุ่งกับลูกค้าคนถัดไป: รับมาพอดี
-  // ไม่ต้องทอนก็พูดยืนยัน "รับมาพอดี" ไปเลย มีเงินทอนก็พูดคำว่า "เงินทอน" นำหน้าตัวเลขเสมอ
-  useEffect(() => {
-    if (result.method !== 'cash' || result.change === null) return
-    speakThai(result.change > 0 ? `เงินทอน ${Math.round(result.change)} บาท` : 'รับมาพอดี')
-  }, [result.method, result.change])
-
   return (
     <div className="text-center space-y-4 py-6">
       <svg width="72" height="72" viewBox="0 0 64 64" className="mx-auto">
