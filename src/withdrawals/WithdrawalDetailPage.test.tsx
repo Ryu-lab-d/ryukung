@@ -42,7 +42,7 @@ function renderPage() {
 }
 
 beforeEach(() => {
-  withdrawalOverride = { id: 'w1', withdrawn_at: '2026-08-10', location: 'โรงเรียน', note: null, status: 'open', settled_at: null }
+  withdrawalOverride = { id: 'w1', withdrawn_at: '2026-08-10', created_at: '2026-08-10T09:15:00Z', location: 'โรงเรียน', note: null, status: 'open', settled_at: null }
   itemsOverride = [
     { id: 'i1', product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty_out: 20, qty_sold: null, amount_collected: null },
   ]
@@ -70,6 +70,16 @@ describe('WithdrawalDetailPage — ยังไม่ปิดรอบ', () => 
   it('ไม่ได้ผูกผู้เบิกไว้ แสดง "ไม่ระบุ"', async () => {
     renderPage()
     expect(await screen.findByText('👤 ผู้เบิก: ไม่ระบุ')).toBeInTheDocument()
+  })
+
+  it('แสดงเวลาที่บันทึกและชื่อผู้สร้างรายการ', async () => {
+    withdrawalOverride = {
+      ...withdrawalOverride,
+      creator: { display_name: 'เจ้าของร้าน', email: 'owner@example.com' },
+    }
+    renderPage()
+    expect(await screen.findByText(/บันทึกเมื่อ/)).toBeInTheDocument()
+    expect(screen.getByText('✏️ สร้างรายการโดย: เจ้าของร้าน')).toBeInTheDocument()
   })
 
   it('กรอกจำนวนที่ขายได้ ระบบเดาจำนวนเงินให้อัตโนมัติจากราคาสินค้า แต่ยังแก้ไขเองได้', async () => {
@@ -140,7 +150,7 @@ describe('WithdrawalDetailPage — ค่าจ้างผู้เบิก', 
 
 describe('WithdrawalDetailPage — ปิดรอบแล้ว', () => {
   beforeEach(() => {
-    withdrawalOverride = { id: 'w1', withdrawn_at: '2026-08-10', location: 'โรงเรียน', note: null, status: 'settled', settled_at: '2026-08-10T12:00:00Z' }
+    withdrawalOverride = { id: 'w1', withdrawn_at: '2026-08-10', created_at: '2026-08-10T09:15:00Z', location: 'โรงเรียน', note: null, status: 'settled', settled_at: '2026-08-10T12:00:00Z' }
     itemsOverride = [
       { id: 'i1', product_id: 'p1', product_name: 'คุกกี้', unit_price: 40, unit_cost: 15, qty_out: 20, qty_sold: 18, amount_collected: 720 },
     ]

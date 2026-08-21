@@ -38,11 +38,21 @@ vi.mock('../staff/useStaffMembers', () => ({
     invite: vi.fn(),
     setStatus: vi.fn(),
     remove: vi.fn(),
+    setAllowedPages: vi.fn(),
+    setRole: vi.fn(),
     reload: vi.fn(),
   }),
 }))
 
-beforeEach(() => save.mockReset())
+let roleOverride: 'owner' | 'manager' | 'staff' = 'owner'
+vi.mock('../auth/AuthProvider', () => ({
+  useAuth: () => ({ staffStatus: { role: roleOverride } }),
+}))
+
+beforeEach(() => {
+  save.mockReset()
+  roleOverride = 'owner'
+})
 
 describe('หน้าตั้งค่า', () => {
   it('แสดงค่าที่มีอยู่ในช่องกรอก', () => {
@@ -75,5 +85,31 @@ describe('หน้าตั้งค่า', () => {
     expect(
       screen.getByLabelText('บังคับกรอกข้อมูลลูกค้าให้ครบก่อนยืนยันออเดอร์')
     ).toBeChecked()
+  })
+})
+
+describe('หน้าตั้งค่า — มุมมองผู้จัดการ', () => {
+  it('ผู้จัดการเห็นแค่ชื่อร้าน/พร้อมเพย์/วิธีชำระเงิน ไม่เห็นส่วนที่จำกัดไว้เฉพาะเจ้าของร้าน', () => {
+    roleOverride = 'manager'
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
+    expect(screen.getByLabelText('ชื่อร้าน')).toBeInTheDocument()
+    expect(screen.getByText('วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)')).toBeInTheDocument()
+    expect(screen.queryByLabelText('เบอร์โทร')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('ที่อยู่ร้าน')).not.toBeInTheDocument()
+    expect(screen.queryByText('จัดการร้าน')).not.toBeInTheDocument()
+    expect(screen.queryByText('แจ้งเตือนออเดอร์ใหม่')).not.toBeInTheDocument()
+    expect(screen.queryByText('ค่าเริ่มต้นใบเสร็จ')).not.toBeInTheDocument()
+    expect(screen.queryByText('เลขที่เอกสารและออเดอร์')).not.toBeInTheDocument()
+  })
+
+  it('เจ้าของร้านยังเห็นทุกส่วนเหมือนเดิม', () => {
+    roleOverride = 'owner'
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
+    expect(screen.getByLabelText('เบอร์โทร')).toBeInTheDocument()
+    expect(screen.getByLabelText('ที่อยู่ร้าน')).toBeInTheDocument()
+    expect(screen.getByText('จัดการร้าน')).toBeInTheDocument()
+    expect(screen.getByText('แจ้งเตือนออเดอร์ใหม่')).toBeInTheDocument()
+    expect(screen.getByText('ค่าเริ่มต้นใบเสร็จ')).toBeInTheDocument()
+    expect(screen.getByText('เลขที่เอกสารและออเดอร์')).toBeInTheDocument()
   })
 })

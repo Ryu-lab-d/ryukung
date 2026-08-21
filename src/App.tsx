@@ -43,11 +43,20 @@ export function OwnerOnlyRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+/** หน้าตั้งค่า — เจ้าของร้านกับผู้จัดการเข้าได้ (ผู้จัดการเห็นแค่บางส่วนตามที่ SettingsPage.tsx จัดการเอง) */
+export function OwnerOrManagerRoute({ children }: { children: ReactNode }) {
+  const { staffStatus } = useAuth()
+  if (staffStatus?.role !== 'owner' && staffStatus?.role !== 'manager') return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
 /** กันหน้าตามสิทธิ์ที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน — เด้งไป /no-access ไม่ใช่ / เพราะ / (orders)
-    เองก็เป็นหน้าที่ถูกจำกัดสิทธิ์ได้เหมือนกัน เด้งกลับ / จะวนลูปถ้าคนนั้นไม่มีสิทธิ์เข้า / ด้วย */
+    เองก็เป็นหน้าที่ถูกจำกัดสิทธิ์ได้เหมือนกัน เด้งกลับ / จะวนลูปถ้าคนนั้นไม่มีสิทธิ์เข้า / ด้วย
+    ผู้จัดการเห็นทุกหน้าอัตโนมัติเหมือนเจ้าของร้าน ไม่ต้องตั้งสิทธิ์รายหน้าเอง */
 export function RequirePage({ page, children }: { page: PageKey; children: ReactNode }) {
   const { staffStatus } = useAuth()
-  const allowed = staffStatus?.role === 'owner' || (staffStatus?.allowedPages?.includes(page) ?? false)
+  const allowed =
+    staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || (staffStatus?.allowedPages?.includes(page) ?? false)
   if (!allowed) return <Navigate to="/no-access" replace />
   return <>{children}</>
 }
@@ -56,8 +65,10 @@ export function NoAccessPage() {
   const { staffStatus } = useAuth()
   // หาเมนูแรกที่คนนี้เข้าได้จริง เผื่อ "/" (orders) เองก็ถูกจำกัดสิทธิ์ไว้ด้วย จะได้ไม่ลิงก์กลับไปที่วนลูป
   const firstAllowed = NAV_ITEMS.find((item) => {
-    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner'
-    if ('page' in item && item.page) return staffStatus?.role === 'owner' || staffStatus?.allowedPages?.includes(item.page)
+    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner' || staffStatus?.role === 'manager'
+    if ('page' in item && item.page) {
+      return staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || staffStatus?.allowedPages?.includes(item.page)
+    }
     return true
   })
 
@@ -116,7 +127,7 @@ function AuthenticatedApp() {
             <Route path="/content/stats" element={<RequirePage page="content"><ContentStatsPage /></RequirePage>} />
             <Route path="/ingredients" element={<RequirePage page="ingredients"><IngredientsPage /></RequirePage>} />
             <Route path="/ingredients/:id" element={<RequirePage page="ingredients"><IngredientDetailPage /></RequirePage>} />
-            <Route path="/settings" element={<OwnerOnlyRoute><SettingsPage /></OwnerOnlyRoute>} />
+            <Route path="/settings" element={<OwnerOrManagerRoute><SettingsPage /></OwnerOrManagerRoute>} />
             <Route path="/promo" element={<RequirePage page="promo"><PromoCardPage /></RequirePage>} />
             <Route path="/chatbot" element={<OwnerOnlyRoute><ChatbotManagementPage /></OwnerOnlyRoute>} />
             <Route path="/storage" element={<RequirePage page="storage"><StorageManagementPage /></RequirePage>} />

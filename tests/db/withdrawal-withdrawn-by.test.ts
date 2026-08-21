@@ -20,10 +20,11 @@ describe('เบิกของ — ผูกผู้เบิก (withdrawn_by
     expect(withdrawal.error).toBeNull()
     cleanupIds.withdrawals.push(withdrawal.data!.id)
 
-    // จำลอง select ที่ useWithdrawal / useWithdrawals ใช้จริง
+    // จำลอง select ที่ useWithdrawal / useWithdrawals ใช้จริง — ต้องใช้ FK hint เพราะมี created_by ชี้ไป
+    // staff_members ด้วยอีกจุด ทำให้ join เฉยๆ (ไม่ระบุ FK) กำกวมว่าจะเอาความสัมพันธ์ไหน
     const joined = await db
       .from('stock_withdrawals')
-      .select('*, staff_members(display_name, email)')
+      .select('*, staff_members!stock_withdrawals_withdrawn_by_fkey(display_name, email)')
       .eq('id', withdrawal.data!.id)
       .single()
     expect(joined.error).toBeNull()

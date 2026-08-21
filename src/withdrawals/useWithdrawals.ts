@@ -4,11 +4,14 @@ import { supabase } from '../lib/supabase'
 export type WithdrawalListItem = {
   id: string
   withdrawn_at: string
+  created_at: string
   location: string | null
   status: string
   settled_at: string | null
   withdrawn_by: string | null
   staff_members: { display_name: string | null; email: string } | null
+  created_by: string | null
+  creator: { display_name: string | null; email: string } | null
   proceeds_received: boolean
   items: { qty_out: number; qty_sold: number | null; amount_collected: number | null; unit_cost: number; is_wage: boolean }[]
 }
@@ -22,7 +25,10 @@ export function useWithdrawals() {
     const { data } = await supabase
       .from('stock_withdrawals')
       .select(
-        'id, withdrawn_at, location, status, settled_at, withdrawn_by, proceeds_received, staff_members(display_name, email), stock_withdrawal_items(qty_out, qty_sold, amount_collected, unit_cost, is_wage)'
+        'id, withdrawn_at, created_at, location, status, settled_at, withdrawn_by, created_by, proceeds_received, ' +
+          'staff_members!stock_withdrawals_withdrawn_by_fkey(display_name, email), ' +
+          'creator:staff_members!stock_withdrawals_created_by_fkey(display_name, email), ' +
+          'stock_withdrawal_items(qty_out, qty_sold, amount_collected, unit_cost, is_wage)'
       )
       .order('withdrawn_at', { ascending: false })
 
@@ -30,11 +36,14 @@ export function useWithdrawals() {
       (data ?? []).map((w: any) => ({
         id: w.id,
         withdrawn_at: w.withdrawn_at,
+        created_at: w.created_at,
         location: w.location,
         status: w.status,
         settled_at: w.settled_at,
         withdrawn_by: w.withdrawn_by,
         staff_members: w.staff_members,
+        created_by: w.created_by,
+        creator: w.creator,
         proceeds_received: w.proceeds_received,
         items: (w.stock_withdrawal_items ?? []).map((it: any) => ({
           qty_out: Number(it.qty_out),

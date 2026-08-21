@@ -126,8 +126,14 @@ export function WithdrawalDetailPage() {
           {new Date(withdrawal.withdrawn_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
           {withdrawal.location && ` · ${withdrawal.location}`}
         </h1>
+        <p className="text-xs text-stone-400 mt-0.5">
+          🕐 บันทึกเมื่อ {new Date(withdrawal.created_at).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
+        </p>
         <p className="text-sm text-stone-500 mt-0.5">
           👤 ผู้เบิก: {withdrawal.staff_members?.display_name ?? withdrawal.staff_members?.email ?? 'ไม่ระบุ'}
+        </p>
+        <p className="text-sm text-stone-500 mt-0.5">
+          ✏️ สร้างรายการโดย: {withdrawal.creator?.display_name ?? withdrawal.creator?.email ?? 'ไม่ระบุ'}
         </p>
         {withdrawal.note && <p className="text-sm text-stone-500 mt-0.5">{withdrawal.note}</p>}
       </div>

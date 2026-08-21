@@ -4,12 +4,15 @@ import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
 import { StaffManagementSection } from '../staff/StaffManagementSection'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { useAuth } from '../auth/AuthProvider'
 
 type Draft = Omit<Settings, 'id'>
 
 const DRAFT_KEY = 'settings-form'
 
 export function SettingsPage() {
+  const { staffStatus } = useAuth()
+  const isOwner = staffStatus?.role === 'owner'
   const { settings, loading, save, uploadLogo } = useSettings()
   const [restoredDraft] = useState(() => loadFormDraft<Draft>(DRAFT_KEY))
   const [draft, setDraft] = useState<Draft | null>(restoredDraft)
@@ -100,52 +103,54 @@ export function SettingsPage() {
     <div className="p-4 max-w-lg space-y-6">
       <h1 className="text-lg font-semibold">ตั้งค่า</h1>
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-stone-500">จัดการร้าน</h2>
-        <Link
-          to="/storage"
-          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">🗑️ จัดการพื้นที่จัดเก็บ</span>
-          <span className="text-stone-400">→</span>
-        </Link>
-        <Link
-          to="/chatbot"
-          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">💬 จัดการแชทบอทน้องริว</span>
-          <span className="text-stone-400">→</span>
-        </Link>
-        <Link
-          to="/withdrawals"
-          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">📦 เบิกของ</span>
-          <span className="text-stone-400">→</span>
-        </Link>
-        <Link
-          to="/expenses"
-          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">💸 รายจ่าย</span>
-          <span className="text-stone-400">→</span>
-        </Link>
-        <Link
-          to="/promo"
-          className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
-        >
-          <span className="flex items-center gap-2 text-sm font-medium">🎨 การ์ดโปรโมทร้าน</span>
-          <span className="text-stone-400">→</span>
-        </Link>
-      </section>
+      {isOwner && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-stone-500">จัดการร้าน</h2>
+          <Link
+            to="/storage"
+            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">🗑️ จัดการพื้นที่จัดเก็บ</span>
+            <span className="text-stone-400">→</span>
+          </Link>
+          <Link
+            to="/chatbot"
+            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">💬 จัดการแชทบอทน้องริว</span>
+            <span className="text-stone-400">→</span>
+          </Link>
+          <Link
+            to="/withdrawals"
+            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">📦 เบิกของ</span>
+            <span className="text-stone-400">→</span>
+          </Link>
+          <Link
+            to="/expenses"
+            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">💸 รายจ่าย</span>
+            <span className="text-stone-400">→</span>
+          </Link>
+          <Link
+            to="/promo"
+            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+          >
+            <span className="flex items-center gap-2 text-sm font-medium">🎨 การ์ดโปรโมทร้าน</span>
+            <span className="text-stone-400">→</span>
+          </Link>
+        </section>
+      )}
 
       <StaffManagementSection />
 
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>
         {text('ชื่อร้าน', 'shop_name')}
-        {text('เบอร์โทร', 'phone')}
-        {text('ที่อยู่ร้าน', 'address')}
+        {isOwner && text('เบอร์โทร', 'phone')}
+        {isOwner && text('ที่อยู่ร้าน', 'address')}
         {text('พร้อมเพย์', 'promptpay')}
 
         <div className="space-y-2">
@@ -172,65 +177,71 @@ export function SettingsPage() {
         </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">แจ้งเตือนออเดอร์ใหม่</h2>
-        <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
-        {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
-      </section>
+      {isOwner && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-stone-500">แจ้งเตือนออเดอร์ใหม่</h2>
+          <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
+          {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
+        </section>
+      )}
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
         {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">ค่าเริ่มต้นใบเสร็จ</h2>
-        {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
-        {checkbox('ใบเสร็จแสดงโลโก้', 'receipt_show_logo')}
-        {checkbox('ใบเสร็จแสดงที่อยู่', 'receipt_show_address')}
-        {checkbox('ใบเสร็จแสดงเบอร์โทร', 'receipt_show_phone')}
-        {checkbox('ใบเสร็จแสดงพร้อมเพย์', 'receipt_show_promptpay')}
-      </section>
+      {isOwner && (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold text-stone-500">ค่าเริ่มต้นใบเสร็จ</h2>
+          {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
+          {checkbox('ใบเสร็จแสดงโลโก้', 'receipt_show_logo')}
+          {checkbox('ใบเสร็จแสดงที่อยู่', 'receipt_show_address')}
+          {checkbox('ใบเสร็จแสดงเบอร์โทร', 'receipt_show_phone')}
+          {checkbox('ใบเสร็จแสดงพร้อมเพย์', 'receipt_show_promptpay')}
+        </section>
+      )}
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-stone-500">เลขที่เอกสารและออเดอร์</h2>
-        <div className="grid grid-cols-2 gap-3">
+      {isOwner && (
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold text-stone-500">เลขที่เอกสารและออเดอร์</h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="order_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขออเดอร์</label>
+              <input
+                id="order_no_prefix"
+                value={draft.order_no_prefix}
+                onChange={(e) => set('order_no_prefix', e.target.value)}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2"
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="receipt_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขใบเสร็จ</label>
+              <input
+                id="receipt_no_prefix"
+                value={draft.receipt_no_prefix}
+                onChange={(e) => set('receipt_no_prefix', e.target.value)}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2"
+              />
+            </div>
+          </div>
+
           <div className="space-y-1">
-            <label htmlFor="order_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขออเดอร์</label>
+            <label htmlFor="shipping_lead_days" className="text-sm text-stone-600">
+              จำนวนวันอบล่วงหน้าเมื่อส่งขนส่ง
+            </label>
             <input
-              id="order_no_prefix"
-              value={draft.order_no_prefix}
-              onChange={(e) => set('order_no_prefix', e.target.value)}
+              id="shipping_lead_days"
+              type="number"
+              min="0"
+              value={draft.shipping_lead_days}
+              onChange={(e) => set('shipping_lead_days', Number(e.target.value))}
               className="w-full rounded-lg border border-stone-300 px-3 py-2"
             />
           </div>
-          <div className="space-y-1">
-            <label htmlFor="receipt_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขใบเสร็จ</label>
-            <input
-              id="receipt_no_prefix"
-              value={draft.receipt_no_prefix}
-              onChange={(e) => set('receipt_no_prefix', e.target.value)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2"
-            />
-          </div>
-        </div>
 
-        <div className="space-y-1">
-          <label htmlFor="shipping_lead_days" className="text-sm text-stone-600">
-            จำนวนวันอบล่วงหน้าเมื่อส่งขนส่ง
-          </label>
-          <input
-            id="shipping_lead_days"
-            type="number"
-            min="0"
-            value={draft.shipping_lead_days}
-            onChange={(e) => set('shipping_lead_days', Number(e.target.value))}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          />
-        </div>
-
-        {checkbox('บังคับกรอกข้อมูลลูกค้าให้ครบก่อนยืนยันออเดอร์', 'require_full_customer_info')}
-      </section>
+          {checkbox('บังคับกรอกข้อมูลลูกค้าให้ครบก่อนยืนยันออเดอร์', 'require_full_customer_info')}
+        </section>
+      )}
 
       {message && <p className="text-sm text-stone-600">{message}</p>}
 

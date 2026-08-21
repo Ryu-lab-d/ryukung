@@ -50,6 +50,24 @@ describe('โครงหน้าเว็บ', () => {
     expect(screen.queryByText('ตั้งค่า')).not.toBeInTheDocument()
   })
 
+  it('ผู้จัดการเห็นเมนูครบทุกหน้าหลัก รวมตั้งค่า เหมือนเจ้าของร้าน แม้ allowedPages จะว่างเปล่า', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { email: 'manager@example.com' } },
+      loading: false,
+      staffStatus: { role: 'manager', state: 'active', allowedPages: [] },
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+    })
+    render(
+      <MemoryRouter>
+        <AppLayout><div>เนื้อหา</div></AppLayout>
+      </MemoryRouter>
+    )
+    for (const label of ['ออเดอร์', 'คอนเทนต์', 'สินค้า', 'ลูกค้า', 'สรุปยอด', 'ตั้งค่า']) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0)
+    }
+  })
+
   it('พนักงานที่มีสิทธิ์บางหน้า เห็นเมนูตรงตามสิทธิ์เท่านั้น', () => {
     useAuthMock.mockReturnValue({
       session: { user: { email: 'staff@example.com' } },

@@ -4,12 +4,15 @@ import { supabase } from '../lib/supabase'
 export type Withdrawal = {
   id: string
   withdrawn_at: string
+  created_at: string
   location: string | null
   note: string | null
   status: string
   settled_at: string | null
   withdrawn_by: string | null
   staff_members: { display_name: string | null; email: string } | null
+  created_by: string | null
+  creator: { display_name: string | null; email: string } | null
   wage_type: 'cash' | 'product' | null
   wage_cash_amount: number | null
   wage_paid: boolean
@@ -42,7 +45,13 @@ export function useWithdrawal(id: string | null) {
     }
     setLoading(true)
     const [{ data: w }, { data: it }] = await Promise.all([
-      supabase.from('stock_withdrawals').select('*, staff_members(display_name, email)').eq('id', id).single(),
+      supabase
+        .from('stock_withdrawals')
+        .select(
+          '*, staff_members!stock_withdrawals_withdrawn_by_fkey(display_name, email), creator:staff_members!stock_withdrawals_created_by_fkey(display_name, email)'
+        )
+        .eq('id', id)
+        .single(),
       supabase.from('stock_withdrawal_items').select('*').eq('withdrawal_id', id).order('sort_order'),
     ])
     setWithdrawal(w as Withdrawal | null)

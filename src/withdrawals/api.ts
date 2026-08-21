@@ -113,7 +113,11 @@ export async function settleWithdrawal(
 /** ดึงข้อมูลฉบับเต็มหลังปิดรอบสำเร็จมาบันทึกลง Google Sheets แบบไม่บล็อกการปิดรอบ — พลาดแค่ไม่มีข้อมูลชุดนี้ใน Sheets เฉยๆ */
 async function logSettledWithdrawalToSheets(withdrawalId: string): Promise<void> {
   const [{ data: withdrawal }, { data: items }] = await Promise.all([
-    supabase.from('stock_withdrawals').select('*, staff_members(display_name, email)').eq('id', withdrawalId).single(),
+    supabase
+      .from('stock_withdrawals')
+      .select('*, staff_members!stock_withdrawals_withdrawn_by_fkey(display_name, email)')
+      .eq('id', withdrawalId)
+      .single(),
     supabase.from('stock_withdrawal_items').select('*').eq('withdrawal_id', withdrawalId),
   ])
   if (!withdrawal || !items) return

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { StaffManagementSection } from './StaffManagementSection'
@@ -7,6 +7,7 @@ const invite = vi.fn()
 const setStatus = vi.fn()
 const remove = vi.fn()
 const setAllowedPages = vi.fn()
+const setRole = vi.fn()
 
 const members = [
   { id: '1', user_id: 'o1', email: 'owner@ryukung.com', display_name: 'เจ้าของร้าน', role: 'owner' as const, status: 'active' as const, allowed_pages: [], created_at: '2026-01-01' },
@@ -16,8 +17,17 @@ const members = [
 ]
 
 vi.mock('./useStaffMembers', () => ({
-  useStaffMembers: () => ({ members, loading: false, invite, setStatus, remove, setAllowedPages, reload: vi.fn() }),
+  useStaffMembers: () => ({ members, loading: false, invite, setStatus, remove, setAllowedPages, setRole, reload: vi.fn() }),
 }))
+
+let roleOverride: 'owner' | 'manager' | 'staff' = 'owner'
+vi.mock('../auth/AuthProvider', () => ({
+  useAuth: () => ({ staffStatus: { role: roleOverride } }),
+}))
+
+beforeEach(() => {
+  roleOverride = 'owner'
+})
 
 describe('ส่วนจัดการพนักงานในหน้าตั้งค่า', () => {
   it('แสดงรายชื่อพนักงานพร้อมสถานะที่ถูกต้อง', () => {
@@ -96,4 +106,23 @@ describe('ส่วนจัดการพนักงานในหน้า�
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
     expect(setAllowedPages).toHaveBeenCalledWith('3', ['orders', 'customers'])
   })
+
+  it('เจ้าของร้านเห็น dropdown เปลี่ยนระดับตำแหน่งของพนักงานคนอื่น (ยกเว้นแถวของเจ้าของร้านเอง) เปลี่ยนแล้วเรียก setRole', async () => {
+    roleOverride = 'owner'
+    render(<StaffManagementSection />)
+    const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
+    const select = within(activeRow).getByLabelText('ระดับตำแหน่งของ พนักงานใช้งานได้')
+    await userEvent.selectOptions(select, 'manager')
+    expect(setRole).toHaveBeenCalledWith('3', 'manager')
+
+    const ownerRow = screen.getByText('เจ้าของร้าน').closest('div')!.parentElement!
+    expect(within(ownerRow).queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
+  })
+
+  it('ผู้จัดการเปิดหน้านี้เอง ไม่เห็น dropdown เปลี่ยนระดับตำแหน่งเลยสักแถว', () => {
+    roleOverride = 'manager'
+    render(<StaffManagementSection />)
+    expect(screen.queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
+  })
+
 })

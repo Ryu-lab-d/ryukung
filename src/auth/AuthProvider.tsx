@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-export type StaffRole = 'owner' | 'staff'
+export type StaffRole = 'owner' | 'staff' | 'manager'
 export type StaffState = 'pending' | 'active' | 'revoked'
 export type StaffStatus = { role: StaffRole; state: StaffState; allowedPages: string[] } | null
 

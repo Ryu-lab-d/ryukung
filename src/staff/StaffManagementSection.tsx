@@ -4,6 +4,9 @@ import { StaffPermissionsModal } from './StaffPermissionsModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { Toast } from '../lib/Toast'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { useAuth } from '../auth/AuthProvider'
+
+const ROLE_LABEL: Record<string, string> = { owner: 'เจ้าของร้าน', manager: 'ผู้จัดการ', staff: 'พนักงาน' }
 
 const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมัติ', active: 'ใช้งานได้', revoked: 'ถูกระงับ' }
 const STATUS_COLOR: Record<string, string> = {
@@ -32,7 +35,9 @@ const JOIN_URL = `${typeof window !== 'undefined' ? window.location.origin : ''}
 const DRAFT_KEY = 'staff-invite-form'
 
 export function StaffManagementSection() {
-  const { members, loading, invite, setStatus, remove, setAllowedPages } = useStaffMembers()
+  const { staffStatus } = useAuth()
+  const isOwner = staffStatus?.role === 'owner'
+  const { members, loading, invite, setStatus, remove, setAllowedPages, setRole } = useStaffMembers()
   const [draft] = useState(() => loadFormDraft<{ email: string; displayName: string }>(DRAFT_KEY))
   const [email, setEmail] = useState(draft?.email ?? '')
   const [displayName, setDisplayName] = useState(draft?.displayName ?? '')
@@ -128,12 +133,23 @@ export function StaffManagementSection() {
             <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 p-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">
-                  {m.display_name ?? m.email} {m.role === 'owner' && <span className="text-xs text-stone-400">(เจ้าของร้าน)</span>}
+                  {m.display_name ?? m.email} {m.role !== 'staff' && <span className="text-xs text-stone-400">({ROLE_LABEL[m.role]})</span>}
                 </p>
                 <p className="text-xs text-stone-500 truncate">{m.email}</p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className={'text-xs rounded-full px-2 py-1 font-medium ' + statusColor(m)}>{statusLabel(m)}</span>
+                {m.role !== 'owner' && isOwner && (
+                  <select
+                    aria-label={`ระดับตำแหน่งของ ${m.display_name ?? m.email}`}
+                    value={m.role}
+                    onChange={(e) => void setRole(m.id, e.target.value as 'staff' | 'manager')}
+                    className="text-xs rounded-lg border border-stone-300 px-2 py-1.5"
+                  >
+                    <option value="staff">พนักงาน</option>
+                    <option value="manager">ผู้จัดการ</option>
+                  </select>
+                )}
                 {m.role !== 'owner' && (
                   <>
                     {m.user_id === null ? (

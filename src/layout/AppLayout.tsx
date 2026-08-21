@@ -5,11 +5,13 @@ import { useAuth } from '../auth/AuthProvider'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
-  // พนักงาน (ไม่ใช่เจ้าของร้าน) มองไม่เห็นเมนู "ตั้งค่า" เลย เพราะเป็นส่วนที่แก้ไขไม่ได้อยู่แล้ว (RLS กันไว้)
-  // เมนูอื่นๆ กรองตามสิทธิ์รายหน้าที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน (allowedPages)
+  // เจ้าของร้าน+ผู้จัดการเห็นเมนู "ตั้งค่า" ได้ (ผู้จัดการเห็นแค่บางส่วนในหน้านั้นเอง) พนักงานทั่วไปไม่เห็นเลย
+  // เมนูอื่นๆ กรองตามสิทธิ์รายหน้าที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน (allowedPages) — ผู้จัดการเห็นครบทุกหน้าอัตโนมัติ
   const visibleItems = NAV_ITEMS.filter((item) => {
-    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner'
-    if ('page' in item && item.page) return staffStatus?.role === 'owner' || (staffStatus?.allowedPages?.includes(item.page) ?? false)
+    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner' || staffStatus?.role === 'manager'
+    if ('page' in item && item.page) {
+      return staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || (staffStatus?.allowedPages?.includes(item.page) ?? false)
+    }
     return true
   })
 

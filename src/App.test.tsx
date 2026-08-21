@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { MemoryRouter, Routes, Route } from 'react-router-dom'
-import { RequirePage, OwnerOnlyRoute, NoAccessPage } from './App'
+import { RequirePage, OwnerOnlyRoute, OwnerOrManagerRoute, NoAccessPage } from './App'
 
 const useAuthMock = vi.fn()
 vi.mock('./auth/AuthProvider', () => ({
@@ -47,6 +47,33 @@ describe('RequirePage', () => {
     expect(screen.getByText('คุณไม่มีสิทธิ์เข้าถึงหน้านี้')).toBeInTheDocument()
     expect(screen.queryByText('หน้าออเดอร์')).not.toBeInTheDocument()
   })
+
+  it('ผู้จัดการเข้าได้ทุกหน้าอัตโนมัติ แม้ allowedPages จะว่างเปล่า', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'manager', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <RequirePage page="expenses"><div>เนื้อหาที่ป้องกันไว้</div></RequirePage>)
+    expect(screen.getByText('เนื้อหาที่ป้องกันไว้')).toBeInTheDocument()
+  })
+})
+
+describe('OwnerOrManagerRoute', () => {
+  it('พนักงานทั่วไปเข้าไม่ได้ เด้งกลับ /', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'staff', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOrManagerRoute><div>หน้าตั้งค่า</div></OwnerOrManagerRoute>)
+    expect(screen.queryByText('หน้าตั้งค่า')).not.toBeInTheDocument()
+    expect(screen.getByText('หน้าออเดอร์')).toBeInTheDocument()
+  })
+
+  it('ผู้จัดการเข้าได้', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'manager', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOrManagerRoute><div>หน้าตั้งค่า</div></OwnerOrManagerRoute>)
+    expect(screen.getByText('หน้าตั้งค่า')).toBeInTheDocument()
+  })
+
+  it('เจ้าของร้านเข้าได้', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'owner', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOrManagerRoute><div>หน้าตั้งค่า</div></OwnerOrManagerRoute>)
+    expect(screen.getByText('หน้าตั้งค่า')).toBeInTheDocument()
+  })
 })
 
 describe('OwnerOnlyRoute', () => {
@@ -61,6 +88,13 @@ describe('OwnerOnlyRoute', () => {
     useAuthMock.mockReturnValue({ staffStatus: { role: 'owner', state: 'active', allowedPages: [] } })
     renderAt('/protected', <OwnerOnlyRoute><div>หน้าตั้งค่า</div></OwnerOnlyRoute>)
     expect(screen.getByText('หน้าตั้งค่า')).toBeInTheDocument()
+  })
+
+  it('ผู้จัดการเข้าไม่ได้เหมือนพนักงานทั่วไป (เช่น หน้าแชทบอท ไม่ได้อยู่ใน 3 สิทธิ์ที่ผู้จัดการมี)', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'manager', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOnlyRoute><div>หน้าตั้งค่า</div></OwnerOnlyRoute>)
+    expect(screen.queryByText('หน้าตั้งค่า')).not.toBeInTheDocument()
+    expect(screen.getByText('หน้าออเดอร์')).toBeInTheDocument()
   })
 })
 

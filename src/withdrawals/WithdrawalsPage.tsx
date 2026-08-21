@@ -105,8 +105,14 @@ export function WithdrawalsPage() {
                   </div>
                 </div>
                 <p className="text-xs text-stone-400">
+                  🕐 {new Date(w.created_at).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น. ·
                   👤 {w.staff_members?.display_name ?? w.staff_members?.email ?? 'ไม่ระบุผู้เบิก'}
                 </p>
+                {w.created_by !== w.withdrawn_by && (
+                  <p className="text-xs text-stone-400">
+                    ✏️ สร้างโดย {w.creator?.display_name ?? w.creator?.email ?? 'ไม่ระบุ'}
+                  </p>
+                )}
                 {w.status === 'settled' ? (
                   <div className="flex justify-between text-sm">
                     <span className="text-stone-500">

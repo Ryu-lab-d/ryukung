@@ -48,11 +48,14 @@ describe('WithdrawalsPage', () => {
       {
         id: 'w1',
         withdrawn_at: '2026-08-10',
+        created_at: '2026-08-10T09:15:00Z',
         location: 'โรงเรียน',
         status: 'open',
         settled_at: null,
         withdrawn_by: 'staff1',
         staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
+        created_by: 'staff1',
+        creator: { display_name: 'น้องริว', email: 'ryu@example.com' },
         proceeds_received: false,
         items: [{ qty_out: 20, qty_sold: null, amount_collected: null, unit_cost: 15, is_wage: false }],
       },
@@ -68,11 +71,14 @@ describe('WithdrawalsPage', () => {
       {
         id: 'w2',
         withdrawn_at: '2026-08-09',
+        created_at: '2026-08-09T08:00:00Z',
         location: null,
         status: 'settled',
         settled_at: '2026-08-09T12:00:00Z',
         withdrawn_by: null,
         staff_members: null,
+        created_by: null,
+        creator: null,
         proceeds_received: true,
         items: [{ qty_out: 20, qty_sold: 18, amount_collected: 720, unit_cost: 15, is_wage: false }],
       },
@@ -82,9 +88,53 @@ describe('WithdrawalsPage', () => {
     expect(screen.getByText(/ขายได้ 18\/20 ชิ้น \(90%\)/)).toBeInTheDocument()
     // กำไร = รายรับ 720 - ต้นทุน (20*15=300) = 420
     expect(screen.getByText(/กำไร 420\.00/)).toBeInTheDocument()
-    expect(screen.getByText('👤 ไม่ระบุผู้เบิก')).toBeInTheDocument()
+    expect(screen.getByText(/👤 ไม่ระบุผู้เบิก/)).toBeInTheDocument()
     const link = screen.getByRole('link', { name: /ขายได้ 18\/20/ })
     expect(link).toHaveAttribute('href', '/withdrawals/w2')
+  })
+})
+
+describe('WithdrawalsPage — ผู้สร้างรายการ', () => {
+  it('คนสร้างรายการเป็นคนเดียวกับผู้เบิก ไม่แสดงบรรทัด "สร้างโดย" ซ้ำ', () => {
+    withdrawalsOverride = [
+      {
+        id: 'w7',
+        withdrawn_at: '2026-08-10',
+        created_at: '2026-08-10T09:15:00Z',
+        location: null,
+        status: 'open',
+        settled_at: null,
+        withdrawn_by: 'staff1',
+        staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
+        created_by: 'staff1',
+        creator: { display_name: 'น้องริว', email: 'ryu@example.com' },
+        proceeds_received: false,
+        items: [{ qty_out: 5, qty_sold: null, amount_collected: null, unit_cost: 10, is_wage: false }],
+      },
+    ]
+    renderPage()
+    expect(screen.queryByText(/สร้างโดย/)).not.toBeInTheDocument()
+  })
+
+  it('เจ้าของร้านสร้างรายการแทนพนักงาน แสดงบรรทัด "สร้างโดย" แยกจากผู้เบิก', () => {
+    withdrawalsOverride = [
+      {
+        id: 'w8',
+        withdrawn_at: '2026-08-10',
+        created_at: '2026-08-10T09:15:00Z',
+        location: null,
+        status: 'open',
+        settled_at: null,
+        withdrawn_by: 'staff1',
+        staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
+        created_by: 'owner1',
+        creator: { display_name: 'เจ้าของร้าน', email: 'owner@example.com' },
+        proceeds_received: false,
+        items: [{ qty_out: 5, qty_sold: null, amount_collected: null, unit_cost: 10, is_wage: false }],
+      },
+    ]
+    renderPage()
+    expect(screen.getByText(/สร้างโดย เจ้าของร้าน/)).toBeInTheDocument()
   })
 })
 
@@ -94,11 +144,14 @@ describe('WithdrawalsPage — เงินค้างเก็บ', () => {
       {
         id: 'w3',
         withdrawn_at: '2026-08-09',
+        created_at: '2026-08-09T08:00:00Z',
         location: null,
         status: 'settled',
         settled_at: '2026-08-09T12:00:00Z',
         withdrawn_by: 's2',
         staff_members: { display_name: 'น้องริว', email: 'ryu@example.com' },
+        created_by: 's2',
+        creator: { display_name: 'น้องริว', email: 'ryu@example.com' },
         proceeds_received: false,
         items: [{ qty_out: 20, qty_sold: 18, amount_collected: 720, unit_cost: 15, is_wage: false }],
       },
@@ -114,11 +167,14 @@ describe('WithdrawalsPage — เงินค้างเก็บ', () => {
       {
         id: 'w4',
         withdrawn_at: '2026-08-09',
+        created_at: '2026-08-09T08:00:00Z',
         location: null,
         status: 'settled',
         settled_at: '2026-08-09T12:00:00Z',
         withdrawn_by: null,
         staff_members: null,
+        created_by: null,
+        creator: null,
         proceeds_received: true,
         items: [{ qty_out: 20, qty_sold: 18, amount_collected: 720, unit_cost: 15, is_wage: false }],
       },
@@ -143,32 +199,38 @@ describe('WithdrawalsPage — ของฉันเท่านั้น', () =>
       {
         id: 'w5',
         withdrawn_at: '2026-08-10',
+        created_at: '2026-08-10T09:00:00Z',
         location: 'โรงเรียน',
         status: 'open',
         settled_at: null,
         withdrawn_by: 'staff1',
         staff_members: { display_name: 'ของฉัน', email: 'me@example.com' },
+        created_by: 'staff1',
+        creator: { display_name: 'ของฉัน', email: 'me@example.com' },
         proceeds_received: false,
         items: [{ qty_out: 5, qty_sold: null, amount_collected: null, unit_cost: 10, is_wage: false }],
       },
       {
         id: 'w6',
         withdrawn_at: '2026-08-10',
+        created_at: '2026-08-10T09:00:00Z',
         location: 'ตลาดนัด',
         status: 'open',
         settled_at: null,
         withdrawn_by: 'staff2',
         staff_members: { display_name: 'คนอื่น', email: 'other@example.com' },
+        created_by: 'staff2',
+        creator: { display_name: 'คนอื่น', email: 'other@example.com' },
         proceeds_received: false,
         items: [{ qty_out: 5, qty_sold: null, amount_collected: null, unit_cost: 10, is_wage: false }],
       },
     ]
     renderPage()
-    expect(screen.getByText('👤 ของฉัน')).toBeInTheDocument()
-    expect(screen.getByText('👤 คนอื่น')).toBeInTheDocument()
+    expect(screen.getByText(/👤 ของฉัน/)).toBeInTheDocument()
+    expect(screen.getByText(/👤 คนอื่น/)).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'ของฉันเท่านั้น' }))
-    expect(screen.getByText('👤 ของฉัน')).toBeInTheDocument()
-    expect(screen.queryByText('👤 คนอื่น')).not.toBeInTheDocument()
+    expect(screen.getByText(/👤 ของฉัน/)).toBeInTheDocument()
+    expect(screen.queryByText(/👤 คนอื่น/)).not.toBeInTheDocument()
   })
 })
