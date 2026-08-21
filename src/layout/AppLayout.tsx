@@ -1,16 +1,16 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth, isManagerOrAbove } from '../auth/AuthProvider'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
-  // เจ้าของร้าน+ผู้จัดการเห็นเมนู "ตั้งค่า" ได้ (ผู้จัดการเห็นแค่บางส่วนในหน้านั้นเอง) พนักงานทั่วไปไม่เห็นเลย
-  // เมนูอื่นๆ กรองตามสิทธิ์รายหน้าที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน (allowedPages) — ผู้จัดการเห็นครบทุกหน้าอัตโนมัติ
+  // เจ้าของร้าน+ผู้บริหาร+ผู้จัดการเห็นเมนู "ตั้งค่า" ได้ (แต่ละระดับเห็นแค่บางส่วนในหน้านั้นเอง) พนักงานทั่วไปไม่เห็นเลย
+  // เมนูอื่นๆ กรองตามสิทธิ์รายหน้าที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน (allowedPages) — ผู้จัดการขึ้นไปเห็นครบทุกหน้าอัตโนมัติ
   const visibleItems = NAV_ITEMS.filter((item) => {
-    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner' || staffStatus?.role === 'manager'
+    if ('ownerOnly' in item && item.ownerOnly) return isManagerOrAbove(staffStatus?.role)
     if ('page' in item && item.page) {
-      return staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || (staffStatus?.allowedPages?.includes(item.page) ?? false)
+      return isManagerOrAbove(staffStatus?.role) || (staffStatus?.allowedPages?.includes(item.page) ?? false)
     }
     return true
   })

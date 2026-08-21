@@ -6,7 +6,7 @@ export type StaffMember = {
   user_id: string | null
   email: string
   display_name: string | null
-  role: 'owner' | 'staff' | 'manager'
+  role: 'owner' | 'staff' | 'manager' | 'executive'
   status: 'pending' | 'active' | 'revoked'
   allowed_pages: string[]
   created_at: string
@@ -52,7 +52,7 @@ export function useStaffMembers() {
   }
 
   /** เปลี่ยนระดับตำแหน่ง (พนักงาน/ผู้จัดการ) — DB บังคับว่าเปลี่ยน role ได้เฉพาะเจ้าของร้านเท่านั้น (ดู migration) */
-  async function setRole(id: string, role: 'staff' | 'manager') {
+  async function setRole(id: string, role: 'staff' | 'manager' | 'executive') {
     const { error } = await supabase.from('staff_members').update({ role }).eq('id', id)
     if (!error) await load()
     return { error: error ? { message: error.message } : null }

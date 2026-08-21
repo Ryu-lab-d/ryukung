@@ -6,7 +6,7 @@ import { Toast } from '../lib/Toast'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { useAuth } from '../auth/AuthProvider'
 
-const ROLE_LABEL: Record<string, string> = { owner: 'เจ้าของร้าน', manager: 'ผู้จัดการ', staff: 'พนักงาน' }
+const ROLE_LABEL: Record<string, string> = { owner: 'เจ้าของร้าน', executive: 'ผู้บริหาร', manager: 'ผู้จัดการ', staff: 'พนักงาน' }
 
 const STATUS_LABEL: Record<string, string> = { pending: 'รออนุมัติ', active: 'ใช้งานได้', revoked: 'ถูกระงับ' }
 const STATUS_COLOR: Record<string, string> = {
@@ -37,6 +37,7 @@ const DRAFT_KEY = 'staff-invite-form'
 export function StaffManagementSection() {
   const { staffStatus } = useAuth()
   const isOwner = staffStatus?.role === 'owner'
+  const isExecutive = staffStatus?.role === 'executive'
   const { members, loading, invite, setStatus, remove, setAllowedPages, setRole } = useStaffMembers()
   const [draft] = useState(() => loadFormDraft<{ email: string; displayName: string }>(DRAFT_KEY))
   const [email, setEmail] = useState(draft?.email ?? '')
@@ -129,7 +130,13 @@ export function StaffManagementSection() {
         <p className="text-sm text-stone-400">ยังไม่มีพนักงานในระบบ</p>
       ) : (
         <div className="space-y-2">
-          {members.map((m) => (
+          {members.map((m) => {
+            // เจ้าของร้านเปลี่ยนตำแหน่งใครก็ได้ (ยกเว้นเจ้าของร้านคนอื่น) ผู้บริหารเปลี่ยนได้แค่ระหว่างพนักงาน/ผู้จัดการ
+            // เงื่อนไข m.role === 'staff' || m.role === 'manager' กันแถวเจ้าของร้านและแถวผู้บริหารคนอื่น (รวมแถว
+            // ตัวเองด้วย เพราะแถวตัวเองก็ role='executive') ออกจากการเห็น dropdown โดยอัตโนมัติ ไม่ต้องเทียบ id เลย
+            const canChangeRole = (isOwner && m.role !== 'owner') || (isExecutive && (m.role === 'staff' || m.role === 'manager'))
+            const roleOptions: Array<'staff' | 'manager' | 'executive'> = isOwner ? ['staff', 'manager', 'executive'] : ['staff', 'manager']
+            return (
             <div key={m.id} className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 p-3">
               <div className="min-w-0">
                 <p className="text-sm font-medium truncate">
@@ -139,15 +146,16 @@ export function StaffManagementSection() {
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className={'text-xs rounded-full px-2 py-1 font-medium ' + statusColor(m)}>{statusLabel(m)}</span>
-                {m.role !== 'owner' && isOwner && (
+                {canChangeRole && (
                   <select
                     aria-label={`ระดับตำแหน่งของ ${m.display_name ?? m.email}`}
                     value={m.role}
-                    onChange={(e) => void setRole(m.id, e.target.value as 'staff' | 'manager')}
+                    onChange={(e) => void setRole(m.id, e.target.value as 'staff' | 'manager' | 'executive')}
                     className="text-xs rounded-lg border border-stone-300 px-2 py-1.5"
                   >
-                    <option value="staff">พนักงาน</option>
-                    <option value="manager">ผู้จัดการ</option>
+                    {roleOptions.map((r) => (
+                      <option key={r} value={r}>{ROLE_LABEL[r]}</option>
+                    ))}
                   </select>
                 )}
                 {m.role !== 'owner' && (
@@ -189,7 +197,8 @@ export function StaffManagementSection() {
                 )}
               </div>
             </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

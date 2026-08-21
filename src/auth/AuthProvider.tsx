@@ -2,9 +2,19 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 
-export type StaffRole = 'owner' | 'staff' | 'manager'
+export type StaffRole = 'owner' | 'staff' | 'manager' | 'executive'
 export type StaffState = 'pending' | 'active' | 'revoked'
 export type StaffStatus = { role: StaffRole; state: StaffState; allowedPages: string[] } | null
+
+/** เจ้าของร้าน/ผู้บริหาร/ผู้จัดการ — ระดับ "ผู้จัดการขึ้นไป": เห็นทุกหน้า + จัดการพนักงานคนอื่นได้ทั้งหมด */
+export function isManagerOrAbove(role: StaffRole | null | undefined): boolean {
+  return role === 'owner' || role === 'executive' || role === 'manager'
+}
+
+/** เจ้าของร้าน/ผู้บริหาร — สิทธิ์แก้ข้อมูลร้านครบทุกช่องในหน้าตั้งค่า */
+export function isOwnerOrExecutive(role: StaffRole | null | undefined): boolean {
+  return role === 'owner' || role === 'executive'
+}
 
 type AuthValue = {
   session: Session | null

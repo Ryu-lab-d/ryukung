@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link, useLocation } from 'react-router-dom'
-import { AuthProvider, useAuth } from './auth/AuthProvider'
+import { AuthProvider, useAuth, isManagerOrAbove } from './auth/AuthProvider'
 import { RequireAuth } from './auth/RequireAuth'
 import { StaffJoinPage } from './auth/StaffJoinPage'
 import { AppLayout } from './layout/AppLayout'
@@ -43,20 +43,19 @@ export function OwnerOnlyRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
-/** หน้าตั้งค่า — เจ้าของร้านกับผู้จัดการเข้าได้ (ผู้จัดการเห็นแค่บางส่วนตามที่ SettingsPage.tsx จัดการเอง) */
+/** หน้าตั้งค่า — เจ้าของร้าน/ผู้บริหาร/ผู้จัดการเข้าได้ (ผู้จัดการ/ผู้บริหารเห็นแค่บางส่วนตามที่ SettingsPage.tsx จัดการเอง) */
 export function OwnerOrManagerRoute({ children }: { children: ReactNode }) {
   const { staffStatus } = useAuth()
-  if (staffStatus?.role !== 'owner' && staffStatus?.role !== 'manager') return <Navigate to="/" replace />
+  if (!isManagerOrAbove(staffStatus?.role)) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
 /** กันหน้าตามสิทธิ์ที่เจ้าของร้านตั้งไว้ต่อพนักงานแต่ละคน — เด้งไป /no-access ไม่ใช่ / เพราะ / (orders)
     เองก็เป็นหน้าที่ถูกจำกัดสิทธิ์ได้เหมือนกัน เด้งกลับ / จะวนลูปถ้าคนนั้นไม่มีสิทธิ์เข้า / ด้วย
-    ผู้จัดการเห็นทุกหน้าอัตโนมัติเหมือนเจ้าของร้าน ไม่ต้องตั้งสิทธิ์รายหน้าเอง */
+    เจ้าของร้าน/ผู้บริหาร/ผู้จัดการเห็นทุกหน้าอัตโนมัติ ไม่ต้องตั้งสิทธิ์รายหน้าเอง */
 export function RequirePage({ page, children }: { page: PageKey; children: ReactNode }) {
   const { staffStatus } = useAuth()
-  const allowed =
-    staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || (staffStatus?.allowedPages?.includes(page) ?? false)
+  const allowed = isManagerOrAbove(staffStatus?.role) || (staffStatus?.allowedPages?.includes(page) ?? false)
   if (!allowed) return <Navigate to="/no-access" replace />
   return <>{children}</>
 }
@@ -65,9 +64,9 @@ export function NoAccessPage() {
   const { staffStatus } = useAuth()
   // หาเมนูแรกที่คนนี้เข้าได้จริง เผื่อ "/" (orders) เองก็ถูกจำกัดสิทธิ์ไว้ด้วย จะได้ไม่ลิงก์กลับไปที่วนลูป
   const firstAllowed = NAV_ITEMS.find((item) => {
-    if ('ownerOnly' in item && item.ownerOnly) return staffStatus?.role === 'owner' || staffStatus?.role === 'manager'
+    if ('ownerOnly' in item && item.ownerOnly) return isManagerOrAbove(staffStatus?.role)
     if ('page' in item && item.page) {
-      return staffStatus?.role === 'owner' || staffStatus?.role === 'manager' || staffStatus?.allowedPages?.includes(item.page)
+      return isManagerOrAbove(staffStatus?.role) || staffStatus?.allowedPages?.includes(item.page)
     }
     return true
   })

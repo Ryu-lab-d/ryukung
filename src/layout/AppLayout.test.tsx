@@ -6,6 +6,7 @@ import { AppLayout } from './AppLayout'
 const useAuthMock = vi.fn()
 vi.mock('../auth/AuthProvider', () => ({
   useAuth: () => useAuthMock(),
+  isManagerOrAbove: (role: string | null | undefined) => role === 'owner' || role === 'executive' || role === 'manager',
 }))
 
 describe('โครงหน้าเว็บ', () => {
@@ -55,6 +56,24 @@ describe('โครงหน้าเว็บ', () => {
       session: { user: { email: 'manager@example.com' } },
       loading: false,
       staffStatus: { role: 'manager', state: 'active', allowedPages: [] },
+      signIn: vi.fn(),
+      signOut: vi.fn(),
+    })
+    render(
+      <MemoryRouter>
+        <AppLayout><div>เนื้อหา</div></AppLayout>
+      </MemoryRouter>
+    )
+    for (const label of ['ออเดอร์', 'คอนเทนต์', 'สินค้า', 'ลูกค้า', 'สรุปยอด', 'ตั้งค่า']) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0)
+    }
+  })
+
+  it('ผู้บริหารเห็นเมนูครบทุกหน้าหลัก รวมตั้งค่า เหมือนผู้จัดการ/เจ้าของร้าน แม้ allowedPages จะว่างเปล่า', () => {
+    useAuthMock.mockReturnValue({
+      session: { user: { email: 'executive@example.com' } },
+      loading: false,
+      staffStatus: { role: 'executive', state: 'active', allowedPages: [] },
       signIn: vi.fn(),
       signOut: vi.fn(),
     })

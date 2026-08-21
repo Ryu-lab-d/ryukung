@@ -6,6 +6,7 @@ import { RequirePage, OwnerOnlyRoute, OwnerOrManagerRoute, NoAccessPage } from '
 const useAuthMock = vi.fn()
 vi.mock('./auth/AuthProvider', () => ({
   useAuth: () => useAuthMock(),
+  isManagerOrAbove: (role: string | null | undefined) => role === 'owner' || role === 'executive' || role === 'manager',
 }))
 
 function renderAt(path: string, element: React.ReactElement) {
@@ -53,6 +54,12 @@ describe('RequirePage', () => {
     renderAt('/protected', <RequirePage page="expenses"><div>เนื้อหาที่ป้องกันไว้</div></RequirePage>)
     expect(screen.getByText('เนื้อหาที่ป้องกันไว้')).toBeInTheDocument()
   })
+
+  it('ผู้บริหารเข้าได้ทุกหน้าอัตโนมัติเหมือนผู้จัดการ แม้ allowedPages จะว่างเปล่า', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'executive', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <RequirePage page="expenses"><div>เนื้อหาที่ป้องกันไว้</div></RequirePage>)
+    expect(screen.getByText('เนื้อหาที่ป้องกันไว้')).toBeInTheDocument()
+  })
 })
 
 describe('OwnerOrManagerRoute', () => {
@@ -74,6 +81,12 @@ describe('OwnerOrManagerRoute', () => {
     renderAt('/protected', <OwnerOrManagerRoute><div>หน้าตั้งค่า</div></OwnerOrManagerRoute>)
     expect(screen.getByText('หน้าตั้งค่า')).toBeInTheDocument()
   })
+
+  it('ผู้บริหารเข้าได้', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'executive', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOrManagerRoute><div>หน้าตั้งค่า</div></OwnerOrManagerRoute>)
+    expect(screen.getByText('หน้าตั้งค่า')).toBeInTheDocument()
+  })
 })
 
 describe('OwnerOnlyRoute', () => {
@@ -92,6 +105,13 @@ describe('OwnerOnlyRoute', () => {
 
   it('ผู้จัดการเข้าไม่ได้เหมือนพนักงานทั่วไป (เช่น หน้าแชทบอท ไม่ได้อยู่ใน 3 สิทธิ์ที่ผู้จัดการมี)', () => {
     useAuthMock.mockReturnValue({ staffStatus: { role: 'manager', state: 'active', allowedPages: [] } })
+    renderAt('/protected', <OwnerOnlyRoute><div>หน้าตั้งค่า</div></OwnerOnlyRoute>)
+    expect(screen.queryByText('หน้าตั้งค่า')).not.toBeInTheDocument()
+    expect(screen.getByText('หน้าออเดอร์')).toBeInTheDocument()
+  })
+
+  it('ผู้บริหารเข้าไม่ได้เหมือนผู้จัดการ (เช่น หน้าแชทบอท ไม่ได้อยู่ใน 3 สิทธิ์ที่ผู้บริหารมี)', () => {
+    useAuthMock.mockReturnValue({ staffStatus: { role: 'executive', state: 'active', allowedPages: [] } })
     renderAt('/protected', <OwnerOnlyRoute><div>หน้าตั้งค่า</div></OwnerOnlyRoute>)
     expect(screen.queryByText('หน้าตั้งค่า')).not.toBeInTheDocument()
     expect(screen.getByText('หน้าออเดอร์')).toBeInTheDocument()

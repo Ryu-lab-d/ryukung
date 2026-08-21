@@ -14,13 +14,14 @@ const members = [
   { id: '2', user_id: null, email: 'invited@ryukung.com', display_name: 'เชิญไว้ล่วงหน้า', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
   { id: '3', user_id: 's1', email: 'active@ryukung.com', display_name: 'พนักงานใช้งานได้', role: 'staff' as const, status: 'active' as const, allowed_pages: ['orders', 'customers'], created_at: '2026-01-01' },
   { id: '4', user_id: 's2', email: 'pending@ryukung.com', display_name: 'รออนุมัติจริง', role: 'staff' as const, status: 'pending' as const, allowed_pages: [], created_at: '2026-01-01' },
+  { id: '5', user_id: 'e1', email: 'exec@ryukung.com', display_name: 'ผู้บริหารทดสอบ', role: 'executive' as const, status: 'active' as const, allowed_pages: [], created_at: '2026-01-01' },
 ]
 
 vi.mock('./useStaffMembers', () => ({
   useStaffMembers: () => ({ members, loading: false, invite, setStatus, remove, setAllowedPages, setRole, reload: vi.fn() }),
 }))
 
-let roleOverride: 'owner' | 'manager' | 'staff' = 'owner'
+let roleOverride: 'owner' | 'manager' | 'staff' | 'executive' = 'owner'
 vi.mock('../auth/AuthProvider', () => ({
   useAuth: () => ({ staffStatus: { role: roleOverride } }),
 }))
@@ -119,10 +120,38 @@ describe('ส่วนจัดการพนักงานในหน้า�
     expect(within(ownerRow).queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
   })
 
+  it('เจ้าของร้านเห็นตัวเลือกครบ 3 ระดับในdropdown (พนักงาน/ผู้จัดการ/ผู้บริหาร) และเลือกผู้บริหารได้', async () => {
+    roleOverride = 'owner'
+    render(<StaffManagementSection />)
+    const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
+    const select = within(activeRow).getByLabelText('ระดับตำแหน่งของ พนักงานใช้งานได้') as HTMLSelectElement
+    const optionLabels = Array.from(select.options).map((o) => o.textContent)
+    expect(optionLabels).toEqual(['พนักงาน', 'ผู้จัดการ', 'ผู้บริหาร'])
+    await userEvent.selectOptions(select, 'executive')
+    expect(setRole).toHaveBeenCalledWith('3', 'executive')
+  })
+
   it('ผู้จัดการเปิดหน้านี้เอง ไม่เห็น dropdown เปลี่ยนระดับตำแหน่งเลยสักแถว', () => {
     roleOverride = 'manager'
     render(<StaffManagementSection />)
     expect(screen.queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
   })
 
+  it('ผู้บริหารเห็น dropdown แค่ 2 ตัวเลือก (พนักงาน/ผู้จัดการ) เฉพาะแถวพนักงาน/ผู้จัดการเท่านั้น ไม่เห็นบนแถวเจ้าของร้านหรือผู้บริหารคนอื่น', async () => {
+    roleOverride = 'executive'
+    render(<StaffManagementSection />)
+
+    const activeRow = screen.getByText('พนักงานใช้งานได้').closest('div')!.parentElement!
+    const select = within(activeRow).getByLabelText('ระดับตำแหน่งของ พนักงานใช้งานได้') as HTMLSelectElement
+    const optionLabels = Array.from(select.options).map((o) => o.textContent)
+    expect(optionLabels).toEqual(['พนักงาน', 'ผู้จัดการ'])
+    await userEvent.selectOptions(select, 'manager')
+    expect(setRole).toHaveBeenCalledWith('3', 'manager')
+
+    const ownerRow = screen.getByText('เจ้าของร้าน').closest('div')!.parentElement!
+    expect(within(ownerRow).queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
+
+    const execRow = screen.getByText('ผู้บริหารทดสอบ').closest('div')!.parentElement!
+    expect(within(execRow).queryByLabelText(/ระดับตำแหน่งของ/)).not.toBeInTheDocument()
+  })
 })

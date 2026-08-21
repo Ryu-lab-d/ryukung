@@ -4,7 +4,7 @@ import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
 import { StaffManagementSection } from '../staff/StaffManagementSection'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
-import { useAuth } from '../auth/AuthProvider'
+import { useAuth, isOwnerOrExecutive } from '../auth/AuthProvider'
 
 type Draft = Omit<Settings, 'id'>
 
@@ -13,6 +13,7 @@ const DRAFT_KEY = 'settings-form'
 export function SettingsPage() {
   const { staffStatus } = useAuth()
   const isOwner = staffStatus?.role === 'owner'
+  const isOwnerOrExec = isOwnerOrExecutive(staffStatus?.role)
   const { settings, loading, save, uploadLogo } = useSettings()
   const [restoredDraft] = useState(() => loadFormDraft<Draft>(DRAFT_KEY))
   const [draft, setDraft] = useState<Draft | null>(restoredDraft)
@@ -149,8 +150,8 @@ export function SettingsPage() {
       <section className="space-y-4">
         <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>
         {text('ชื่อร้าน', 'shop_name')}
-        {isOwner && text('เบอร์โทร', 'phone')}
-        {isOwner && text('ที่อยู่ร้าน', 'address')}
+        {isOwnerOrExec && text('เบอร์โทร', 'phone')}
+        {isOwnerOrExec && text('ที่อยู่ร้าน', 'address')}
         {text('พร้อมเพย์', 'promptpay')}
 
         <div className="space-y-2">
@@ -177,7 +178,7 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {isOwner && (
+      {isOwnerOrExec && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-stone-500">แจ้งเตือนออเดอร์ใหม่</h2>
           <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
@@ -190,7 +191,7 @@ export function SettingsPage() {
         {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
       </section>
 
-      {isOwner && (
+      {isOwnerOrExec && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-stone-500">ค่าเริ่มต้นใบเสร็จ</h2>
           {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
@@ -201,7 +202,7 @@ export function SettingsPage() {
         </section>
       )}
 
-      {isOwner && (
+      {isOwnerOrExec && (
         <section className="space-y-4">
           <h2 className="text-sm font-semibold text-stone-500">เลขที่เอกสารและออเดอร์</h2>
           <div className="grid grid-cols-2 gap-3">

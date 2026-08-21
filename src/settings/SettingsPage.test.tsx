@@ -44,9 +44,10 @@ vi.mock('../staff/useStaffMembers', () => ({
   }),
 }))
 
-let roleOverride: 'owner' | 'manager' | 'staff' = 'owner'
+let roleOverride: 'owner' | 'manager' | 'staff' | 'executive' = 'owner'
 vi.mock('../auth/AuthProvider', () => ({
   useAuth: () => ({ staffStatus: { role: roleOverride } }),
+  isOwnerOrExecutive: (role: string | null | undefined) => role === 'owner' || role === 'executive',
 }))
 
 beforeEach(() => {
@@ -111,5 +112,18 @@ describe('หน้าตั้งค่า — มุมมองผู้จ�
     expect(screen.getByText('แจ้งเตือนออเดอร์ใหม่')).toBeInTheDocument()
     expect(screen.getByText('ค่าเริ่มต้นใบเสร็จ')).toBeInTheDocument()
     expect(screen.getByText('เลขที่เอกสารและออเดอร์')).toBeInTheDocument()
+  })
+})
+
+describe('หน้าตั้งค่า — มุมมองผู้บริหาร', () => {
+  it('ผู้บริหารเห็นข้อมูลร้านครบทุกช่องเหมือนเจ้าของร้าน แต่ไม่เห็น "จัดการร้าน" (ลิงก์ลัด)', () => {
+    roleOverride = 'executive'
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
+    expect(screen.getByLabelText('เบอร์โทร')).toBeInTheDocument()
+    expect(screen.getByLabelText('ที่อยู่ร้าน')).toBeInTheDocument()
+    expect(screen.getByText('แจ้งเตือนออเดอร์ใหม่')).toBeInTheDocument()
+    expect(screen.getByText('ค่าเริ่มต้นใบเสร็จ')).toBeInTheDocument()
+    expect(screen.getByText('เลขที่เอกสารและออเดอร์')).toBeInTheDocument()
+    expect(screen.queryByText('จัดการร้าน')).not.toBeInTheDocument()
   })
 })
