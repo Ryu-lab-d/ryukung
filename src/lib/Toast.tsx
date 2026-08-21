@@ -7,16 +7,18 @@ type ToastVariant = 'success' | 'error'
 export function Toast({
   message,
   variant = 'success',
+  durationMs = 1800,
   onDone,
 }: {
   message: string
   variant?: ToastVariant
+  durationMs?: number
   onDone: () => void
 }) {
   useEffect(() => {
-    const t = setTimeout(onDone, 1800)
+    const t = setTimeout(onDone, durationMs)
     return () => clearTimeout(t)
-  }, [onDone])
+  }, [onDone, durationMs])
 
   const isError = variant === 'error'
 

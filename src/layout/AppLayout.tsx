@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
 import { useAuth, isManagerOrAbove } from '../auth/AuthProvider'
+import { WelcomeToast } from './WelcomeToast'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
@@ -17,6 +18,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen bg-stone-50 lg:flex">
+      <WelcomeToast />
+
       {/* เมนูข้าง แสดงเฉพาะจอกว้างระดับคอม — ไอแพด (แนวตั้งและแนวนอน) ใช้เมนูล่างแบบมือถือแทน
           เพราะเมนูข้าง+เนื้อหาสองคอลัมน์บีบอัดเกินไปบนจอ ~768-1024px ใช้งานด้วยนิ้วลำบาก */}
       <aside className="hidden lg:flex lg:w-56 lg:flex-col border-r border-stone-200 bg-white">

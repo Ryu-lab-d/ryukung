@@ -10,6 +10,9 @@ import {
   useOrderDraftAutosave,
   loadDraftFromLocalStorage,
   clearDraftFromLocalStorage,
+  getPendingNewOrderId,
+  setPendingNewOrderId,
+  clearPendingNewOrderId,
 } from './useOrderDraftAutosave'
 import { Step1Customer } from './Step1Customer'
 import { Step2Products } from './Step2Products'
@@ -46,7 +49,10 @@ export function OrderFormPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { settings } = useSettings()
-  const [orderId, setOrderId] = useState<string | null>(id ?? null)
+  // ออเดอร์ใหม่ (ไม่มี id ใน URL): ถ้าเคยเริ่มสร้างร่างค้างไว้แล้ว (เช่น มือถือรีโหลดแท็บพื้นหลังทิ้งระหว่างสลับไป
+  // ดูข้อมูลลูกค้าที่อื่น) ให้กลับไปที่ orderId เดิมแทนที่จะสร้างแถวใหม่ทุกครั้งจนข้อมูลที่กรอกไว้หายหมด
+  const [initialOrderId] = useState(() => id ?? getPendingNewOrderId())
+  const [orderId, setOrderId] = useState<string | null>(initialOrderId)
   const [step, setStep] = useState(1)
   const [error, setError] = useState<string | null>(null)
 
@@ -57,13 +63,18 @@ export function OrderFormPage() {
 
   const methods = useForm<OrderFormValues>({
     resolver: zodResolver(schema),
-    defaultValues: (id && loadDraftFromLocalStorage<OrderFormValues>(id)) || EMPTY_ORDER,
+    defaultValues: (initialOrderId && loadDraftFromLocalStorage<OrderFormValues>(initialOrderId)) || EMPTY_ORDER,
     mode: 'onBlur',
   })
 
   useEffect(() => {
     if (!orderId) {
-      void createDraft().then(({ id: newId }) => { if (newId) setOrderId(newId) })
+      void createDraft().then(({ id: newId }) => {
+        if (newId) {
+          setPendingNewOrderId(newId)
+          setOrderId(newId)
+        }
+      })
     }
   }, [orderId])
 
@@ -73,6 +84,9 @@ export function OrderFormPage() {
     if (!orderId) return
     const { error } = await saveDraft(orderId, methods.getValues())
     if (error) { setError(error.message); return }
+    // ไม่ใช่หน้าแก้ไขออเดอร์เดิม (id จาก URL) แปลว่านี่คือ flow "สร้างใหม่" ที่กำลังจะออกไป — เลิกจำ id นี้ไว้เป็น
+    // ร่างที่ค้างอยู่ กด "+ สร้างออเดอร์ใหม่" ครั้งหน้าจะได้เริ่มร่างใหม่จริงๆ (ร่างนี้ยังหาเจอได้ปกติจากบอร์ดออเดอร์)
+    if (!id) clearPendingNewOrderId()
     navigate('/')
   })
 
@@ -95,6 +109,7 @@ export function OrderFormPage() {
     const { orderNo, error } = await confirmOrder(orderId, values)
     if (error) { setError(error.message); return }
     clearDraftFromLocalStorage(orderId)
+    if (!id) clearPendingNewOrderId()
 
     // แจ้งอีเมลลูกค้าว่ารับออเดอร์แล้ว — best-effort ไม่บล็อกการนำทางแม้ส่งไม่สำเร็จ (เช่น SMTP มีปัญหาชั่วคราว)
     if (orderNo && settings) {

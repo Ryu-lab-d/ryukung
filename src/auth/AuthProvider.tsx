@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 
 export type StaffRole = 'owner' | 'staff' | 'manager' | 'executive'
 export type StaffState = 'pending' | 'active' | 'revoked'
-export type StaffStatus = { role: StaffRole; state: StaffState; allowedPages: string[] } | null
+export type StaffStatus = { role: StaffRole; state: StaffState; allowedPages: string[]; displayName: string | null } | null
 
 /** เจ้าของร้าน/ผู้บริหาร/ผู้จัดการ — ระดับ "ผู้จัดการขึ้นไป": เห็นทุกหน้า + จัดการพนักงานคนอื่นได้ทั้งหมด */
 export function isManagerOrAbove(role: StaffRole | null | undefined): boolean {
@@ -55,13 +55,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     ;(async () => {
       const { data } = await supabase
         .from('staff_members')
-        .select('role, status, allowed_pages')
+        .select('role, status, allowed_pages, display_name')
         .eq('user_id', session.user.id)
         .maybeSingle()
       if (cancelled) return
 
       if (data) {
-        setStaffStatus({ role: data.role, state: data.status, allowedPages: data.allowed_pages ?? [] })
+        setStaffStatus({ role: data.role, state: data.status, allowedPages: data.allowed_pages ?? [], displayName: data.display_name })
       } else {
         // ล็อกอินสำเร็จ (ยืนยันอีเมลแล้ว) แต่ยังไม่มีแถวสิทธิ์เลย — เพิ่งสมัครพนักงานครั้งแรก ผูกสิทธิ์อัตโนมัติ
         const displayName = (session.user.user_metadata?.display_name as string | undefined) ?? null
@@ -70,11 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // re-select แถวสดหลัง claim เพื่อได้ allowed_pages ที่ backfill มาจาก DB default ถูกต้อง (RPC คืนแค่ status)
           const { data: fresh } = await supabase
             .from('staff_members')
-            .select('role, status, allowed_pages')
+            .select('role, status, allowed_pages, display_name')
             .eq('user_id', session.user.id)
             .maybeSingle()
           if (!cancelled) {
-            setStaffStatus(fresh ? { role: fresh.role, state: fresh.status, allowedPages: fresh.allowed_pages ?? [] } : null)
+            setStaffStatus(
+              fresh ? { role: fresh.role, state: fresh.status, allowedPages: fresh.allowed_pages ?? [], displayName: fresh.display_name } : null
+            )
           }
         } else if (!cancelled) {
           setStaffStatus(null)

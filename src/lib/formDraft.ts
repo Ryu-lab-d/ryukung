@@ -21,6 +21,15 @@ export function clearFormDraft(key: string | null) {
   }
 }
 
+/** เวอร์ชันเรียกทันที (ไม่ใช่ hook) — ใช้ตอนต้องบันทึกค่าเดียวทันทีนอก render cycle เช่นบันทึก id ของแถวที่เพิ่งสร้าง */
+export function saveFormDraft<T>(key: string, value: T) {
+  try {
+    localStorage.setItem(PREFIX + key, JSON.stringify(value))
+  } catch {
+    // เหตุผลเดียวกับ clearFormDraft
+  }
+}
+
 /**
  * บันทึกค่าฟอร์มลง localStorage อัตโนมัติทุกครั้งที่เปลี่ยน กันข้อมูลหายตอนสลับหน้า/แท็บ (component unmount)
  * หรือมือถือรีโหลดแท็บที่ค้างอยู่เบื้องหลังเพื่อประหยัดแรม — ทั้งสองกรณีทำให้ state ในหน่วยความจำหายหมด
@@ -29,10 +38,6 @@ export function clearFormDraft(key: string | null) {
 export function useFormDraft<T>(key: string | null, value: T) {
   useEffect(() => {
     if (!key) return
-    try {
-      localStorage.setItem(PREFIX + key, JSON.stringify(value))
-    } catch {
-      // เหตุผลเดียวกับ clearFormDraft
-    }
+    saveFormDraft(key, value)
   }, [key, value])
 }

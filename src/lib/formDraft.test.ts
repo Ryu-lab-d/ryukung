@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { renderHook } from '@testing-library/react'
-import { loadFormDraft, clearFormDraft, useFormDraft } from './formDraft'
+import { loadFormDraft, saveFormDraft, clearFormDraft, useFormDraft } from './formDraft'
 
 beforeEach(() => {
   localStorage.clear()
@@ -42,5 +42,10 @@ describe('loadFormDraft / useFormDraft / clearFormDraft', () => {
   it('ข้อมูลที่เก็บไว้เสีย (JSON parse ไม่ได้) โหลดแล้วได้ null ไม่ throw', () => {
     localStorage.setItem('ryukung-draft:broken', '{not valid json')
     expect(loadFormDraft('broken')).toBeNull()
+  })
+
+  it('saveFormDraft บันทึกทันทีโดยไม่ต้องผ่าน hook/render', () => {
+    saveFormDraft('imperative-key', { qty: 5 })
+    expect(loadFormDraft('imperative-key')).toEqual({ qty: 5 })
   })
 })
