@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import { formatBaht } from '../lib/money'
 import type { SaleResult } from './PaymentStep'
 
@@ -12,12 +13,13 @@ export function SaleComplete({
   grandTotal: number
   onNextSale: () => void
 }) {
-  // ประกาศเสียงบอกเงินทอนตอนขายสำเร็จ (จ่ายเงินสดเท่านั้น) — กันพนักงานทอนผิดตอนมัวยุ่งกับลูกค้าคนถัดไป
-  // ไม่รองรับก็แค่ไม่มีเสียง ไม่ทำให้หน้าพัง (เบราว์เซอร์บางตัว/บางเครื่องไม่มี Web Speech API)
+  // ประกาศเสียงตอนขายสำเร็จ (จ่ายเงินสดเท่านั้น) — กันพนักงานทอนผิดตอนมัวยุ่งกับลูกค้าคนถัดไป: รับมาพอดี
+  // ไม่ต้องทอนก็พูดยืนยัน "รับมาพอดี" ไปเลย มีเงินทอนก็บอกจำนวนชัดๆ — ไม่รองรับก็แค่ไม่มีเสียง ไม่ทำให้หน้าพัง
   useEffect(() => {
-    if (result.method !== 'cash' || result.change === null || result.change <= 0) return
+    if (result.method !== 'cash' || result.change === null) return
+    const text = result.change > 0 ? `เงินทอน ${Math.round(result.change)} บาท` : 'รับมาพอดี'
     try {
-      const utterance = new SpeechSynthesisUtterance(`เงินทอน ${Math.round(result.change)} บาท`)
+      const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = 'th-TH'
       window.speechSynthesis?.speak(utterance)
     } catch {
@@ -46,10 +48,14 @@ export function SaleComplete({
       </div>
 
       {result.method === 'cash' && result.change !== null && (
-        <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mx-auto max-w-xs">
-          <p className="text-sm text-amber-700">เงินทอน</p>
-          <p className="text-3xl font-bold text-amber-900">{formatBaht(Math.max(result.change, 0))} บาท</p>
-        </div>
+        result.change > 0 ? (
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-4 mx-auto max-w-xs">
+            <p className="text-sm text-amber-700">เงินทอน</p>
+            <p className="text-3xl font-bold text-amber-900">{formatBaht(result.change)} บาท</p>
+          </div>
+        ) : (
+          <p className="text-lg font-semibold text-green-700">✅ รับมาพอดี ไม่ต้องทอน</p>
+        )
       )}
 
       {!result.receiptIssued && (
@@ -57,14 +63,12 @@ export function SaleComplete({
       )}
 
       <div className="flex flex-col gap-2 max-w-xs mx-auto pt-2">
-        <a
-          href={`/receipts/${result.orderId}`}
-          target="_blank"
-          rel="noreferrer"
+        <Link
+          to={`/orders/${result.orderId}/receipt`}
           className="rounded-xl border-2 border-stone-300 text-stone-700 font-medium py-3"
         >
           🧾 ดูใบเสร็จ
-        </a>
+        </Link>
         <button
           type="button"
           onClick={onNextSale}
