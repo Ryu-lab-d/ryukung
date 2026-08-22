@@ -51,9 +51,15 @@ vi.mock('../receipts/api', () => ({
   issueReceipt: (...args: unknown[]) => issueReceipt(...args),
 }))
 
+const reloadTodaySales = vi.fn()
+vi.mock('./useTodaySales', () => ({
+  useTodaySales: () => ({ sales: [], loading: false, reload: reloadTodaySales }),
+}))
+
 beforeEach(() => {
   createPOSSale.mockReset()
   issueReceipt.mockReset()
+  reloadTodaySales.mockReset()
 })
 
 describe('POSPage — flow เต็ม', () => {
@@ -79,6 +85,8 @@ describe('POSPage — flow เต็ม', () => {
     // เห็นหน้าสำเร็จ — จ่ายพอดีไม่มีเงินทอน แสดง "รับมาพอดี"
     expect(await screen.findByText('ขายสำเร็จ! 🎉')).toBeInTheDocument()
     expect(screen.getByText(/รับมาพอดี/)).toBeInTheDocument()
+    // ขายสำเร็จแล้วรีเฟรชยอดขายวันนี้ให้ทันที ไม่ต้องรอโหลดหน้าใหม่
+    expect(reloadTodaySales).toHaveBeenCalled()
 
     // ขายรายการต่อไป — กลับมาตะกร้าว่างเหมือนเปิดหน้าใหม่
     await userEvent.click(screen.getByRole('button', { name: 'ขายรายการต่อไป' }))
@@ -92,6 +100,13 @@ describe('POSPage — flow เต็ม', () => {
     await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
     await userEvent.click(screen.getByRole('button', { name: '← กลับไปแก้ตะกร้า' }))
     expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
+  })
+})
+
+describe('POSPage — ยอดขายวันนี้', () => {
+  it('แสดงแถบยอดขายวันนี้อยู่บนหน้าเลือกสินค้า', () => {
+    renderPOSPage()
+    expect(screen.getByText('ยอดขายวันนี้ (0 บิล)')).toBeInTheDocument()
   })
 })
 

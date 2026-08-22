@@ -8,6 +8,8 @@ import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { CartPanel, type CartItem } from './CartPanel'
 import { PaymentStep, type SaleResult } from './PaymentStep'
 import { SaleComplete } from './SaleComplete'
+import { TodaySalesPanel } from './TodaySalesPanel'
+import { useTodaySales } from './useTodaySales'
 
 type Step = 'cart' | 'payment' | 'complete'
 
@@ -24,6 +26,7 @@ export function POSPage() {
   const [step, setStep] = useState<Step>('cart')
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null)
   const [completedTotal, setCompletedTotal] = useState(0)
+  const { sales: todaySales, loading: todaySalesLoading, reload: reloadTodaySales } = useTodaySales()
 
   useFormDraft(CART_DRAFT_KEY, items)
 
@@ -62,6 +65,7 @@ export function POSPage() {
     setCompletedTotal(items.reduce((sum, it) => sum + it.unit_price * it.qty, 0))
     setSaleResult(result)
     setStep('complete')
+    void reloadTodaySales()
   }
 
   function handleNextSale() {
@@ -90,6 +94,8 @@ export function POSPage() {
     <div className="p-4 space-y-4 max-w-5xl mx-auto pb-8">
       <h1 className="text-lg font-semibold">ขายหน้าร้าน</h1>
       <p className="text-sm text-stone-500">ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย</p>
+
+      <TodaySalesPanel sales={todaySales} loading={todaySalesLoading} />
 
       <div className="lg:grid lg:grid-cols-[1fr,380px] lg:gap-4 lg:items-start">
         <div className="space-y-2">
