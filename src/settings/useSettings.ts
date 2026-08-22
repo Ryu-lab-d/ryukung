@@ -57,8 +57,9 @@ export function useSettings() {
       const { error: upErr } = await supabase.storage
         .from('product-images')
         .upload(path, file, { upsert: true })
-      if (upErr) return { error: { message: upErr.message } }
-      return save({ logo_path: path })
+      if (upErr) return { error: { message: upErr.message }, path: null }
+      const { error } = await save({ logo_path: path })
+      return { error, path: error ? null : path }
     },
     [save]
   )

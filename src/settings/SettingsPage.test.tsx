@@ -5,10 +5,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { SettingsPage } from './SettingsPage'
 
 const save = vi.fn()
-const settings = {
+const baseSettings = {
   id: '1',
   shop_name: 'RYUKUNG BAKERY',
-  logo_path: null,
+  logo_path: null as string | null,
   phone: '0800000000',
   address: '123 ถนนทดสอบ',
   promptpay: null,
@@ -26,9 +26,13 @@ const settings = {
   faqs: [{ keywords: ['จัดส่ง'], answer: 'ทดสอบคำตอบ' }],
   owner_notification_email: null,
 }
+// เป็น let ไม่ใช่ const ตั้งใจ — เทสต์บั๊กเดิมด้านล่างต้อง "สลับ reference" ของ settings กลางอากาศ จำลอง
+// พฤติกรรมจริงของ useSettings.ts ที่ยิง load() ใหม่ (ได้ object ใหม่) หลังอัปโหลดโลโก้สำเร็จ
+let settings = { ...baseSettings }
 
+const uploadLogo = vi.fn()
 vi.mock('./useSettings', () => ({
-  useSettings: () => ({ settings, loading: false, save, uploadLogo: vi.fn() }),
+  useSettings: () => ({ settings, loading: false, save, uploadLogo }),
 }))
 
 vi.mock('../staff/useStaffMembers', () => ({
@@ -52,7 +56,9 @@ vi.mock('../auth/AuthProvider', () => ({
 
 beforeEach(() => {
   save.mockReset()
+  uploadLogo.mockReset()
   roleOverride = 'owner'
+  settings = { ...baseSettings }
 })
 
 describe('หน้าตั้งค่า', () => {
@@ -71,6 +77,48 @@ describe('หน้าตั้งค่า', () => {
     await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({ shop_name: 'RYUKUNG' })
+    )
+  })
+
+  it('แก้ส่วนนำหน้าเลขออเดอร์แล้วกดบันทึก เรียก save ด้วยค่าใหม่', async () => {
+    save.mockResolvedValue({ error: null })
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
+    const input = screen.getByLabelText('ส่วนนำหน้าเลขออเดอร์')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'NEWPFX')
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ order_no_prefix: 'NEWPFX' })
+    )
+  })
+
+  it('บั๊กเดิม: กำลังแก้ช่องอื่นค้างอยู่ (ยังไม่กดบันทึก) แล้วอัปโหลดโลโก้ ต้องไม่ทำให้ค่าที่พิมพ์ค้างหายไป', async () => {
+    // จำลองพฤติกรรมจริงของ useSettings.ts: อัปโหลดโลโก้สำเร็จแล้ว save()+load() ภายในจะได้ settings เป็น
+    // object ใหม่ (reference เปลี่ยน) กลับมา — ต้อง "สลับ" settings จริงๆ ไม่ใช่แค่ mock ค่าที่คืน ไม่งั้นเทสต์
+    // จะไม่จับบั๊กเดิมที่เกิดจาก effect sync ทับร่างทั้งก้อนตอน settings reference เปลี่ยนกลางอากาศ
+    uploadLogo.mockImplementation(async () => {
+      settings = { ...settings, logo_path: 'logo/new-logo.png' }
+      return { error: null, path: 'logo/new-logo.png' }
+    })
+    save.mockResolvedValue({ error: null })
+    render(<MemoryRouter><SettingsPage /></MemoryRouter>)
+
+    const prefixInput = screen.getByLabelText('ส่วนนำหน้าเลขออเดอร์')
+    await userEvent.clear(prefixInput)
+    await userEvent.type(prefixInput, 'ZZZ')
+    expect(prefixInput).toHaveValue('ZZZ')
+
+    // อัปโหลดโลโก้แยก (เซฟทันทีในตัวเอง ไม่ผ่านปุ่ม "บันทึก" หลัก) ระหว่างที่ยังไม่ได้กดบันทึกช่องด้านบน
+    const file = new File(['x'], 'logo.png', { type: 'image/png' })
+    await userEvent.upload(screen.getByLabelText('โลโก้ร้าน'), file)
+    expect(uploadLogo).toHaveBeenCalledWith(file)
+
+    // ค่าที่พิมพ์ค้างไว้ต้องยังอยู่ครบ ไม่ถูกเขียนทับด้วย settings ที่โหลดใหม่จากการอัปโหลดโลโก้
+    expect(prefixInput).toHaveValue('ZZZ')
+
+    await userEvent.click(screen.getByRole('button', { name: 'บันทึก' }))
+    expect(save).toHaveBeenCalledWith(
+      expect.objectContaining({ order_no_prefix: 'ZZZ', logo_path: 'logo/new-logo.png' })
     )
   })
 

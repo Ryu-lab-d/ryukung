@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useSettings, type Settings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
@@ -19,13 +19,19 @@ export function SettingsPage() {
   const [draft, setDraft] = useState<Draft | null>(restoredDraft)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // hydrate ค่าเริ่มต้นของฟอร์มจาก settings แค่ครั้งแรกครั้งเดียวเท่านั้น (ข้ามไปเลยถ้ามีร่างค้างอยู่แล้ว) —
+  // กันไม่ให้การกระทำอื่นในหน้านี้ที่ทำให้ settings รีโหลดใหม่ระหว่างทาง (เช่นอัปโหลดโลโก้ ซึ่งเซฟทันทีแยก
+  // จากปุ่ม "บันทึก" หลัก) มาเขียนทับข้อมูลช่องอื่นที่ผู้ใช้กำลังแก้ไขอยู่แต่ยังไม่ได้กดบันทึกทิ้งไปเฉยๆ —
+  // นี่คือสาเหตุจริงที่แก้ "ส่วนนำหน้าเลขออเดอร์" แล้วดูเหมือนไม่มีผล ถ้าหน้านี้เคยอัปโหลดโลโก้ไปด้วยก่อนกดบันทึก
+  const hydratedRef = useRef(restoredDraft !== null)
 
   useEffect(() => {
-    if (settings && !restoredDraft) {
+    if (settings && !hydratedRef.current) {
+      hydratedRef.current = true
       const { id: _id, ...rest } = settings
       setDraft(rest)
     }
-  }, [settings, restoredDraft])
+  }, [settings])
 
   useFormDraft(draft ? DRAFT_KEY : null, draft)
 
@@ -51,8 +57,11 @@ export function SettingsPage() {
 
   async function handleLogoChange(file: File) {
     setBusy(true)
-    const { error } = await uploadLogo(file)
+    const { error, path } = await uploadLogo(file)
     setBusy(false)
+    // แก้เฉพาะช่อง logo_path ในร่างท้องถิ่น ไม่ใช่เขียนทับร่างทั้งก้อนด้วย settings ที่โหลดใหม่ทั้งชุด
+    // เพราะจะทำให้ช่องอื่นที่ผู้ใช้กำลังพิมพ์ค้างอยู่ (เช่นส่วนนำหน้าเลขออเดอร์) หายไปก่อนกดบันทึกจริง
+    if (!error && path) set('logo_path', path)
     setMessage(error ? 'อัปโหลดโลโก้ไม่สำเร็จ: ' + error.message : 'อัปโหลดโลโก้แล้ว')
   }
 
