@@ -64,19 +64,19 @@ describe('การยืนยันชื่อในหน้าสรุป�
   it('ชื่อผิดจริงๆ เข้าไม่ได้ และมีข้อความเตือน', async () => {
     rpc.mockResolvedValue({ data: baseOrder })
     renderPage()
-    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, 'คนละคนกันเลย')
     // ปุ่มเปลี่ยนข้อความและปลดล็อกพร้อมกันตอนข้อมูลจริงโหลดเสร็จ — findByRole รอจนกว่าจะเจอชื่อปุ่มสุดท้ายนี้
     const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
     await userEvent.click(submitButton)
-    expect(await screen.findByText(/ชื่อไม่ตรงกับที่แจ้งไว้/)).toBeInTheDocument()
+    expect(await screen.findByText(/ไม่ตรงกับที่แจ้งไว้/)).toBeInTheDocument()
     expect(screen.queryByText('RYUKUNG BAKERY')).not.toBeInTheDocument()
   })
 
   it('พิมพ์ตัวพิมพ์เล็ก/ใหญ่ต่างกัน (เหมือน autocapitalize บนมือถือ) ยังถือว่าถูก เข้าได้ปกติ', async () => {
     rpc.mockResolvedValue({ data: baseOrder })
     renderPage()
-    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     // ชื่อจริงคือ "Somchai ใจดี" — พิมพ์เป็น "somchai ใจดี" (s ตัวเล็ก) จำลองผลจาก autocapitalize ที่ต่างเครื่องต่างกัน
     await userEvent.type(input, 'somchai ใจดี')
     // ปุ่มเปลี่ยนข้อความและปลดล็อกพร้อมกันตอนข้อมูลจริงโหลดเสร็จ — findByRole รอจนกว่าจะเจอชื่อปุ่มสุดท้ายนี้
@@ -85,22 +85,75 @@ describe('การยืนยันชื่อในหน้าสรุป�
     expect(await screen.findByText('RYUKUNG BAKERY')).toBeInTheDocument()
   })
 
-  it('ออเดอร์ที่ไม่มีชื่อลูกค้าผูกไว้เลย ปิดกั้นเสมอไม่ว่าจะพิมพ์อะไร', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, customer_name: null } })
+  it('ออเดอร์ที่ไม่มีทั้งชื่อและเบอร์ลูกค้าผูกไว้เลย ปิดกั้นเสมอไม่ว่าจะพิมพ์อะไร', async () => {
+    rpc.mockResolvedValue({ data: { ...baseOrder, customer_name: null, customer_phone: null } })
     renderPage()
-    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, 'อะไรก็ได้')
     // ปุ่มเปลี่ยนข้อความและปลดล็อกพร้อมกันตอนข้อมูลจริงโหลดเสร็จ — findByRole รอจนกว่าจะเจอชื่อปุ่มสุดท้ายนี้
     const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
     await userEvent.click(submitButton)
-    expect(await screen.findByText('ออเดอร์นี้ไม่มีชื่อลูกค้าผูกไว้ในระบบ')).toBeInTheDocument()
+    expect(await screen.findByText('ออเดอร์นี้ไม่มีชื่อหรือเบอร์ลูกค้าผูกไว้ในระบบ')).toBeInTheDocument()
+  })
+
+  it('ไม่มีชื่อผูกไว้ แต่มีเบอร์ กรอกเบอร์ให้ตรงแล้วเข้าได้ปกติ (ไม่ติดหน้าปิดกั้น)', async () => {
+    rpc.mockResolvedValue({ data: { ...baseOrder, customer_name: null, customer_phone: '0812345678' } })
+    renderPage()
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
+    await userEvent.type(input, '0812345678')
+    const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+    await userEvent.click(submitButton)
+    expect(await screen.findByText('RYUKUNG BAKERY')).toBeInTheDocument()
+  })
+
+  it('กรอกเบอร์โทรตรงกับที่บันทึกไว้ (ชื่อไม่ตรงก็ผ่านได้เพราะยืนยันด้วยเบอร์แทน)', async () => {
+    rpc.mockResolvedValue({ data: { ...baseOrder, customer_phone: '0812345678' } })
+    renderPage()
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
+    await userEvent.type(input, '0812345678')
+    const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+    await userEvent.click(submitButton)
+    expect(await screen.findByText('RYUKUNG BAKERY')).toBeInTheDocument()
+  })
+
+  it('กรอกเบอร์รูปแบบ +66 ขีด/เว้นวรรค ยังเทียบตรงกับเบอร์ที่บันทึกแบบ 0 นำหน้าได้', async () => {
+    rpc.mockResolvedValue({ data: { ...baseOrder, customer_phone: '0812345678' } })
+    renderPage()
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
+    await userEvent.type(input, '+66 81-234-5678')
+    const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+    await userEvent.click(submitButton)
+    expect(await screen.findByText('RYUKUNG BAKERY')).toBeInTheDocument()
+  })
+
+  it('กรอกผิด 2 ครั้งติด ขึ้นป็อปอัพแนะนำติดต่อพนักงานผ่านไลน์ ปิดแล้วยังกรอกต่อได้ปกติ', async () => {
+    rpc.mockResolvedValue({ data: { ...baseOrder, line_url: 'https://lin.ee/yscT9fJ' } })
+    renderPage()
+    const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
+    const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
+
+    await userEvent.type(input, 'ผิดครั้งที่หนึ่ง')
+    await userEvent.click(submitButton)
+    await screen.findByText(/ไม่ตรงกับที่แจ้งไว้/)
+    expect(screen.queryByRole('link', { name: /ติดต่อพนักงาน/ })).not.toBeInTheDocument()
+
+    await userEvent.clear(input)
+    await userEvent.type(input, 'ผิดครั้งที่สอง')
+    await userEvent.click(submitButton)
+
+    const contactLink = await screen.findByRole('link', { name: /ติดต่อพนักงาน/ })
+    expect(contactLink).toHaveAttribute('href', 'https://lin.ee/yscT9fJ')
+
+    await userEvent.click(screen.getByRole('button', { name: 'ลองกรอกอีกครั้ง' }))
+    expect(screen.queryByRole('link', { name: /ติดต่อพนักงาน/ })).not.toBeInTheDocument()
+    expect(screen.getByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')).toBeInTheDocument()
   })
 })
 
 async function openOrder(order: typeof baseOrder) {
   rpc.mockResolvedValue({ data: order })
   renderPage()
-  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
@@ -280,7 +333,7 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
 async function openOrderKeepPopup(order: typeof baseOrder) {
   rpc.mockResolvedValue({ data: order })
   renderPage()
-  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
@@ -346,7 +399,7 @@ describe('ป็อปอัพเตือนยังไม่ชำระเ�
 async function openOrderKeepAllPopups(order: typeof baseOrder) {
   rpc.mockResolvedValue({ data: order })
   renderPage()
-  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ')
+  const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)

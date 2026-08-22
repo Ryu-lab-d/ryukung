@@ -1,6 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
+import { render, screen, fireEvent, act } from '@testing-library/react'
 import { WelcomeOverlay } from './WelcomeOverlay'
 
 let staffStatusOverride: { role: string; state: string; allowedPages: string[]; displayName: string | null } | null = null
@@ -51,10 +50,18 @@ describe('WelcomeOverlay — ป็อปอัพต้อนรับตอน
     expect(screen.queryByText('RYUKUNG BAKERY')).not.toBeInTheDocument()
   })
 
-  it('กดปุ่ม "เริ่มทำงานเลย" ปิดป็อปอัพได้ทันที', async () => {
+  it('กดปุ่ม "เริ่มทำงานเลย" เห็นป็อปอัพเริ่มทำงานก่อน แล้วค่อยปิดจริงหลังผ่านไปสักพัก', () => {
+    vi.useFakeTimers()
     render(<WelcomeOverlay />)
     expect(screen.getByText('RYUKUNG BAKERY')).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: /เริ่มทำงานเลย/ }))
+
+    fireEvent.click(screen.getByRole('button', { name: /เริ่มทำงานเลย/ }))
+    // การ์ดต้อนรับเดิมหายไปแล้ว เปลี่ยนเป็นป็อปอัพฉลองเริ่มทำงานแทน
     expect(screen.queryByText('RYUKUNG BAKERY')).not.toBeInTheDocument()
+    expect(screen.getByText('เริ่มทำงานแล้ว!')).toBeInTheDocument()
+
+    act(() => { vi.advanceTimersByTime(1600) })
+    expect(screen.queryByText('เริ่มทำงานแล้ว!')).not.toBeInTheDocument()
+    vi.useRealTimers()
   })
 })

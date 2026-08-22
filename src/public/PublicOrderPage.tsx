@@ -26,6 +26,7 @@ type PublicOrderView = {
   line_url: string | null
   order_no: string
   customer_name: string | null
+  customer_phone: string | null
   needed_date: string | null
   fulfillment_type: string
   pickup_place: string | null
@@ -79,6 +80,14 @@ const FULFILLMENT_LABELS: Record<string, string> = {
  */
 function normalizeName(value: string): string {
   return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+}
+
+/** เทียบเบอร์โทรทนรูปแบบที่ต่างกัน — ตัดอักขระที่ไม่ใช่ตัวเลขทิ้งหมด (ช่องว่าง/ขีด/วงเล็บ) แล้วแปลงเบอร์
+ * รูปแบบ +66/66 นำหน้าให้เป็น 0 นำหน้าแบบไทยปกติ จะได้เทียบตรงกับที่ผู้ใช้กรอกแบบ 0812345678 ได้ */
+function normalizePhone(value: string): string {
+  const digits = value.replace(/\D/g, '')
+  if (digits.startsWith('66') && digits.length === 11) return '0' + digits.slice(2)
+  return digits
 }
 
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean; pulsing?: boolean }> = {
@@ -521,6 +530,8 @@ export function PublicOrderPage() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
+  const [failCount, setFailCount] = useState(0)
+  const [showContactPopup, setShowContactPopup] = useState(false)
 
   useFormDraft(nameDraftKey, nameInput)
 
@@ -553,57 +564,65 @@ export function PublicOrderPage() {
       setCustomerName(typed)
       setRevealing(true)
       clearFormDraft(nameDraftKey)
-      setTimeout(() => setRevealing(false), 700)
       return
     }
 
-    if (!order.customer_name) {
-      // มีออเดอร์จริง แต่ไม่มีชื่อลูกค้าผูกไว้เลย — ไม่มีอะไรให้เทียบ ต้องกันไว้ ห้ามปล่อยผ่านให้ใครพิมพ์อะไรก็เข้าได้
+    if (!order.customer_name && !order.customer_phone) {
+      // มีออเดอร์จริง แต่ไม่มีทั้งชื่อและเบอร์ผูกไว้เลย — ไม่มีอะไรให้เทียบ ต้องกันไว้ ห้ามปล่อยผ่านให้ใครพิมพ์อะไรก็เข้าได้
       setNoNameOnFile(true)
       return
     }
 
-    // ต้องสะกดตรงกับชื่อลูกค้าจริงที่บันทึกไว้ กันคนอื่นเดาชื่อสุ่มๆ แล้วเข้าดูออเดอร์คนอื่นได้
-    // เทียบแบบ normalize แล้ว (ดูฟังก์ชัน normalizeName ด้านบน) ไม่ใช่เทียบสตริงดิบ เพราะแป้นพิมพ์มือถือ
-    // มักแก้ตัวอักษรแรกเป็นตัวใหญ่หรือแทรกช่องว่างเกินให้เองโดยผู้ใช้ไม่รู้ตัว ถ้าเทียบดิบๆ จะพังเฉพาะบนมือถือ
-    if (normalizeName(typed) !== normalizeName(order.customer_name)) {
+    // ยอมรับได้ทั้งชื่อหรือเบอร์โทร — ต้องตรงกับที่บันทึกไว้จริงอย่างใดอย่างหนึ่ง กันคนอื่นเดาสุ่มๆ แล้วเข้าดู
+    // ออเดอร์คนอื่นได้ เทียบชื่อแบบ normalize แล้ว (ดูฟังก์ชัน normalizeName ด้านบน) ไม่ใช่เทียบสตริงดิบ เพราะ
+    // แป้นพิมพ์มือถือมักแก้ตัวอักษรแรกเป็นตัวใหญ่หรือแทรกช่องว่างเกินให้เองโดยผู้ใช้ไม่รู้ตัว
+    const nameMatches = !!order.customer_name && normalizeName(typed) === normalizeName(order.customer_name)
+    const typedDigits = normalizePhone(typed)
+    const phoneMatches =
+      !!order.customer_phone && typedDigits.length >= 9 && typedDigits === normalizePhone(order.customer_phone)
+
+    if (!nameMatches && !phoneMatches) {
       setShake(true)
       setTimeout(() => setShake(false), 400)
       setNameError(true)
+      const nextFailCount = failCount + 1
+      setFailCount(nextFailCount)
+      if (nextFailCount >= 2) setShowContactPopup(true)
       return
     }
 
     setCustomerName(typed)
     setRevealing(true)
     clearFormDraft(nameDraftKey)
-    // หน่วงสั้นๆ ให้รู้สึกเหมือนระบบกำลังเปิดออเดอร์ให้ ข้อมูลจริงโหลดเสร็จรอไว้อยู่แล้วเบื้องหลัง
-    setTimeout(() => setRevealing(false), 700)
   }
 
-  // ออเดอร์นี้มีจริง แต่ไม่มีชื่อลูกค้าผูกไว้ในระบบเลย ไม่มีทางตรวจสอบตัวตนได้ ต้องหยุดตรงนี้เสมอ ไม่ปล่อยให้ใครพิมพ์อะไรก็เข้าได้
+  // ออเดอร์นี้มีจริง แต่ไม่มีทั้งชื่อและเบอร์ลูกค้าผูกไว้ในระบบเลย ไม่มีทางตรวจสอบตัวตนได้ ต้องหยุดตรงนี้เสมอ ไม่ปล่อยให้ใครพิมพ์อะไรก็เข้าได้
   if (noNameOnFile) {
     return (
       <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
         <div className="max-w-sm">
           <p className="text-4xl mb-2">🔒</p>
-          <p className="text-stone-700 font-medium">ออเดอร์นี้ไม่มีชื่อลูกค้าผูกไว้ในระบบ</p>
+          <p className="text-stone-700 font-medium">ออเดอร์นี้ไม่มีชื่อหรือเบอร์ลูกค้าผูกไว้ในระบบ</p>
           <p className="text-sm text-stone-500 mt-1">ไม่สามารถยืนยันตัวตนอัตโนมัติได้ กรุณาติดต่อร้านโดยตรงเพื่อตรวจสอบออเดอร์</p>
         </div>
       </div>
     )
   }
 
-  // ขั้นที่ 1: ยืนยันชื่อก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อคืออะไร
+  // ขั้นที่ 1: ยืนยันชื่อหรือเบอร์ก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อ/เบอร์คืออะไร
   if (customerName === null) {
     return (
       <div className="min-h-screen bg-stone-50 grid place-items-center p-4">
         <form
           onSubmit={handleConfirmName}
-          className={'w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 space-y-4 text-center' + (shake ? ' animate-shake' : '')}
+          className={
+            'w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 space-y-4 text-center animate-form-in' +
+            (shake ? ' animate-shake' : '')
+          }
         >
           <div className="text-4xl">🥐</div>
           <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
-          <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
+          <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
           <div className="space-y-1.5 text-left">
             <input
               autoFocus
@@ -612,7 +631,7 @@ export function PublicOrderPage() {
                 setNameInput(e.target.value)
                 if (nameError) setNameError(false)
               }}
-              placeholder="ชื่อผู้สั่งซื้อ"
+              placeholder="ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์"
               autoCapitalize="off"
               autoCorrect="off"
               autoComplete="off"
@@ -620,7 +639,7 @@ export function PublicOrderPage() {
               className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-center"
             />
             {nameError && (
-              <InlineError message="ชื่อไม่ตรงกับที่แจ้งไว้ กรุณาสะกดให้ตรงเป๊ะตามที่คุยในแชท" className="justify-center" />
+              <InlineError message="ชื่อ/เบอร์ไม่ตรงกับที่แจ้งไว้ กรุณาลองใหม่ให้ตรงกับที่คุยในแชท" className="justify-center" />
             )}
           </div>
           <button
@@ -631,19 +650,56 @@ export function PublicOrderPage() {
             {order === undefined ? 'กำลังโหลดข้อมูล...' : 'ดูรายละเอียดออเดอร์'}
           </button>
         </form>
+
+        {showContactPopup && (
+          <div className="fixed inset-0 bg-black/50 grid place-items-center z-50 p-4 animate-overlay-fade">
+            <div className="bg-white rounded-2xl p-6 text-center space-y-3 max-w-xs w-full shadow-xl animate-toast-pop relative">
+              <button
+                type="button"
+                onClick={() => setShowContactPopup(false)}
+                aria-label="ปิด"
+                className="absolute top-3 right-3 text-stone-400 text-lg leading-none"
+              >
+                ✕
+              </button>
+              <div className="text-3xl">🤔</div>
+              <p className="font-semibold text-stone-900">กรอกไม่ตรงหลายครั้งแล้วใช่ไหมคะ?</p>
+              <p className="text-sm text-stone-500">ลองตรวจสอบชื่อ/เบอร์ที่แจ้งไว้ตอนสั่งอีกครั้ง หรือติดต่อร้านโดยตรงได้เลย</p>
+              {order?.line_url ? (
+                <a
+                  href={order.line_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-2.5 text-sm"
+                >
+                  💬 ติดต่อพนักงาน (แอดไลน์)
+                </a>
+              ) : (
+                <p className="text-sm text-stone-400">กรุณาติดต่อร้านโดยตรงเพื่อตรวจสอบออเดอร์</p>
+              )}
+              <button
+                type="button"
+                onClick={() => setShowContactPopup(false)}
+                className="w-full rounded-lg border border-stone-300 text-stone-600 py-2 text-sm"
+              >
+                ลองกรอกอีกครั้ง
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }
 
-  // ขั้นที่ 2: เอฟเฟกต์โหลดกลางจอสั้นๆ
+  // ขั้นที่ 2: เอฟเฟกต์ยืนยันตัวตนสำเร็จสั้นๆ ก่อนเปิดออเดอร์จริง
   if (revealing) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center">
-        <div className="text-center space-y-3">
-          <div className="w-12 h-12 border-4 border-stone-200 border-t-stone-900 rounded-full animate-spin mx-auto" />
-          <p className="text-sm text-stone-500">กำลังเปิดออเดอร์ของคุณ...</p>
-        </div>
-      </div>
+      <SuccessOverlay
+        message="ยืนยันตัวตนสำเร็จ ✨"
+        submessage="กำลังเปิดออเดอร์ของคุณ..."
+        onDone={() => setRevealing(false)}
+        durationMs={700}
+      />
     )
   }
 
