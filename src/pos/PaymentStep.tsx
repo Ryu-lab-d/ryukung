@@ -37,11 +37,12 @@ export function PaymentStep({
   const enoughCash = tenderedNum >= grandTotal
 
   async function finalizeSale(paymentMethod: POSPaymentMethod, changeAmount: number | null) {
-    // เริ่มพูดทันทีตรงนี้ ก่อน await เครือข่ายของ createPOSSale/issueReceipt — ยิ่งเริ่มเร็วยิ่งดี (โดยเฉพาะ
-    // fallback เสียงในเครื่องที่ต้องเรียกแบบใกล้เคียง user gesture ที่สุดบนมือถือบางรุ่น) ไม่ต้องรอผลเสียง
-    // เสร็จก่อนไปทำต่อ (fire-and-forget)
+    // พูดทันทีตรงนี้ ก่อน await ใดๆ ทั้งหมด — เบราว์เซอร์มือถือหลายตัว (โดยเฉพาะ Safari บน iOS) จะเงียบเสียง
+    // ทิ้งเฉยๆ ถ้า speechSynthesis.speak() ไม่ได้ถูกเรียกแบบ synchronous อยู่ใน call stack เดียวกับตอนที่ผู้ใช้
+    // กดปุ่ม (user gesture) — ถ้าไปเรียกหลัง await เครือข่าย (createPOSSale/issueReceipt) จะถือว่าหลุดจาก
+    // user gesture ไปแล้ว เสียงจะไม่ออกเลยแม้โค้ดรันไม่ error อะไรเลยก็ตาม
     if (paymentMethod === 'cash' && changeAmount !== null) {
-      void speakThai(changeAmount > 0 ? `เงินทอน ${Math.round(changeAmount)} บาท` : 'รับมาพอดี')
+      speakThai(changeAmount > 0 ? `เงินทอน ${Math.round(changeAmount)} บาท` : 'รับมาพอดี')
     }
 
     setError(null)

@@ -1,25 +1,22 @@
-import { synthesizeThaiSpeech } from './ttsApi'
-
-let activeAudio: HTMLAudioElement | null = null
-
-/** เล่นเสียง MP3 (base64) ที่ได้จากเซิร์ฟเวอร์ (Google Cloud TTS) — ถูกต้องเหมือนกันทุกเครื่องเสมอ ไม่ต้องพึ่ง
- * ว่าอุปกรณ์ผู้ใช้ติดตั้งเสียงไทยไว้หรือเปล่า */
-function playBase64Mp3(base64: string) {
-  if (activeAudio) activeAudio.pause()
-  const audio = new Audio(`data:audio/mp3;base64,${base64}`)
-  activeAudio = audio
-  void audio.play().catch(() => {
-    // เล่นไม่ได้ (เช่นเบราว์เซอร์บล็อกเสียงอัตโนมัติ) — เงียบไปเฉยๆ ไม่ทำให้หน้าพัง
-  })
-}
-
 /**
- * เสียงในเครื่อง (Web Speech API) — ใช้เป็น fallback เมื่อเรียกเซิร์ฟเวอร์ไม่สำเร็จเท่านั้น (เช่นยังไม่ได้ตั้ง
- * GOOGLE_TTS_API_KEY หรือเน็ตมีปัญหาชั่วคราว) แค่ตั้ง utterance.lang = 'th-TH' อย่างเดียวไม่พอ หลายเครื่อง
- * (โดยเฉพาะ Windows) ไม่มีเสียงไทยติดตั้งไว้เป็นค่าเริ่มต้น จะได้เสียงภาษาอังกฤษอ่านคำไทยแทน — ต้องหา voice ที่
- * lang ขึ้นต้นด้วย "th" จากรายชื่อเสียงที่เครื่องมีจริงแล้วเลือกใช้ตรงๆ ถ้ามี
+ * พูดข้อความภาษาไทยผ่าน Web Speech API (เสียงในเครื่องผู้ใช้) — แค่ตั้ง utterance.lang = 'th-TH' อย่างเดียวไม่พอ
+ * หลายเครื่อง/เบราว์เซอร์ (โดยเฉพาะ Windows) ไม่มีเสียงไทยติดตั้งไว้เป็นค่าเริ่มต้น จะได้เสียงภาษาอังกฤษอ่านคำไทย
+ * แทน (ฟังดูเป็นภาษาอังกฤษทั้งที่ตั้ง lang ถูกแล้ว) — ต้องหา voice ที่ lang ขึ้นต้นด้วย "th" จากรายชื่อเสียงที่
+ * เครื่องมีจริงแล้วเลือกใช้ตรงๆ ถ้ามี — **ข้อจำกัดที่แก้ด้วยโค้ดฝั่งเว็บไม่ได้เลย**: ถ้าเครื่องไม่มีเสียงไทยติดตั้ง
+ * ไว้จริงๆ (พบบ่อยบน Windows) จะยังได้เสียงเริ่มต้นของเครื่องอ่านแทนอยู่ดี ต้องไปเพิ่มเสียงที่ตัวเครื่องเอง —
+ * ทางเลือกที่รับประกันเสียงไทยถูกต้องทุกเครื่องคือใช้บริการแปลงเสียงจากเซิร์ฟเวอร์ (เช่น Google Cloud TTS) แทน
+ * แต่ต้องผูกบัตรเครดิตยืนยันตัวตนกับผู้ให้บริการ — ตัดสินใจไม่ใช้ทางนั้น ใช้เสียงในเครื่องแบบนี้ต่อไปแทน
+ *
+ * รายชื่อเสียง (getVoices) มักโหลดแบบ async ครั้งแรกที่ใช้ TTS ในเซสชันนั้น (คืนอาเรย์ว่างก่อน) ต้องรอ event
+ * "voiceschanged" ก่อนถึงจะมีรายชื่อจริงให้เลือก — ใส่ timeout สำรองไว้ด้วยเผื่อบางเบราว์เซอร์ไม่ยิง event นี้เลย
+ *
+ * เก็บ utterance ไว้ในตัวแปรระดับโมดูล (ไม่ใช่ตัวแปร local ในฟังก์ชัน) ตั้งใจ — Safari/WebKit (โดยเฉพาะ iOS)
+ * มีบั๊กที่รู้จักกันดี: ถ้า SpeechSynthesisUtterance ถูกเก็บขยะ (garbage collect) ทิ้งก่อนเสียงเล่นจบ จะเงียบเสียง
+ * ไปเฉยๆ ไม่มี error ให้เห็นเลย เก็บ reference ไว้กันไม่ให้โดนเก็บขยะก่อนพูดจบ
  */
-function speakThaiLocally(text: string): void {
+let activeUtterance: SpeechSynthesisUtterance | null = null
+
+export function speakThai(text: string): void {
   const synth = window.speechSynthesis
   if (!synth) return
 
@@ -33,6 +30,7 @@ function speakThaiLocally(text: string): void {
       const thaiVoice = synth.getVoices().find((v) => v.lang.toLowerCase().startsWith('th'))
       if (thaiVoice) utterance.voice = thaiVoice
       activeUtterance = utterance
+      // ปล่อย reference คืนหลังพูดจบ/error — กันโตค้างไม่จำกัดถ้าเรียกซ้ำหลายรอบ (ขายหลายรายการต่อกัน)
       utterance.onend = () => {
         if (activeUtterance === utterance) activeUtterance = null
       }
@@ -56,26 +54,4 @@ function speakThaiLocally(text: string): void {
   } catch {
     // เบราว์เซอร์ไม่รองรับ Web Speech API — ข้ามไปเงียบๆ
   }
-}
-
-// เก็บ reference ของ utterance ล่าสุดไว้ระดับโมดูล (ไม่ใช่ตัวแปร local) ตั้งใจ — Safari/WebKit (โดยเฉพาะ iOS)
-// มีบั๊กที่รู้จักกันดี: ถ้า SpeechSynthesisUtterance ถูกเก็บขยะทิ้งก่อนเสียงเล่นจบ จะเงียบเสียงไปเฉยๆ ไม่มี error
-let activeUtterance: SpeechSynthesisUtterance | null = null
-
-/**
- * พูดข้อความภาษาไทย — เรียกเสียงจากเซิร์ฟเวอร์ (Google Cloud TTS) ก่อนเสมอ เพราะได้เสียงไทยถูกต้องเหมือนกัน
- * ทุกเครื่อง (Windows/Mac/iPhone/iPad/Android) ไม่ขึ้นกับว่าเครื่องนั้นติดตั้งเสียงไทยไว้หรือเปล่า — เรียกไม่สำเร็จ
- * (ยังไม่ได้ตั้งค่า API key ฝั่งเซิร์ฟเวอร์ หรือเน็ตมีปัญหาชั่วคราว) ค่อย fallback ไปใช้เสียงในเครื่องแทน
- */
-export async function speakThai(text: string): Promise<void> {
-  try {
-    const { audioContent, error } = await synthesizeThaiSpeech(text)
-    if (audioContent && !error) {
-      playBase64Mp3(audioContent)
-      return
-    }
-  } catch {
-    // เรียกเซิร์ฟเวอร์ไม่สำเร็จ — ไปต่อที่ fallback ด้านล่าง
-  }
-  speakThaiLocally(text)
 }
