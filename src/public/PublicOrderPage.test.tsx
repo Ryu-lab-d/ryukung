@@ -61,6 +61,13 @@ function renderPage(token = 'abc') {
 }
 
 describe('การยืนยันชื่อในหน้าสรุปออเดอร์สำหรับลูกค้า', () => {
+  it('โหลดออเดอร์เสร็จแล้ว เห็นเลขออเดอร์บนหน้ากรอกชื่อ/เบอร์ ก่อนยืนยันตัวตนด้วย', async () => {
+    rpc.mockResolvedValue({ data: baseOrder })
+    renderPage()
+    await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
+    expect(await screen.findByText(`ออเดอร์ ${baseOrder.order_no}`)).toBeInTheDocument()
+  })
+
   it('ชื่อผิดจริงๆ เข้าไม่ได้ และมีข้อความเตือน', async () => {
     rpc.mockResolvedValue({ data: baseOrder })
     renderPage()
@@ -158,10 +165,13 @@ async function openOrder(order: typeof baseOrder) {
   const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
-  // ป็อปอัพแนะนำร้านขึ้นก่อนเสมอ (ครั้งแรกของเครื่องนี้) ตามด้วยป็อปอัพเตือนยังไม่ชำระเงินถ้ายังไม่จ่าย ปิดทั้งคู่
-  // ออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติด้านล่าง (มี describe แยกที่ทดสอบป็อปอัพแต่ละอันเองโดยเฉพาะ)
+  // ป็อปอัพแนะนำร้านขึ้นก่อนเสมอ (ครั้งแรกของเครื่องนี้) ตามด้วยป็อปอัพสอนวิธีใช้งาน แล้วค่อยป็อปอัพเตือนยังไม่
+  // ชำระเงินถ้ายังไม่จ่าย ปิดทั้งหมดออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติด้านล่าง
+  // (มี describe แยกที่ทดสอบป็อปอัพแต่ละอันเองโดยเฉพาะ)
   let closeButton = screen.queryByRole('button', { name: 'ปิด' })
   if (closeButton) await userEvent.click(closeButton)
+  const howToButton = screen.queryByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' })
+  if (howToButton) await userEvent.click(howToButton)
   closeButton = screen.queryByRole('button', { name: 'ปิด' })
   if (closeButton) await userEvent.click(closeButton)
 }
@@ -327,8 +337,8 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
 })
 
 /**
- * เปิดออเดอร์แบบดิบๆ ปิดแค่ป็อปอัพแนะนำร้าน (ที่ขึ้นก่อนเสมอ) แต่ไม่แตะป็อปอัพเตือนยังไม่ชำระเงิน
- * (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพเตือนยังไม่ชำระเงินนี้เอง
+ * เปิดออเดอร์แบบดิบๆ ปิดป็อปอัพแนะนำร้าน+ป็อปอัพสอนวิธีใช้งาน (ที่ขึ้นก่อนเสมอทั้งคู่) แต่ไม่แตะป็อปอัพเตือน
+ * ยังไม่ชำระเงิน (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพเตือนยังไม่ชำระเงินนี้เอง
  */
 async function openOrderKeepPopup(order: typeof baseOrder) {
   rpc.mockResolvedValue({ data: order })
@@ -339,6 +349,7 @@ async function openOrderKeepPopup(order: typeof baseOrder) {
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
   await userEvent.click(await screen.findByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+  await userEvent.click(await screen.findByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
 }
 
 describe('ปุ่มบันทึกสรุปออเดอร์เป็นรูปภาพ', () => {
@@ -418,11 +429,12 @@ describe('ป็อปอัพแนะนำร้าน', () => {
     expect(screen.getByAltText('')).toHaveAttribute('src', expect.stringContaining('logo/logo-1.png'))
   })
 
-  it('ปิดป็อปอัพแนะนำร้านแล้ว ถ้ายังไม่จ่ายจะเห็นป็อปอัพเตือนชำระเงินต่อทันที', async () => {
+  it('ปิดป็อปอัพแนะนำร้านแล้ว เห็นป็อปอัพสอนวิธีใช้งานต่อทันที (ยังไม่ใช่ป็อปอัพเตือนชำระเงิน)', async () => {
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
     expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
-    expect(await screen.findByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
+    expect(await screen.findByText('วิธีใช้งานหน้านี้')).toBeInTheDocument()
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
   })
 
   it('ไม่ได้จำไว้ข้ามการเข้าชม เปิดออเดอร์ใหม่อีกรอบ (เช่นเข้ามาเช็คสถานะอีกวัน) ก็ยังเห็นป็อปอัพแนะนำร้านอีกเหมือนเดิม', async () => {
@@ -433,5 +445,25 @@ describe('ป็อปอัพแนะนำร้าน', () => {
 
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
     expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
+  })
+})
+
+describe('ป็อปอัพสอนวิธีใช้งาน', () => {
+  it('ปิดป็อปอัพแนะนำร้านแล้ว เห็นป็อปอัพสอนวิธีใช้งาน ปิดแล้วไปต่อป็อปอัพเตือนชำระเงินตามเดิม', async () => {
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+    expect(await screen.findByText('วิธีใช้งานหน้านี้')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
+    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
+    expect(await screen.findByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
+  })
+
+  it('จ่ายครบแล้ว ปิดป็อปอัพสอนวิธีใช้งานแล้วไปต่อการ์ดปกติ (ไม่มีป็อปอัพเตือนชำระเงินให้เห็น)', async () => {
+    await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
+    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
+    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
   })
 })

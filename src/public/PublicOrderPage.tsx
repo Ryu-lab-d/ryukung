@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
 import { supabase } from '../lib/supabase'
@@ -461,6 +461,54 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
   )
 }
 
+/** ป็อปอัพสอนวิธีใช้งานหน้านี้ โชว์ต่อจากป็อปอัพแนะนำร้านเสมอ ทุกครั้งที่เข้าดูออเดอร์ (คนละอันกับ AboutShopPopup) */
+function HowToUsePopup({ onClose }: { onClose: () => void }) {
+  const items = [
+    { icon: '📊', text: 'เช็คสถานะออเดอร์แบบเรียลไทม์ได้ตลอดในหน้านี้' },
+    { icon: '💳', text: 'ยังไม่จ่าย? กด "ดูวิธีชำระเงิน" แล้วแจ้งชำระได้เลยในหน้านี้' },
+    { icon: '📸', text: 'กดบันทึกสรุปออเดอร์เป็นรูปภาพเก็บไว้ดูภายหลังได้' },
+    { icon: '💬', text: 'มีปัญหาหรือข้อสงสัย ทักไลน์ร้านได้ทันทีจากปุ่มด้านบน' },
+  ]
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center animate-toast-pop">
+        <p className="text-4xl">💡</p>
+        <h2 className="text-lg font-bold text-stone-900">วิธีใช้งานหน้านี้</h2>
+        <div className="space-y-2.5 text-left">
+          {items.map((it, i) => (
+            <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
+              <span className="text-lg shrink-0">{it.icon}</span>
+              <span>{it.text}</span>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={onClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
+          เข้าใจแล้ว เริ่มดูออเดอร์
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** ของตกแต่งลอยเบาๆ อยู่หลังเนื้อหาทั้งหมด (aria-hidden, ไม่กันคลิก) เพิ่มความมีชีวิตชีวาให้หน้าลูกค้า */
+function FloatingDecor() {
+  const items: { icon: string; style: CSSProperties }[] = [
+    { icon: '🥐', style: { top: '8%', left: '6%' } },
+    { icon: '🧁', style: { top: '18%', right: '8%', animationDelay: '1.5s' } },
+    { icon: '🍪', style: { bottom: '18%', left: '10%', animationDelay: '3s' } },
+    { icon: '✨', style: { bottom: '32%', right: '12%', animationDelay: '0.8s' } },
+  ]
+  return (
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+      {items.map((it, i) => (
+        <span key={i} className="absolute text-4xl opacity-10 animate-float-slow" style={it.style}>
+          {it.icon}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 /**
  * รายการสินค้า + ยอดรวม พร้อมปุ่มบันทึกเป็นรูปภาพ — สร้างรูปฝั่งเบราว์เซอร์ล้วนๆ (html-to-image) ไม่มีการอัปโหลด
  * หรือเก็บอะไรใน Supabase เพิ่มเลย ลูกค้ากดแล้วได้ไฟล์ลงเครื่องตัวเองทันที ไม่กินพื้นที่จัดเก็บของร้านแม้แต่นิดเดียว
@@ -530,6 +578,7 @@ export function PublicOrderPage() {
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
+  const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
   const [failCount, setFailCount] = useState(0)
   const [showContactPopup, setShowContactPopup] = useState(false)
 
@@ -613,6 +662,7 @@ export function PublicOrderPage() {
   if (customerName === null) {
     return (
       <div className="min-h-screen bg-stone-50 grid place-items-center p-4">
+        <FloatingDecor />
         <form
           onSubmit={handleConfirmName}
           className={
@@ -620,8 +670,9 @@ export function PublicOrderPage() {
             (shake ? ' animate-shake' : '')
           }
         >
-          <div className="text-4xl">🥐</div>
+          <div className="text-4xl animate-icon-pop">🥐</div>
           <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
+          {order && <p className="text-xs text-stone-400 font-mono tracking-wide">ออเดอร์ {order.order_no}</p>}
           <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
           <div className="space-y-1.5 text-left">
             <input
@@ -718,6 +769,7 @@ export function PublicOrderPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 p-4">
+      <FloatingDecor />
       <div className="max-w-md mx-auto space-y-4">
         <div className="text-center pt-2">
           <p className="text-sm text-stone-500">สวัสดีคุณ{customerName} 👋</p>
@@ -862,6 +914,8 @@ export function PublicOrderPage() {
 
       {!aboutPopupDismissed ? (
         <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={() => setAboutPopupDismissed(true)} />
+      ) : !howToPopupDismissed ? (
+        <HowToUsePopup onClose={() => setHowToPopupDismissed(true)} />
       ) : (
         !unpaidPopupDismissed &&
         !order.payment_claimed_at &&

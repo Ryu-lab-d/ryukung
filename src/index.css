@@ -236,3 +236,22 @@ a:focus-visible {
 .animate-form-in {
   animation: form-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
+
+/* ไอคอนหน้ากรอกชื่อ/เบอร์เด้งเข้ามาแบบมีจังหวะ หลังการ์ดเริ่มโผล่เล็กน้อย ให้ดูมีชีวิตชีวากว่าโผล่พร้อมกันเป๊ะ */
+@keyframes icon-pop-in {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  70% { transform: scale(1.15) rotate(5deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.animate-icon-pop {
+  animation: icon-pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+}
+
+/* ของตกแต่งลอยขึ้นลงเบาๆ พร้อมโยกตัวเล็กน้อย ใช้กับอิโมจิพื้นหลังในหน้าลูกค้า */
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0) rotate(0deg); }
+  50% { transform: translateY(-14px) rotate(6deg); }
+}
+.animate-float-slow {
+  animation: float-slow 6s ease-in-out infinite;
+}
