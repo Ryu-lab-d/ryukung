@@ -8,23 +8,31 @@ const items: CartItem[] = [
 ]
 
 describe('CartPanel', () => {
-  it('ตะกร้าว่าง แสดงข้อความและปุ่มไปหน้าชำระเงิน disabled', () => {
-    render(<CartPanel items={[]} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={vi.fn()} />)
+  it('ตะกร้าว่าง แสดงข้อความและปุ่มไปหน้าชำระเงิน/พักบิล disabled', () => {
+    render(<CartPanel items={[]} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={vi.fn()} onHold={vi.fn()} />)
     expect(screen.getByText('ยังไม่ได้เลือกสินค้า')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '⏸ พักบิล' })).toBeDisabled()
   })
 
   it('แสดงยอดรวมถูกต้องและปุ่มไปหน้าชำระเงินกดได้', async () => {
     const onCheckout = vi.fn()
-    render(<CartPanel items={items} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={onCheckout} />)
+    render(<CartPanel items={items} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={onCheckout} onHold={vi.fn()} />)
     expect(screen.getByText('80.00 บาท')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
     expect(onCheckout).toHaveBeenCalled()
   })
 
+  it('มีของในตะกร้า กดพักบิลเรียก onHold', async () => {
+    const onHold = vi.fn()
+    render(<CartPanel items={items} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={vi.fn()} onHold={onHold} />)
+    await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
+    expect(onHold).toHaveBeenCalled()
+  })
+
   it('กด + / − เปลี่ยนจำนวน', async () => {
     const onUpdateQty = vi.fn()
-    render(<CartPanel items={items} onUpdateQty={onUpdateQty} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={vi.fn()} />)
+    render(<CartPanel items={items} onUpdateQty={onUpdateQty} onUpdatePrice={vi.fn()} onRemove={vi.fn()} onCheckout={vi.fn()} onHold={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: 'เพิ่มจำนวน คุกกี้' }))
     expect(onUpdateQty).toHaveBeenCalledWith(0, 3)
     await userEvent.click(screen.getByRole('button', { name: 'ลดจำนวน คุกกี้' }))
@@ -40,6 +48,7 @@ describe('CartPanel', () => {
         onUpdatePrice={vi.fn()}
         onRemove={vi.fn()}
         onCheckout={vi.fn()}
+        onHold={vi.fn()}
       />
     )
     await userEvent.click(screen.getByRole('button', { name: 'ลดจำนวน คุกกี้' }))
@@ -48,7 +57,7 @@ describe('CartPanel', () => {
 
   it('กดลบเรียก onRemove ถูกแถว', async () => {
     const onRemove = vi.fn()
-    render(<CartPanel items={items} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={onRemove} onCheckout={vi.fn()} />)
+    render(<CartPanel items={items} onUpdateQty={vi.fn()} onUpdatePrice={vi.fn()} onRemove={onRemove} onCheckout={vi.fn()} onHold={vi.fn()} />)
     await userEvent.click(screen.getByRole('button', { name: 'ลบ' }))
     expect(onRemove).toHaveBeenCalledWith(0)
   })

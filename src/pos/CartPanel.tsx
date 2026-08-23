@@ -14,12 +14,14 @@ export function CartPanel({
   onUpdatePrice,
   onRemove,
   onCheckout,
+  onHold,
 }: {
   items: CartItem[]
   onUpdateQty: (index: number, qty: number) => void
   onUpdatePrice: (index: number, price: number) => void
   onRemove: (index: number) => void
   onCheckout: () => void
+  onHold: () => void
 }) {
   const grandTotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
 
@@ -82,14 +84,24 @@ export function CartPanel({
           <span className="text-sm text-stone-500">ยอดรวม</span>
           <span className="text-xl font-bold text-stone-900">{formatBaht(grandTotal)} บาท</span>
         </div>
-        <button
-          type="button"
-          onClick={onCheckout}
-          disabled={items.length === 0}
-          className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
-        >
-          ไปหน้าชำระเงิน →
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={onHold}
+            disabled={items.length === 0}
+            className="flex-1 rounded-xl border border-stone-300 text-stone-700 font-medium py-3 disabled:opacity-40"
+          >
+            ⏸ พักบิล
+          </button>
+          <button
+            type="button"
+            onClick={onCheckout}
+            disabled={items.length === 0}
+            className="flex-[2] rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+          >
+            ไปหน้าชำระเงิน →
+          </button>
+        </div>
       </div>
     </div>
   )

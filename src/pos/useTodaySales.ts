@@ -28,15 +28,15 @@ export function useTodaySales() {
       .gte('created_at', startOfToday.toISOString())
       .order('created_at', { ascending: false })
 
-    setSales(
-      (data ?? []).map((o) => ({
-        id: o.id,
-        order_no: o.order_no,
-        grand_total: Number(o.grand_total),
-        created_at: o.created_at,
-      }))
-    )
+    const rows = (data ?? []).map((o) => ({
+      id: o.id,
+      order_no: o.order_no,
+      grand_total: Number(o.grand_total),
+      created_at: o.created_at,
+    }))
+    setSales(rows)
     setLoading(false)
+    return rows
   }, [])
 
   useEffect(() => {

@@ -5,15 +5,19 @@ import { ProductCard } from '../products/ProductCard'
 import { useSettings } from '../settings/useSettings'
 import { formatBaht } from '../lib/money'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { playAddSound } from '../lib/uiSound'
 import { CartPanel, type CartItem } from './CartPanel'
 import { PaymentStep, type SaleResult } from './PaymentStep'
 import { SaleComplete } from './SaleComplete'
 import { TodaySalesPanel } from './TodaySalesPanel'
+import { HeldSalesPanel, type HeldSale } from './HeldSalesPanel'
+import { MilestoneToast } from './MilestoneToast'
 import { useTodaySales } from './useTodaySales'
 
 type Step = 'cart' | 'payment' | 'complete'
 
 const CART_DRAFT_KEY = 'pos-cart'
+const HELD_DRAFT_KEY = 'pos-held-sales'
 
 export function POSPage() {
   const { products } = useProducts()
@@ -23,12 +27,16 @@ export function POSPage() {
   const [categoryId, setCategoryId] = useState<string | null>(null)
   // กันตะกร้าหายตอนสลับแท็บ/แอปแล้วกลับมา — บันทึกลง localStorage ทุกครั้งที่เปลี่ยน เหมือนฟอร์มอื่นๆ ในระบบ
   const [items, setItems] = useState<CartItem[]>(() => loadFormDraft<CartItem[]>(CART_DRAFT_KEY) ?? [])
+  const [heldSales, setHeldSales] = useState<HeldSale[]>(() => loadFormDraft<HeldSale[]>(HELD_DRAFT_KEY) ?? [])
+  const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [step, setStep] = useState<Step>('cart')
   const [saleResult, setSaleResult] = useState<SaleResult | null>(null)
   const [completedTotal, setCompletedTotal] = useState(0)
+  const [milestoneCount, setMilestoneCount] = useState<number | null>(null)
   const { sales: todaySales, loading: todaySalesLoading, reload: reloadTodaySales } = useTodaySales()
 
   useFormDraft(CART_DRAFT_KEY, items)
+  useFormDraft(HELD_DRAFT_KEY, heldSales)
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -38,12 +46,36 @@ export function POSPage() {
   }, [products, search, categoryId])
 
   function addProduct(p: (typeof products)[number]) {
+    // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
+    // เดียวกันตอนสร้าง AudioContext ครั้งแรก ไม่งั้นจะโดนบล็อกเสียงเงียบๆ (บทเรียนเดียวกับ speakThai.ts)
+    playAddSound()
+    setJustAddedId(p.id)
+    setTimeout(() => setJustAddedId((cur) => (cur === p.id ? null : cur)), 300)
+
     const existingIndex = items.findIndex((it) => it.product_id === p.id)
     if (existingIndex >= 0) {
       setItems((rows) => rows.map((r, i) => (i === existingIndex ? { ...r, qty: r.qty + 1 } : r)))
       return
     }
     setItems((rows) => [...rows, { product_id: p.id, product_name: p.name, unit_price: p.price, unit_cost: p.cost, qty: 1 }])
+  }
+
+  function holdSale() {
+    if (items.length === 0) return
+    setHeldSales((rows) => [{ id: crypto.randomUUID(), items, heldAt: new Date().toISOString() }, ...rows])
+    setItems([])
+  }
+
+  function resumeSale(id: string) {
+    if (items.length > 0) return
+    const held = heldSales.find((h) => h.id === id)
+    if (!held) return
+    setItems(held.items)
+    setHeldSales((rows) => rows.filter((h) => h.id !== id))
+  }
+
+  function discardHeldSale(id: string) {
+    setHeldSales((rows) => rows.filter((h) => h.id !== id))
   }
 
   function updateQty(index: number, qty: number) {
@@ -65,7 +97,9 @@ export function POSPage() {
     setCompletedTotal(items.reduce((sum, it) => sum + it.unit_price * it.qty, 0))
     setSaleResult(result)
     setStep('complete')
-    void reloadTodaySales()
+    void reloadTodaySales().then((rows) => {
+      if (rows.length > 0 && rows.length % 5 === 0) setMilestoneCount(rows.length)
+    })
   }
 
   function handleNextSale() {
@@ -86,6 +120,9 @@ export function POSPage() {
     return (
       <div className="p-4 max-w-md mx-auto">
         <SaleComplete result={saleResult} grandTotal={completedTotal} onNextSale={handleNextSale} />
+        {milestoneCount !== null && (
+          <MilestoneToast count={milestoneCount} onDone={() => setMilestoneCount(null)} />
+        )}
       </div>
     )
   }
@@ -96,6 +133,12 @@ export function POSPage() {
       <p className="text-sm text-stone-500">ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย</p>
 
       <TodaySalesPanel sales={todaySales} loading={todaySalesLoading} />
+      <HeldSalesPanel
+        heldSales={heldSales}
+        canResume={items.length === 0}
+        onResume={resumeSale}
+        onDiscard={discardHeldSale}
+      />
 
       <div className="lg:grid lg:grid-cols-[1fr,380px] lg:gap-4 lg:items-start">
         <div className="space-y-2">
@@ -126,7 +169,12 @@ export function POSPage() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-32 lg:pb-0">
             {filtered.map((p) => (
-              <button key={p.id} type="button" onClick={() => addProduct(p)}>
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => addProduct(p)}
+                className={p.id === justAddedId ? 'animate-cart-bump' : ''}
+              >
                 <ProductCard product={p} mode="picker" />
               </button>
             ))}
@@ -141,6 +189,7 @@ export function POSPage() {
             onUpdatePrice={updatePrice}
             onRemove={removeItem}
             onCheckout={() => setStep('payment')}
+            onHold={holdSale}
           />
         </div>
       </div>

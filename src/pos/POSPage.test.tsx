@@ -56,10 +56,18 @@ vi.mock('./useTodaySales', () => ({
   useTodaySales: () => ({ sales: [], loading: false, reload: reloadTodaySales }),
 }))
 
+const playAddSound = vi.fn()
+vi.mock('../lib/uiSound', () => ({
+  playAddSound: (...args: unknown[]) => playAddSound(...args),
+}))
+
 beforeEach(() => {
   createPOSSale.mockReset()
   issueReceipt.mockReset()
   reloadTodaySales.mockReset()
+  reloadTodaySales.mockResolvedValue([])
+  playAddSound.mockReset()
+  localStorage.clear()
 })
 
 describe('POSPage — flow เต็ม', () => {
@@ -107,6 +115,88 @@ describe('POSPage — ยอดขายวันนี้', () => {
   it('แสดงแถบยอดขายวันนี้อยู่บนหน้าเลือกสินค้า', () => {
     renderPOSPage()
     expect(screen.getByText('ยอดขายวันนี้ (0 บิล)')).toBeInTheDocument()
+  })
+})
+
+describe('POSPage — เสียง+แอนิเมชันตอนเพิ่มสินค้า', () => {
+  it('กดเพิ่มสินค้าเรียก playAddSound ทุกครั้ง', async () => {
+    renderPOSPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(playAddSound).toHaveBeenCalledTimes(1)
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(playAddSound).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('POSPage — พักบิล', () => {
+  it('มีของในตะกร้า กดพักบิล ตะกร้าว่างทันที + เห็นแถวบิลที่พักไว้', async () => {
+    renderPOSPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
+    expect(screen.getByText('ยังไม่ได้เลือกสินค้า')).toBeInTheDocument()
+    expect(screen.getByText('⏸ บิลที่พักไว้ (1)')).toBeInTheDocument()
+    expect(screen.getByText('1 รายการ · 40.00 บาท')).toBeInTheDocument()
+  })
+
+  it('มีบิลพักไว้ แต่ตะกร้าปัจจุบันไม่ว่าง ปุ่มเรียกคืน disabled', async () => {
+    renderPOSPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
+    // เลือกสินค้าใหม่ใส่ตะกร้าอีกรอบ ตอนนี้ตะกร้าไม่ว่างแล้ว
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    expect(screen.getByRole('button', { name: 'เรียกคืน' })).toBeDisabled()
+  })
+
+  it('ตะกร้าว่าง กดเรียกคืนได้ของกลับมาครบ และแถวบิลที่พักไว้หายไป', async () => {
+    renderPOSPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
+    await userEvent.click(screen.getByRole('button', { name: 'เรียกคืน' }))
+    expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
+    expect(screen.queryByText('⏸ บิลที่พักไว้')).not.toBeInTheDocument()
+  })
+
+  it('พักบิลไว้แล้ว unmount+remount หน้า (จำลองสลับแท็บ) บิลที่พักไว้ยังอยู่', async () => {
+    const { unmount } = renderPOSPage()
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
+    unmount()
+
+    renderPOSPage()
+    expect(screen.getByText('⏸ บิลที่พักไว้ (1)')).toBeInTheDocument()
+  })
+})
+
+describe('POSPage — ป้ายฉลองยอดขายครบหลัก', () => {
+  it('ขายบิลที่ 5 ของวันนี้ (ยอดขายวันนี้ยาว 5 รายการหลังรีเฟรช) เห็นป้ายฉลอง', async () => {
+    createPOSSale.mockResolvedValue({ orderId: 'order-5', error: null })
+    issueReceipt.mockResolvedValue({ id: 'receipt-5', error: null })
+    reloadTodaySales.mockResolvedValue(Array.from({ length: 5 }, (_, i) => ({ id: `o${i}`, order_no: null, grand_total: 40, created_at: '' })))
+    renderPOSPage()
+
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
+    await userEvent.click(screen.getByRole('button', { name: /💵/ }))
+    await userEvent.click(screen.getByRole('button', { name: /รับพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
+
+    expect(await screen.findByText('ขายไปแล้ว 5 บิลวันนี้')).toBeInTheDocument()
+  })
+
+  it('ขายบิลที่ 6 ของวันนี้ (ไม่ใช่หลักที่ตั้งไว้) ไม่เห็นป้ายฉลอง', async () => {
+    createPOSSale.mockResolvedValue({ orderId: 'order-6', error: null })
+    issueReceipt.mockResolvedValue({ id: 'receipt-6', error: null })
+    reloadTodaySales.mockResolvedValue(Array.from({ length: 6 }, (_, i) => ({ id: `o${i}`, order_no: null, grand_total: 40, created_at: '' })))
+    renderPOSPage()
+
+    await userEvent.click(screen.getAllByText('คุกกี้')[0])
+    await userEvent.click(screen.getByRole('button', { name: 'ไปหน้าชำระเงิน →' }))
+    await userEvent.click(screen.getByRole('button', { name: /💵/ }))
+    await userEvent.click(screen.getByRole('button', { name: /รับพอดี/ }))
+    await userEvent.click(screen.getByRole('button', { name: 'ยืนยันรับเงิน' }))
+
+    await screen.findByText('ขายสำเร็จ! 🎉')
+    expect(screen.queryByText(/บิลวันนี้/)).not.toBeInTheDocument()
   })
 })
 
