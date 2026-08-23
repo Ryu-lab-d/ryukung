@@ -57,8 +57,10 @@ vi.mock('./useTodaySales', () => ({
 }))
 
 const playAddSound = vi.fn()
+const playPaymentSound = vi.fn()
 vi.mock('../lib/uiSound', () => ({
   playAddSound: (...args: unknown[]) => playAddSound(...args),
+  playPaymentSound: (...args: unknown[]) => playPaymentSound(...args),
 }))
 
 beforeEach(() => {
@@ -67,6 +69,7 @@ beforeEach(() => {
   reloadTodaySales.mockReset()
   reloadTodaySales.mockResolvedValue([])
   playAddSound.mockReset()
+  playPaymentSound.mockReset()
   localStorage.clear()
 })
 

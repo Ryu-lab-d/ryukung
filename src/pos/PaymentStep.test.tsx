@@ -48,10 +48,16 @@ vi.mock('../lib/speakThai', () => ({
   speakThai: (...args: unknown[]) => speakThai(...args),
 }))
 
+const playPaymentSound = vi.fn()
+vi.mock('../lib/uiSound', () => ({
+  playPaymentSound: (...args: unknown[]) => playPaymentSound(...args),
+}))
+
 beforeEach(() => {
   createPOSSale.mockReset()
   issueReceipt.mockReset()
   speakThai.mockReset()
+  playPaymentSound.mockReset()
 })
 
 describe('PaymentStep — เงินสด', () => {
@@ -96,6 +102,10 @@ describe('PaymentStep — เงินสด', () => {
     // บน iOS) เงียบเสียงทิ้งถ้าไม่ได้เรียกแบบ synchronous อยู่ใน call stack เดียวกับตอนกดปุ่ม (user gesture)
     expect(speakThai).toHaveBeenCalledWith('เงินทอน 10 บาท')
     expect(speakThai.mock.invocationCallOrder[0]).toBeLessThan(createPOSSale.mock.invocationCallOrder[0])
+
+    // เล่นเสียงยืนยันรับเงิน (cha-ching) ก่อน await ใดๆ ทั้งหมดเช่นกัน ด้วยเหตุผลเดียวกับเสียงพูด
+    expect(playPaymentSound).toHaveBeenCalledTimes(1)
+    expect(playPaymentSound.mock.invocationCallOrder[0]).toBeLessThan(createPOSSale.mock.invocationCallOrder[0])
   })
 
   it('รับเงินพอดี (ไม่มีเงินทอน) พูด "รับมาพอดี" ทันทีตอนกดยืนยัน', async () => {
@@ -140,6 +150,8 @@ describe('PaymentStep — พร้อมเพย์', () => {
     expect(createPOSSale).toHaveBeenCalledWith(expect.anything(), 'promptpay')
     expect(onComplete).toHaveBeenCalledWith({ orderId: 'order-2', method: 'promptpay', change: null, receiptIssued: true })
     expect(speakThai).not.toHaveBeenCalled()
+    // พร้อมเพย์ไม่มีเงินทอนให้พูด แต่ก็ยังต้องมีเสียงยืนยันชำระเงินเหมือนกัน
+    expect(playPaymentSound).toHaveBeenCalledTimes(1)
   })
 })
 
