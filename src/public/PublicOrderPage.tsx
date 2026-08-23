@@ -304,6 +304,17 @@ function PaymentInfoPanel({
   )
 }
 
+/** หน่วงปิดสั้นๆ ให้ overlay/การ์ดมีจังหวะเฟดออกก่อนถูก unmount จริง แทนที่จะหายวับไปทันที */
+function useClosingTransition(onClose: () => void, durationMs = 200) {
+  const [closing, setClosing] = useState(false)
+  function requestClose() {
+    if (closing) return
+    setClosing(true)
+    setTimeout(onClose, durationMs)
+  }
+  return { closing, requestClose }
+}
+
 /**
  * ป็อปอัพเตือนใหญ่ๆ กลางจอ ขึ้นทันทีที่ลูกค้าเข้าดูออเดอร์ถ้ายังไม่จ่าย (และยังไม่เคยกดยืนยันการชำระเงินด้วย —
  * ถ้ากดยืนยันไปแล้วรอตรวจสอบอยู่ ข้อความ "ยังไม่ได้ชำระเงิน" จะไม่ตรงกับความจริงและอาจทำให้ลูกค้าสับสน/จ่ายซ้ำ)
@@ -325,18 +336,19 @@ function UnpaidPaymentPopup({
   claimError: string | null
   onClaimPayment: () => void
 }) {
+  const { closing, requestClose } = useClosingTransition(onClose)
   return (
     <div
-      className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade"
-      onClick={onClose}
+      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
     >
       <div
-        className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto animate-toast-pop"
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="ปิด"
           className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-500 grid place-items-center text-lg font-bold shadow-md z-10"
         >
@@ -392,18 +404,19 @@ function UnpaidPaymentPopup({
 
 /** ป็อปอัพแนะนำร้าน โชว์ก่อนป็อปอัพเตือนชำระเงินเสมอ ทุกครั้งที่เข้าดูออเดอร์ */
 function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
+  const { closing, requestClose } = useClosingTransition(onClose)
   return (
     <div
-      className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade"
-      onClick={onClose}
+      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
     >
       <div
-        className="relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto animate-toast-pop"
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           type="button"
-          onClick={onClose}
+          onClick={requestClose}
           aria-label="ปิด"
           className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-600 grid place-items-center text-lg font-bold shadow-md z-10"
         >
@@ -450,7 +463,7 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
         <div className="px-5 pb-5">
           <button
             type="button"
-            onClick={onClose}
+            onClick={requestClose}
             className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
           >
             เริ่มดูออเดอร์ของฉัน
@@ -469,9 +482,10 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
     { icon: '📸', text: 'กดบันทึกสรุปออเดอร์เป็นรูปภาพเก็บไว้ดูภายหลังได้' },
     { icon: '💬', text: 'มีปัญหาหรือข้อสงสัย ทักไลน์ร้านได้ทันทีจากปุ่มด้านบน' },
   ]
+  const { closing, requestClose } = useClosingTransition(onClose)
   return (
-    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center animate-toast-pop">
+    <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
+      <div className={'bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}>
         <p className="text-4xl">💡</p>
         <h2 className="text-lg font-bold text-stone-900">วิธีใช้งานหน้านี้</h2>
         <div className="space-y-2.5 text-left">
@@ -482,7 +496,7 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
             </div>
           ))}
         </div>
-        <button type="button" onClick={onClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
+        <button type="button" onClick={requestClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
           เข้าใจแล้ว เริ่มดูออเดอร์
         </button>
       </div>
@@ -579,6 +593,7 @@ export function PublicOrderPage() {
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
   const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
+  const [manualHowTo, setManualHowTo] = useState(false)
   const [failCount, setFailCount] = useState(0)
   const [showContactPopup, setShowContactPopup] = useState(false)
 
@@ -767,6 +782,14 @@ export function PublicOrderPage() {
     )
   }
 
+  // ป็อปอัพวิธีใช้งานโผล่เองครั้งแรกตามลำดับ onboarding (ต่อจากป็อปอัพแนะนำร้าน) หรือเปิดซ้ำเองได้ทุกเมื่อ
+  // จากปุ่ม "วิธีใช้งานหน้านี้" — ปิดแล้วต้องเคลียร์ทั้งสองทางเสมอ กันเปิดค้างจากอีกทางนึงโดยไม่ตั้งใจ
+  const showHowTo = (aboutPopupDismissed && !howToPopupDismissed) || manualHowTo
+  function closeHowTo() {
+    setManualHowTo(false)
+    if (!howToPopupDismissed) setHowToPopupDismissed(true)
+  }
+
   return (
     <div className="min-h-screen bg-stone-50 p-4">
       <FloatingDecor />
@@ -775,6 +798,13 @@ export function PublicOrderPage() {
           <p className="text-sm text-stone-500">สวัสดีคุณ{customerName} 👋</p>
           <h1 className="text-xl font-bold mt-1">{order.shop_name}</h1>
           <p className="text-sm text-stone-500">ออเดอร์ {order.order_no}</p>
+          <button
+            type="button"
+            onClick={() => setManualHowTo(true)}
+            className="text-xs text-stone-500 underline underline-offset-2 mt-1"
+          >
+            💡 วิธีใช้งานหน้านี้
+          </button>
         </div>
 
         {order.line_url && (
@@ -914,8 +944,8 @@ export function PublicOrderPage() {
 
       {!aboutPopupDismissed ? (
         <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={() => setAboutPopupDismissed(true)} />
-      ) : !howToPopupDismissed ? (
-        <HowToUsePopup onClose={() => setHowToPopupDismissed(true)} />
+      ) : showHowTo ? (
+        <HowToUsePopup onClose={closeHowTo} />
       ) : (
         !unpaidPopupDismissed &&
         !order.payment_claimed_at &&

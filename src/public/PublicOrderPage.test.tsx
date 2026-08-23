@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import { render, screen, cleanup } from '@testing-library/react'
+import { render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { PublicOrderPage } from './PublicOrderPage'
@@ -166,14 +166,24 @@ async function openOrder(order: typeof baseOrder) {
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
   // ป็อปอัพแนะนำร้านขึ้นก่อนเสมอ (ครั้งแรกของเครื่องนี้) ตามด้วยป็อปอัพสอนวิธีใช้งาน แล้วค่อยป็อปอัพเตือนยังไม่
-  // ชำระเงินถ้ายังไม่จ่าย ปิดทั้งหมดออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติด้านล่าง
-  // (มี describe แยกที่ทดสอบป็อปอัพแต่ละอันเองโดยเฉพาะ)
+  // ชำระเงินถ้ายังไม่จ่าย ปิดทั้งหมดออกก่อนเสมอที่นี่ กันไม่ให้ element ซ้ำกับตัวการ์ดปกติด้านล่าง (มี describe
+  // แยกที่ทดสอบป็อปอัพแต่ละอันเองโดยเฉพาะ) — แต่ละป็อปอัพปิดแบบเฟดออกหน่วง 200ms ก่อน unmount จริง ต้อง
+  // waitFor ให้หายไปจริงก่อนไปหาปุ่มปิดของป็อปอัพถัดไป ไม่งั้นจะเจอปุ่มปนกันหรือป็อปอัพถัดไปยังไม่ทันโผล่
   let closeButton = screen.queryByRole('button', { name: 'ปิด' })
-  if (closeButton) await userEvent.click(closeButton)
+  if (closeButton) {
+    await userEvent.click(closeButton)
+    await waitFor(() => expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument())
+  }
   const howToButton = screen.queryByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' })
-  if (howToButton) await userEvent.click(howToButton)
+  if (howToButton) {
+    await userEvent.click(howToButton)
+    await waitFor(() => expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument())
+  }
   closeButton = screen.queryByRole('button', { name: 'ปิด' })
-  if (closeButton) await userEvent.click(closeButton)
+  if (closeButton) {
+    await userEvent.click(closeButton)
+    await waitFor(() => expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument())
+  }
 }
 
 describe('ปุ่มติดต่อพนักงานผ่านไลน์', () => {
@@ -349,7 +359,11 @@ async function openOrderKeepPopup(order: typeof baseOrder) {
   await userEvent.click(submitButton)
   await screen.findByText(order.shop_name)
   await userEvent.click(await screen.findByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+  await waitFor(() => expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument())
   await userEvent.click(await screen.findByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
+  // รอให้ป็อปอัพสอนวิธีใช้งานเฟดออกจริงก่อน กันไม่ให้ผู้เรียกใช้ helper นี้เจอป็อปอัพเตือนยังไม่ชำระเงิน
+  // (ถ้ามี) ยังไม่ทันโผล่ตอน helper คืนค่ากลับไป
+  await waitFor(() => expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument())
 }
 
 describe('ปุ่มบันทึกสรุปออเดอร์เป็นรูปภาพ', () => {
@@ -402,7 +416,7 @@ describe('ป็อปอัพเตือนยังไม่ชำระเ�
   it('กด "ปิด" แล้วป็อปอัพหายไป เหลือแค่การ์ดปกติด้านล่าง', async () => {
     await openOrderKeepPopup(baseOrder)
     await userEvent.click(screen.getByRole('button', { name: 'ปิด' }))
-    expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument())
   })
 })
 
@@ -432,8 +446,10 @@ describe('ป็อปอัพแนะนำร้าน', () => {
   it('ปิดป็อปอัพแนะนำร้านแล้ว เห็นป็อปอัพสอนวิธีใช้งานต่อทันที (ยังไม่ใช่ป็อปอัพเตือนชำระเงิน)', async () => {
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'unpaid' })
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
-    expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
+    // รอป็อปอัพถัดไปโผล่ก่อน (เฟดออก 200ms) แล้วค่อยเช็คว่าอันเก่าหายจริง — ป็อปอัพเรนเดอร์แบบ if/else
+    // กันเองอยู่แล้วว่าไม่มีทางโผล่ซ้อนกัน 2 อันพร้อมกัน พอเจออันใหม่คือมั่นใจได้ว่าอันเก่าหายไปแล้วจริง
     expect(await screen.findByText('วิธีใช้งานหน้านี้')).toBeInTheDocument()
+    expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument()
     expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
   })
 
@@ -455,15 +471,37 @@ describe('ป็อปอัพสอนวิธีใช้งาน', () => {
     expect(await screen.findByText('วิธีใช้งานหน้านี้')).toBeInTheDocument()
 
     await userEvent.click(screen.getByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
-    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
     expect(await screen.findByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).toBeInTheDocument()
+    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
   })
 
   it('จ่ายครบแล้ว ปิดป็อปอัพสอนวิธีใช้งานแล้วไปต่อการ์ดปกติ (ไม่มีป็อปอัพเตือนชำระเงินให้เห็น)', async () => {
     await openOrderKeepAllPopups({ ...baseOrder, payment_status: 'paid' })
     await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
     await userEvent.click(await screen.findByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
-    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
+    // จ่ายครบแล้วไม่มีป็อปอัพถัดไปให้ findBy รอ ต้อง waitFor ยืนยันว่าเฟดออกหายไปจริงแทน
+    await waitFor(() => expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument())
     expect(screen.queryByText('คุณลูกค้ายังไม่ได้ชำระเงิน')).not.toBeInTheDocument()
+  })
+
+  it('มีปุ่ม "วิธีใช้งานหน้านี้" บนหน้าหลัก กดแล้วเปิดป็อปอัพสอนวิธีใช้งานซ้ำได้ แม้ onboarding ปิดไปหมดแล้ว', async () => {
+    await openOrder({ ...baseOrder, payment_status: 'paid' })
+    expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '💡 วิธีใช้งานหน้านี้' }))
+    expect(await screen.findByText('วิธีใช้งานหน้านี้')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: 'เข้าใจแล้ว เริ่มดูออเดอร์' }))
+    await waitFor(() => expect(screen.queryByText('วิธีใช้งานหน้านี้')).not.toBeInTheDocument())
+  })
+
+  it('กดปิดป็อปอัพแล้วมีจังหวะเฟดออกก่อนหายจริง (เปลี่ยนคลาสทันที ไม่ใช่หายวับไปทันที)', async () => {
+    await openOrderKeepAllPopups(baseOrder)
+    const card = screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี').closest('.animate-toast-pop')!
+    await userEvent.click(screen.getByRole('button', { name: 'เริ่มดูออเดอร์ของฉัน' }))
+    // ทันทีที่กดปิด ป็อปอัพยังอยู่ในจอ แค่เปลี่ยนไปใช้คลาสเฟดออก ไม่ใช่หายไปเลย
+    expect(card).toHaveClass('animate-toast-pop-out')
+    expect(screen.getByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByText('ร้านเบเกอรี่ของเด็กอายุ 13 ปี')).not.toBeInTheDocument())
   })
 })

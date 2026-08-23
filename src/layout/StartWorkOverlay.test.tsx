@@ -6,7 +6,7 @@ describe('StartWorkOverlay — ป็อปอัพฉลองเริ่ม�
   it('แสดงข้อความฉลองทันที', () => {
     render(<StartWorkOverlay onDone={() => {}} />)
     expect(screen.getByText('เริ่มทำงานแล้ว!')).toBeInTheDocument()
-    expect(screen.getByText('🚀')).toBeInTheDocument()
+    expect(screen.getByText('🔔')).toBeInTheDocument()
   })
 
   it('เรียก onDone หลังผ่านไปสักพักโดยไม่ต้องกดอะไร', () => {
