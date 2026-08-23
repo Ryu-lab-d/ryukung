@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:db": "vitest run --config vitest.db.config.ts"
+    "test:db": "vitest run --config vitest.db.config.ts",
+    "sync:sheets": "tsx scripts/syncToSheets.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -41,6 +42,7 @@
     "jsdom": "^30.0.1",
     "oxlint": "^1.75.0",
     "supabase": "^2.113.0",
+    "tsx": "^4.23.12",
     "typescript": "~6.0.2",
     "vite": "^8.2.0",
     "vitest": "^4.1.10",
