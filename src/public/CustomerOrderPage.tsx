@@ -289,7 +289,12 @@ export function CustomerOrderPage() {
   }, [menu, search, categoryId])
 
   const grandTotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
-  const minNeededDate = menu ? addDays(todayStr(), menu.shipping_lead_days) : todayStr()
+  // นัดรับเองไม่ควรบังคับรอนานเท่าส่งขนส่ง (shipping_lead_days คือเวลาเตรียมของ+เผื่อขนส่งเฉพาะเคสส่งพัสดุ) —
+  // ระบบเดิม (ก่อนแก้) ใช้ shipping_lead_days บังคับกับ "นัดรับเอง" ด้วย ทำให้ลูกค้ามารับหน้าร้านต้องรอนานเกินจำเป็น
+  // ต่างจากฝั่งพนักงาน (Step3Fulfillment.tsx) ที่ใช้ lead time เฉพาะตอนส่งขนส่งเท่านั้น จึงปรับให้ตรงกัน
+  const minNeededDate = menu
+    ? addDays(todayStr(), form.fulfillmentType === 'shipping' ? menu.shipping_lead_days : 1)
+    : todayStr()
 
   function addProduct(p: PublicMenu['products'][number]) {
     // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
