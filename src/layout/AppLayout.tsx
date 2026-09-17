@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
+import { NavIcon } from './NavIcon'
 import { useAuth, isManagerOrAbove } from '../auth/AuthProvider'
 import { WelcomeOverlay } from './WelcomeOverlay'
 
@@ -17,39 +18,39 @@ export function AppLayout({ children }: { children: ReactNode }) {
   })
 
   return (
-    <div className="min-h-screen bg-stone-50 lg:flex">
+    <div className="min-h-screen bg-stone-50">
       <WelcomeOverlay />
 
-      {/* เมนูข้าง แสดงเฉพาะจอกว้างระดับคอม — ไอแพด (แนวตั้งและแนวนอน) ใช้เมนูล่างแบบมือถือแทน
-          เพราะเมนูข้าง+เนื้อหาสองคอลัมน์บีบอัดเกินไปบนจอ ~768-1024px ใช้งานด้วยนิ้วลำบาก */}
-      <aside className="hidden lg:flex lg:w-56 lg:flex-col border-r border-stone-200 bg-white">
-        <div className="px-4 py-5 font-semibold">RYUKUNG BAKERY</div>
-        <nav className="flex-1 px-2 space-y-1">
+      {/* แถบนำทางด้านบน กึ่งกลางจอ แสดงเฉพาะจอกว้างระดับคอม (เดิมเป็นแถบข้างซ้าย ย้ายมาไว้บนตามที่ร้านขอ) —
+          ไอแพด (แนวตั้งและแนวนอน) ใช้เมนูล่างแบบมือถือแทน เพราะจอ ~768-1024px ใช้งานด้วยนิ้วลำบากกว่า */}
+      <header className="hidden lg:flex items-center gap-4 border-b border-stone-200 bg-white px-6 py-3">
+        <div className="font-semibold shrink-0">RYUKUNG BAKERY</div>
+        <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
           {visibleItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                'flex items-center gap-2 rounded-lg px-3 py-2 text-sm ' +
+                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm whitespace-nowrap ' +
                 (isActive ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100')
               }
             >
-              <span aria-hidden="true">{item.icon}</span>
+              <NavIcon name={item.icon} />
               {item.label}
             </NavLink>
           ))}
         </nav>
         <button
           onClick={signOut}
-          className="m-2 rounded-lg px-3 py-2 text-sm text-stone-500 hover:bg-stone-100 text-left"
+          className="shrink-0 rounded-lg px-3 py-2 text-sm text-stone-500 hover:bg-stone-100"
         >
           ออกจากระบบ
         </button>
-      </aside>
+      </header>
 
       {/* เนื้อหา เว้นที่ด้านล่างไว้ให้เมนูมือถือ/ไอแพดไม่ทับ */}
-      <main className="flex-1 pb-20 lg:pb-0">{children}</main>
+      <main className="pb-20 lg:pb-0">{children}</main>
 
       {/* เมนูล่าง แสดงบนมือถือและไอแพด — จำนวนช่องปรับตามจำนวนเมนูที่มองเห็นจริง (พนักงานไม่เห็น "ตั้งค่า")
           มีไอคอนช่วยให้กวาดตาหาเมนูได้เร็วโดยไม่ต้องอ่านตัวหนังสือเล็กๆ ทีละช่อง และเพิ่มความสูงของพื้นที่กดให้ถึง ~48px
@@ -68,7 +69,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               (isActive ? 'text-stone-900 font-semibold' : 'text-stone-500')
             }
           >
-            <span className="text-lg leading-none" aria-hidden="true">{item.icon}</span>
+            <NavIcon name={item.icon} className="w-5 h-5" />
             {item.label}
           </NavLink>
         ))}
