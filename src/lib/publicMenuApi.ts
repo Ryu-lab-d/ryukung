@@ -13,6 +13,7 @@ export type PublicMenu = {
   shop_name: string
   logo_path: string | null
   promptpay: string | null
+  line_url: string | null
   shipping_lead_days: number
   categories: PublicMenuCategory[]
   products: PublicMenuProduct[]

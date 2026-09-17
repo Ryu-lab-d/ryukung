@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
 import { getPublicMenu, submitCustomerOrder, notifyCustomerOrder, type PublicMenu } from '../lib/publicMenuApi'
 import { productImageUrl } from '../products/ProductCard'
 import { formatBaht } from '../lib/money'
 import { addDays } from '../lib/dates'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { playAddSound, playPaymentSound } from '../lib/uiSound'
 import { PromptPayQR } from './PromptPayQR'
 
 type Step = 'menu' | 'checkout' | 'payment' | 'done'
@@ -34,6 +35,150 @@ const emptyCheckout: CheckoutForm = {
 function todayStr(): string {
   const now = new Date()
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
+}
+
+/** หน่วงปิดสั้นๆ ให้ป็อปอัพมีจังหวะเฟดออกก่อนถูก unmount จริง แทนที่จะหายวับไปทันที — ก็อปมาจาก PublicOrderPage.tsx */
+function useClosingTransition(onClose: () => void, durationMs = 200) {
+  const [closing, setClosing] = useState(false)
+  function requestClose() {
+    if (closing) return
+    setClosing(true)
+    setTimeout(onClose, durationMs)
+  }
+  return { closing, requestClose }
+}
+
+/** ของตกแต่งลอยเบาๆ อยู่หลังเนื้อหาทั้งหมด (aria-hidden, ไม่กันคลิก) — เหมือนหน้าติดตามออเดอร์ (/o/:token) */
+function FloatingDecor() {
+  const items: { icon: string; style: CSSProperties }[] = [
+    { icon: '🥐', style: { top: '8%', left: '6%' } },
+    { icon: '🧁', style: { top: '18%', right: '8%', animationDelay: '1.5s' } },
+    { icon: '🍪', style: { bottom: '18%', left: '10%', animationDelay: '3s' } },
+    { icon: '✨', style: { bottom: '32%', right: '12%', animationDelay: '0.8s' } },
+  ]
+  return (
+    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+      {items.map((it, i) => (
+        <span key={i} className="absolute text-4xl opacity-10 animate-float-slow" style={it.style}>
+          {it.icon}
+        </span>
+      ))}
+    </div>
+  )
+}
+
+/** ป็อปอัพแนะนำร้าน โชว์ก่อนอันอื่นเสมอตอนเข้าหน้านี้ครั้งแรก — เนื้อหาเดียวกับหน้าติดตามออเดอร์ (/o/:token) */
+function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
+  const { closing, requestClose } = useClosingTransition(onClose)
+  return (
+    <div
+      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
+    >
+      <div
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={requestClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-600 grid place-items-center text-lg font-bold shadow-md z-10"
+        >
+          ✕
+        </button>
+
+        <div
+          className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3"
+          style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
+        >
+          {logoPath && (
+            <img
+              src={productImageUrl(logoPath)}
+              alt=""
+              className="w-20 h-20 rounded-full mx-auto object-cover border-2"
+              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+            />
+          )}
+          <p className="text-4xl">🍪</p>
+          <h2 className="text-2xl font-extrabold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
+          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
+            {shopName} คืออะไร?
+          </p>
+        </div>
+
+        <div className="px-5 py-5 space-y-3 text-sm text-stone-700 leading-relaxed">
+          <p>
+            RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
+            เน้นขนมที่ทำสดใหม่ เหมาะทั้งกับการซื้อกินเองและซื้อเป็นของฝากในโอกาสพิเศษ
+          </p>
+          <p>
+            จุดเด่นของร้านคือการทำขนมแบบ Pre-order เพื่อเตรียมสินค้าให้พอดีกับจำนวนที่สั่ง และรักษาคุณภาพความสดใหม่ในทุกรอบการผลิต
+            เมนูของร้านมีทั้ง Soft Cookie, S'more, Mini Cornflake และอื่นๆ อีกมากมาย รวมถึงบริการรับผลิตขนมจำนวนมากสำหรับงานสัมมนา งานเลี้ยง และ Snack Box
+          </p>
+          <p>
+            สั่งของจากหน้านี้ได้เลย เลือกสินค้าที่ชอบ กรอกข้อมูลรับของ แล้วโอนเงินผ่าน QR พร้อมเพย์ ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด
+          </p>
+        </div>
+
+        <div className="px-5 pb-5">
+          <button
+            type="button"
+            onClick={requestClose}
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
+          >
+            เริ่มเลือกเมนูกันเลย
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ป็อปอัพสอนวิธีใช้งานหน้านี้ โชว์ต่อจากป็อปอัพแนะนำร้านเสมอ เปิดซ้ำเองได้ทุกเมื่อ */
+function HowToUsePopup({ onClose }: { onClose: () => void }) {
+  const items = [
+    { icon: '🛒', text: 'เลือกสินค้าที่ต้องการ ปรับจำนวนแล้วกด "สั่งเลย" ด้านล่างได้ทันที' },
+    { icon: '📝', text: 'กรอกชื่อ เบอร์โทร และวันที่ต้องการรับของให้ครบ' },
+    { icon: '💳', text: 'สแกน QR พร้อมเพย์จ่ายเงินก่อน แล้วกดยืนยันว่าโอนแล้ว' },
+    { icon: '⏳', text: 'ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด (ยังไม่เข้าคิวอบจนกว่าร้านจะยืนยัน)' },
+    { icon: '💬', text: 'มีปัญหาหรือข้อสงสัยระหว่างสั่ง ทักไลน์ร้านได้ทันทีจากปุ่มด้านบน' },
+  ]
+  const { closing, requestClose } = useClosingTransition(onClose)
+  return (
+    <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
+      <div className={'bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}>
+        <p className="text-4xl">💡</p>
+        <h2 className="text-lg font-bold text-stone-900">วิธีสั่งซื้อจากหน้านี้</h2>
+        <div className="space-y-2.5 text-left">
+          {items.map((it, i) => (
+            <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
+              <span className="text-lg shrink-0">{it.icon}</span>
+              <span>{it.text}</span>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={requestClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
+          เข้าใจแล้ว เริ่มเลือกเมนู
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** ปุ่มติดต่อไลน์ร้าน — โชว์ทุกขั้นตอนของการสั่งซื้อ เผื่อลูกค้าติดปัญหาระหว่างทาง */
+function LineContactButton({ lineUrl }: { lineUrl: string | null }) {
+  if (!lineUrl) return null
+  return (
+    <a
+      href={lineUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex items-center justify-center gap-2 w-full rounded-xl border border-[#06C755] text-[#06C755] font-medium py-2.5 text-sm bg-white"
+    >
+      💬 พบปัญหา? ติดต่อที่นี่
+    </a>
+  )
 }
 
 /** สรุปรายการที่สั่งแบบละเอียด (ชื่อ/จำนวน/ราคาต่อชิ้น/รวม) — ใช้ทั้งหน้ากรอกข้อมูลรับของและหน้าชำระเงิน
@@ -70,6 +215,10 @@ export function CustomerOrderPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submittedTotal, setSubmittedTotal] = useState(0)
+  const [justAddedId, setJustAddedId] = useState<string | null>(null)
+  const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
+  const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
+  const [manualHowTo, setManualHowTo] = useState(false)
 
   useFormDraft(CART_DRAFT_KEY, items)
   useFormDraft(CHECKOUT_DRAFT_KEY, form)
@@ -88,6 +237,12 @@ export function CustomerOrderPage() {
   const minNeededDate = menu ? addDays(todayStr(), menu.shipping_lead_days) : todayStr()
 
   function addProduct(p: PublicMenu['products'][number]) {
+    // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
+    // เดียวกันตอนสร้าง AudioContext ครั้งแรก (เหมือน POSPage.tsx)
+    playAddSound()
+    setJustAddedId(p.id)
+    setTimeout(() => setJustAddedId((cur) => (cur === p.id ? null : cur)), 300)
+
     const existingIndex = items.findIndex((it) => it.product_id === p.id)
     if (existingIndex >= 0) {
       setItems((rows) => rows.map((r, i) => (i === existingIndex ? { ...r, qty: r.qty + 1 } : r)))
@@ -110,6 +265,8 @@ export function CustomerOrderPage() {
   }
 
   async function handleConfirmPayment() {
+    // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน await ใดๆ — เหตุผลเดียวกับ playAddSound ด้านบน
+    playPaymentSound()
     setSubmitting(true)
     setError(null)
     const { orderId, error: submitError } = await submitCustomerOrder({
@@ -144,7 +301,12 @@ export function CustomerOrderPage() {
   }
 
   if (menu === undefined) {
-    return <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-stone-500">กำลังโหลดเมนู...</div>
+    return (
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center space-y-3">
+        <div className="text-4xl animate-icon-pop">🧁</div>
+        <p className="text-stone-500">กำลังโหลดเมนู...</p>
+      </div>
+    )
   }
   if (menu === null) {
     return (
@@ -154,16 +316,34 @@ export function CustomerOrderPage() {
     )
   }
 
+  // ป็อปอัพวิธีใช้งานโผล่เองครั้งแรกตามลำดับ onboarding (ต่อจากป็อปอัพแนะนำร้าน) หรือเปิดซ้ำเองได้ทุกเมื่อ
+  // จากปุ่ม "วิธีสั่งซื้อจากหน้านี้" — ปิดแล้วต้องเคลียร์ทั้งสองทางเสมอ กันเปิดค้างจากอีกทางนึงโดยไม่ตั้งใจ
+  const showHowTo = (aboutPopupDismissed && !howToPopupDismissed) || manualHowTo
+  function closeHowTo() {
+    setManualHowTo(false)
+    if (!howToPopupDismissed) setHowToPopupDismissed(true)
+  }
+
+  const onboardingPopups = (
+    <>
+      {!aboutPopupDismissed ? (
+        <AboutShopPopup shopName={menu.shop_name} logoPath={menu.logo_path} onClose={() => setAboutPopupDismissed(true)} />
+      ) : (
+        showHowTo && <HowToUsePopup onClose={closeHowTo} />
+      )}
+    </>
+  )
+
   if (step === 'checkout') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4">
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in">
         <div className="max-w-md mx-auto space-y-4">
           <button type="button" onClick={() => setStep('menu')} className="text-sm text-stone-600 underline">
             ← กลับไปแก้ตะกร้า
           </button>
           <h1 className="text-lg font-bold">กรอกข้อมูลรับของ</h1>
           <CartSummaryList items={items} grandTotal={grandTotal} />
-          <form onSubmit={handleCheckoutSubmit} className="space-y-4 bg-white rounded-2xl shadow-sm p-5">
+          <form onSubmit={handleCheckoutSubmit} className="space-y-4 bg-white rounded-2xl shadow-sm p-5 animate-form-in">
             <div className="space-y-1">
               <label htmlFor="customerName" className="text-sm text-stone-600">ชื่อผู้สั่งซื้อ</label>
               <input
@@ -237,6 +417,7 @@ export function CustomerOrderPage() {
               <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
             )}
           </form>
+          <LineContactButton lineUrl={menu.line_url} />
         </div>
       </div>
     )
@@ -244,9 +425,10 @@ export function CustomerOrderPage() {
 
   if (step === 'done') {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm p-6 text-center space-y-3">
-          <div className="text-5xl">🎉</div>
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 animate-page-in">
+        <FloatingDecor />
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm p-6 text-center space-y-3 animate-toast-pop">
+          <div className="text-5xl animate-icon-pop">🎉</div>
           <h1 className="text-lg font-bold">ส่งคำสั่งซื้อเรียบร้อยแล้ว!</h1>
           <p className="text-sm text-stone-500">
             ยอดที่แจ้งชำระ {formatBaht(submittedTotal)} บาท — ร้านได้รับคำสั่งซื้อของคุณแล้ว และจะตรวจสอบ/ยืนยันออเดอร์โดยเร็วที่สุด
@@ -259,6 +441,7 @@ export function CustomerOrderPage() {
           >
             กลับไปหน้าเมนู
           </button>
+          <LineContactButton lineUrl={menu.line_url} />
         </div>
       </div>
     )
@@ -266,7 +449,7 @@ export function CustomerOrderPage() {
 
   if (step === 'payment') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4">
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in">
         <div className="max-w-md mx-auto space-y-4">
           <button type="button" onClick={() => setStep('checkout')} className="text-sm text-stone-600 underline">
             ← กลับไปแก้ข้อมูล
@@ -292,13 +475,15 @@ export function CustomerOrderPage() {
             {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
           </button>
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+          <LineContactButton lineUrl={menu.line_url} />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 p-4 pb-28">
+    <div className="min-h-screen bg-stone-50 p-4 pb-28 animate-page-in">
+      <FloatingDecor />
       <div className="max-w-5xl mx-auto space-y-4">
         <div className="text-center pt-2 space-y-1">
           {menu.logo_path && (
@@ -306,7 +491,16 @@ export function CustomerOrderPage() {
           )}
           <h1 className="text-xl font-bold">{menu.shop_name}</h1>
           <p className="text-sm text-stone-500">เลือกสินค้าแล้วกดสั่งได้เลย</p>
+          <button
+            type="button"
+            onClick={() => setManualHowTo(true)}
+            className="text-xs text-stone-500 underline underline-offset-2 mt-1"
+          >
+            💡 วิธีสั่งซื้อจากหน้านี้
+          </button>
         </div>
+
+        <LineContactButton lineUrl={menu.line_url} />
 
         <input
           placeholder="ค้นหาสินค้า" value={search} onChange={(e) => setSearch(e.target.value)}
@@ -333,7 +527,10 @@ export function CustomerOrderPage() {
           {filtered.map((p) => {
             const inCart = items.find((it) => it.product_id === p.id)
             return (
-              <div key={p.id} className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+              <div
+                key={p.id}
+                className={'rounded-xl border border-stone-200 bg-white overflow-hidden' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
+              >
                 <div className="aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs">
                   {p.image_path ? (
                     <img src={productImageUrl(p.image_path)} alt={p.name} className="w-full h-full object-cover" />
@@ -390,6 +587,8 @@ export function CustomerOrderPage() {
           </div>
         </div>
       )}
+
+      {onboardingPopups}
     </div>
   )
 }
