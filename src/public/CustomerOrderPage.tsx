@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { getPublicMenu, submitCustomerOrder, notifyCustomerOrder, type PublicMenu } from '../lib/publicMenuApi'
 import { productImageUrl } from '../products/ProductCard'
 import { formatBaht } from '../lib/money'
 import { addDays } from '../lib/dates'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { playAddSound, playPaymentSound } from '../lib/uiSound'
+import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { PromptPayQR } from './PromptPayQR'
 
-type Step = 'menu' | 'checkout' | 'payment' | 'done'
+type Step = 'menu' | 'checkout' | 'payment'
 
 type CartItem = { product_id: string; product_name: string; unit_price: number; unit: string; qty: number }
 
@@ -181,6 +183,55 @@ function LineContactButton({ lineUrl }: { lineUrl: string | null }) {
   )
 }
 
+/** ป็อปอัพเตือนแอดไลน์ก่อนพาไปหน้าติดตามออเดอร์ — สำคัญมาก เพราะร้านแจ้งเลขที่ออเดอร์/อัปเดตสถานะ/เลขพัสดุ
+ * ผ่านไลน์เป็นหลัก (ลูกค้าสั่งเองไม่ได้กรอกอีเมลไว้เลย ไม่มีช่องทางอื่นให้ติดต่อกลับ) ตั้งใจไม่ให้มีปุ่มปิดเลยใน
+ * ช่วงแรก บังคับรอครบ 7 วินาทีก่อนถึงจะกดปิดได้ กันลูกค้ากดปิดข้ามเร็วเกินไปโดยไม่ทันอ่าน */
+function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; onClose: () => void }) {
+  const [secondsLeft, setSecondsLeft] = useState(7)
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return
+    const t = setTimeout(() => setSecondsLeft((s) => s - 1), 1000)
+    return () => clearTimeout(t)
+  }, [secondsLeft])
+
+  return (
+    <div className="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 animate-toast-pop">
+        <div className="text-5xl animate-icon-pop">📣</div>
+        <h2 className="text-lg font-bold text-stone-900">สำคัญมาก! กรุณาแอดไลน์ร้าน</h2>
+        <p className="text-sm text-stone-600">
+          ร้านจะแจ้งเลขที่ออเดอร์ อัปเดตสถานะงาน และ (ถ้าเลือกส่งขนส่ง) เลขพัสดุให้ทราบผ่านไลน์เป็นหลัก
+          กรุณาแอดไลน์ร้านไว้ก่อน ไม่งั้นอาจพลาดข้อมูลสำคัญของออเดอร์นี้
+        </p>
+        {lineUrl ? (
+          <a
+            href={lineUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm"
+          >
+            💬 แอดไลน์ร้านตอนนี้เลย
+          </a>
+        ) : (
+          <p className="text-sm text-red-600">ร้านยังไม่ได้ตั้งค่าลิงก์ไลน์ไว้ ติดต่อร้านโดยตรงแทนได้เลย</p>
+        )}
+        {secondsLeft > 0 ? (
+          <p className="text-xs text-stone-400">ปุ่มปิดจะขึ้นใน {secondsLeft} วินาที...</p>
+        ) : (
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full rounded-lg border border-stone-300 text-stone-600 py-2.5 text-sm font-medium"
+          >
+            ปิด แล้วไปหน้าติดตามออเดอร์
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
 /** สรุปรายการที่สั่งแบบละเอียด (ชื่อ/จำนวน/ราคาต่อชิ้น/รวม) — ใช้ทั้งหน้ากรอกข้อมูลรับของและหน้าชำระเงิน
  * กันลูกค้ากดสั่งไปโดยไม่เคยเห็นรายการที่เลือกไว้ครบๆ เลยสักครั้ง (หน้าตะกร้าเดิมเห็นทีละชิ้นปนอยู่ในกริดสินค้า) */
 function CartSummaryList({ items, grandTotal }: { items: CartItem[]; grandTotal: number }) {
@@ -206,6 +257,7 @@ function CartSummaryList({ items, grandTotal }: { items: CartItem[]; grandTotal:
 }
 
 export function CustomerOrderPage() {
+  const navigate = useNavigate()
   const [menu, setMenu] = useState<PublicMenu | null | undefined>(undefined)
   const [step, setStep] = useState<Step>('menu')
   const [search, setSearch] = useState('')
@@ -215,6 +267,9 @@ export function CustomerOrderPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submittedTotal, setSubmittedTotal] = useState(0)
+  const [paymentSuccessVisible, setPaymentSuccessVisible] = useState(false)
+  const [showLineReminder, setShowLineReminder] = useState(false)
+  const [pendingToken, setPendingToken] = useState<string | null>(null)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
   const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
@@ -269,7 +324,7 @@ export function CustomerOrderPage() {
     playPaymentSound()
     setSubmitting(true)
     setError(null)
-    const { orderId, error: submitError } = await submitCustomerOrder({
+    const { orderId, publicToken, error: submitError } = await submitCustomerOrder({
       customerName: form.customerName,
       customerPhone: form.customerPhone,
       fulfillmentType: form.fulfillmentType,
@@ -282,22 +337,37 @@ export function CustomerOrderPage() {
       note: form.note || null,
       items: items.map((it) => ({ product_id: it.product_id, qty: it.qty })),
     })
-    if (submitError || !orderId) {
+    if (submitError || !orderId || !publicToken) {
       setSubmitting(false)
       setError(submitError ?? 'ส่งคำสั่งซื้อไม่สำเร็จ กรุณาลองใหม่')
       return
     }
     void notifyCustomerOrder(orderId)
-    // ออเดอร์ที่ลูกค้าส่งเองยังเป็น is_draft=true อยู่จนกว่าร้านจะกดยืนยัน — หน้า /o/:token (get_public_order)
-    // แสดงเฉพาะออเดอร์ที่ยืนยันแล้วเท่านั้น พาไปที่นั่นตอนนี้เลยจะเจอ "ไม่พบออเดอร์" ทั้งที่ส่งสำเร็จจริง
-    // จึงจบ flow นี้ด้วยหน้าขอบคุณในตัวแทน ร้านจะติดต่อกลับ/ส่งลิงก์ติดตามให้ทีหลังตอนยืนยันออเดอร์แล้ว
+    // ออเดอร์ที่ลูกค้าส่งเองยังเป็น is_draft=true อยู่จนกว่าร้านจะกดยืนยัน — get_public_order เปิดช่องพิเศษให้
+    // ออเดอร์ order_source='customer' ดูได้แม้ยังไม่ยืนยัน (แสดงเป็นสถานะ "รอร้านตรวจสอบและยืนยัน") จึงพาไปหน้า
+    // ติดตามออเดอร์จริงได้เลยหลังปิดป็อปอัพเตือนแอดไลน์ ไม่ต้องรอร้านยืนยันก่อนเหมือนที่เคยเป็น
     setSubmittedTotal(grandTotal)
+    setPendingToken(publicToken)
     clearFormDraft(CART_DRAFT_KEY)
     clearFormDraft(CHECKOUT_DRAFT_KEY)
     setItems([])
     setForm(emptyCheckout)
     setSubmitting(false)
-    setStep('done')
+    setPaymentSuccessVisible(true)
+  }
+
+  function handlePaymentSuccessDone() {
+    setPaymentSuccessVisible(false)
+    if (menu?.line_url) {
+      setShowLineReminder(true)
+    } else if (pendingToken) {
+      navigate(`/o/${pendingToken}`)
+    }
+  }
+
+  function handleLineReminderClose() {
+    setShowLineReminder(false)
+    if (pendingToken) navigate(`/o/${pendingToken}`)
   }
 
   if (menu === undefined) {
@@ -372,7 +442,7 @@ export function CustomerOrderPage() {
               </select>
             </div>
             <div className="space-y-1">
-              <label htmlFor="neededDate" className="text-sm text-stone-600">วันที่ต้องการ</label>
+              <label htmlFor="neededDate" className="text-sm text-stone-600">วันที่สะดวกนัดรับ</label>
               <input
                 id="neededDate" required type="date" min={minNeededDate} value={form.neededDate}
                 onChange={(e) => setForm((f) => ({ ...f, neededDate: e.target.value }))}
@@ -391,13 +461,22 @@ export function CustomerOrderPage() {
                 />
               </div>
             ) : (
-              <div className="space-y-1">
-                <label htmlFor="shipAddressText" className="text-sm text-stone-600">ที่อยู่จัดส่ง</label>
-                <textarea
-                  id="shipAddressText" required value={form.shipAddressText}
-                  onChange={(e) => setForm((f) => ({ ...f, shipAddressText: e.target.value }))}
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2.5" rows={3}
-                />
+              <div className="space-y-3">
+                <div className="space-y-1">
+                  <label htmlFor="shipAddressText" className="text-sm text-stone-600">ที่อยู่จัดส่ง</label>
+                  <textarea
+                    id="shipAddressText" required value={form.shipAddressText}
+                    onChange={(e) => setForm((f) => ({ ...f, shipAddressText: e.target.value }))}
+                    className="w-full rounded-lg border border-stone-300 px-3 py-2.5" rows={3}
+                  />
+                </div>
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800 space-y-1.5">
+                  <p>💰 ตอนนี้จ่ายแค่ค่าสินค้าก่อน ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง</p>
+                  <p>
+                    📦 การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล เมื่อจัดส่งเรียบร้อย
+                    ร้านจะแจ้งเลขพัสดุให้ทราบทางไลน์ — โปรดแอดไลน์ร้านไว้ก่อน
+                  </p>
+                </div>
               </div>
             )}
 
@@ -417,30 +496,6 @@ export function CustomerOrderPage() {
               <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
             )}
           </form>
-          <LineContactButton lineUrl={menu.line_url} />
-        </div>
-      </div>
-    )
-  }
-
-  if (step === 'done') {
-    return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 animate-page-in">
-        <FloatingDecor />
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-sm p-6 text-center space-y-3 animate-toast-pop">
-          <div className="text-5xl animate-icon-pop">🎉</div>
-          <h1 className="text-lg font-bold">ส่งคำสั่งซื้อเรียบร้อยแล้ว!</h1>
-          <p className="text-sm text-stone-500">
-            ยอดที่แจ้งชำระ {formatBaht(submittedTotal)} บาท — ร้านได้รับคำสั่งซื้อของคุณแล้ว และจะตรวจสอบ/ยืนยันออเดอร์โดยเร็วที่สุด
-            กรุณารอการติดต่อกลับทางเบอร์โทรที่ให้ไว้
-          </p>
-          <button
-            type="button"
-            onClick={() => setStep('menu')}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3"
-          >
-            กลับไปหน้าเมนู
-          </button>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
       </div>
@@ -469,7 +524,7 @@ export function CustomerOrderPage() {
           <button
             type="button"
             onClick={() => void handleConfirmPayment()}
-            disabled={submitting}
+            disabled={submitting || paymentSuccessVisible || showLineReminder}
             className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
           >
             {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
@@ -477,6 +532,16 @@ export function CustomerOrderPage() {
           {error && <p className="text-sm text-red-600 text-center">{error}</p>}
           <LineContactButton lineUrl={menu.line_url} />
         </div>
+
+        {paymentSuccessVisible && (
+          <SuccessOverlay
+            message="ยืนยันการชำระเงินเสร็จสิ้น ✅"
+            submessage={`ส่งคำสั่งซื้อยอด ${formatBaht(submittedTotal)} บาท เรียบร้อยแล้ว`}
+            onDone={handlePaymentSuccessDone}
+            durationMs={1800}
+          />
+        )}
+        {showLineReminder && <AddLineReminderPopup lineUrl={menu.line_url} onClose={handleLineReminderClose} />}
       </div>
     )
   }

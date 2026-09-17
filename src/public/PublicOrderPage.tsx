@@ -24,7 +24,8 @@ type PublicOrderView = {
   payment_claimed_at: string | null
   faqs: { keywords: string[]; answer: string }[]
   line_url: string | null
-  order_no: string
+  order_no: string | null
+  pending_confirmation: boolean
   customer_name: string | null
   customer_phone: string | null
   needed_date: string | null
@@ -64,8 +65,13 @@ const COURIER_WORK_STAGES = [
   { key: 'delivered', label: 'จัดส่งสำเร็จ' },
 ] as const
 
-function workStagesFor(fulfillmentType: string) {
-  return fulfillmentType === 'shipping' || fulfillmentType === 'rider' ? COURIER_WORK_STAGES : SIMPLE_WORK_STAGES
+function workStagesFor(fulfillmentType: string, pending: boolean) {
+  const base = fulfillmentType === 'shipping' || fulfillmentType === 'rider' ? COURIER_WORK_STAGES : SIMPLE_WORK_STAGES
+  // ออเดอร์ที่ลูกค้าส่งเองยังไม่ผ่านการยืนยันจากร้าน (is_draft=true) — work_status ในฐานข้อมูลเป็นค่าเริ่มต้น
+  // 'to_bake' ไปพลางๆ เท่านั้น ยังไม่ได้แปลว่าร้าน "รับออเดอร์แล้ว" จริง จึงต้องแทรกขั้น "รอร้านยืนยัน" นำหน้า
+  // เสมอ และบังคับให้เป็นขั้นปัจจุบันเสมอ (ดู currentIndex ใน StatusTimeline) ไม่ใช่ปล่อยให้ไปจับคู่กับ work_status ตรงๆ
+  if (!pending) return base
+  return [{ key: 'pending', label: 'รอร้านตรวจสอบและยืนยันออเดอร์' }, ...base]
 }
 
 const FULFILLMENT_LABELS: Record<string, string> = {
@@ -107,14 +113,17 @@ function StatusTimeline({
   paymentStatus,
   paymentClaimedAt,
   fulfillmentType,
+  pending,
 }: {
   workStatus: string
   paymentStatus: string
   paymentClaimedAt: string | null
   fulfillmentType: string
+  pending: boolean
 }) {
-  const WORK_STAGES = workStagesFor(fulfillmentType)
-  const currentIndex = WORK_STAGES.findIndex((s) => s.key === workStatus)
+  const WORK_STAGES = workStagesFor(fulfillmentType, pending)
+  // pending: บังคับขั้น "รอร้านยืนยัน" (index 0 เสมอ ดู workStagesFor) เป็นขั้นปัจจุบันเสมอ ไม่ใช้ workStatus ตัดสิน
+  const currentIndex = pending ? 0 : WORK_STAGES.findIndex((s) => s.key === workStatus)
   const paymentKey = paymentStatus !== 'paid' && paymentClaimedAt ? 'pending_review' : paymentStatus
   const payment = PAYMENT_STAGE[paymentKey] ?? PAYMENT_STAGE.unpaid
 
@@ -538,7 +547,7 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
     const dataUrl = await htmlToImage.toPng(cardRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' })
     setDownloading(false)
     const link = document.createElement('a')
-    link.download = `${order.order_no}.png`
+    link.download = `${order.order_no ?? 'order'}.png`
     link.href = dataUrl
     link.click()
   }
@@ -687,7 +696,7 @@ export function PublicOrderPage() {
         >
           <div className="text-4xl animate-icon-pop">🥐</div>
           <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
-          {order && <p className="text-xs text-stone-400 font-mono tracking-wide">ออเดอร์ {order.order_no}</p>}
+          {order && <p className="text-xs text-stone-400 font-mono tracking-wide">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>}
           <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
           <div className="space-y-1.5 text-left">
             <input
@@ -797,7 +806,12 @@ export function PublicOrderPage() {
         <div className="text-center pt-2">
           <p className="text-sm text-stone-500">สวัสดีคุณ{customerName} 👋</p>
           <h1 className="text-xl font-bold mt-1">{order.shop_name}</h1>
-          <p className="text-sm text-stone-500">ออเดอร์ {order.order_no}</p>
+          <p className="text-sm text-stone-500">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>
+          {order.pending_confirmation && (
+            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-3 py-1 mt-1">
+              🕐 รอร้านตรวจสอบและยืนยันออเดอร์
+            </p>
+          )}
           <button
             type="button"
             onClick={() => setManualHowTo(true)}
@@ -825,6 +839,7 @@ export function PublicOrderPage() {
             paymentStatus={order.payment_status}
             paymentClaimedAt={order.payment_claimed_at}
             fulfillmentType={order.fulfillment_type}
+            pending={order.pending_confirmation}
           />
 
           {order.work_status === 'delivered' && order.line_url && (
@@ -897,14 +912,18 @@ export function PublicOrderPage() {
             )}
           </div>
           {!order.address_editable && order.fulfillment_type !== 'pickup' && (
-            <p className="text-xs text-stone-400 pt-1">แพ็คของแล้ว แก้ไขที่อยู่เองไม่ได้แล้ว ติดต่อร้านโดยตรงถ้าจำเป็น</p>
+            <p className="text-xs text-stone-400 pt-1">
+              {order.pending_confirmation
+                ? 'รอร้านตรวจสอบและยืนยันออเดอร์ก่อน จึงจะแก้ไขที่อยู่เองได้ — ต้องการแก้ไขตอนนี้ ทักไลน์ร้านได้เลย'
+                : 'แพ็คของแล้ว แก้ไขที่อยู่เองไม่ได้แล้ว ติดต่อร้านโดยตรงถ้าจำเป็น'}
+            </p>
           )}
         </div>
 
         <div className="flex gap-2">
           {order.needed_date && (
             <AddToCalendarButton
-              orderNo={order.order_no}
+              orderNo={order.order_no ?? 'รอเลขที่'}
               shopName={order.shop_name}
               neededDate={order.needed_date}
               location={order.fulfillment_type === 'pickup' ? order.pickup_place : order.ship_address_text}
@@ -915,7 +934,7 @@ export function PublicOrderPage() {
               }
             />
           )}
-          <ShareOrderButton shopName={order.shop_name} orderNo={order.order_no} />
+          <ShareOrderButton shopName={order.shop_name} orderNo={order.order_no ?? 'รอเลขที่'} />
         </div>
 
         <OrderSummaryCard order={order} />
