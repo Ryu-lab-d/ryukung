@@ -48,6 +48,7 @@ export function BoardDesktop({
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
   const confirmed = orders.filter((o) => !o.is_draft)
+  const pendingCustomerOrders = orders.filter((o) => o.is_draft && o.order_source === 'customer')
   const [error, setError] = useState<string | null>(null)
 
   async function handleDragEnd(event: DragEndEvent) {
@@ -59,6 +60,20 @@ export function BoardDesktop({
 
   return (
     <DndContext sensors={sensors} onDragEnd={(e) => void handleDragEnd(e)}>
+      {pendingCustomerOrders.length > 0 && (
+        <div className="hidden lg:block px-4 pt-4">
+          <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-3 space-y-2">
+            <h2 className="text-sm font-semibold text-indigo-800">🛒 ออเดอร์รอยืนยัน จากลูกค้าสั่งเอง ({pendingCustomerOrders.length})</h2>
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {pendingCustomerOrders.map((o) => (
+                <div key={o.id} className="w-64 shrink-0">
+                  <OrderCard order={o} />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       <div className="hidden lg:flex gap-3 p-4 overflow-x-auto">
         {COLUMNS.map((col) => (
           <Column

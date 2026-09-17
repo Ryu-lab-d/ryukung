@@ -43,6 +43,57 @@ export async function saveDraft(orderId: string, order: OrderDraftInput) {
   return { error: error ? { message: error.message } : null }
 }
 
+/**
+ * โหลดออเดอร์เดิมจากฐานข้อมูลมาเติมฟอร์มแก้ไข — ใช้ตอนไม่มีร่างในเครื่อง (localStorage) ให้ใช้ต่อ เช่นเปิด
+ * แก้ไขจากอุปกรณ์คนละเครื่องกับที่สร้างร่างไว้ หรือเปิดตรวจสอบออเดอร์ที่ลูกค้าส่งเข้ามาเองจากหน้า /menu
+ * (ออเดอร์พวกนี้ไม่เคยมีร่างในเครื่องของพนักงานเลยสักครั้ง เพราะลูกค้าเป็นคนสร้างจากอุปกรณ์ของลูกค้าเอง)
+ */
+export async function fetchOrderForEdit(orderId: string): Promise<{ values: OrderDraftInput | null; error: { message: string } | null }> {
+  const [{ data: order, error: orderError }, { data: items, error: itemsError }] = await Promise.all([
+    supabase
+      .from('orders')
+      .select(
+        'customer_id, fulfillment_type, needed_date, bake_date, pickup_place, pickup_time, ship_recipient_name, ship_recipient_phone, ship_address_text, shipping_fee, discount_type, discount_value, note'
+      )
+      .eq('id', orderId)
+      .single(),
+    supabase
+      .from('order_items')
+      .select('product_id, product_name, unit_price, unit_cost, qty, note')
+      .eq('order_id', orderId)
+      .order('created_at'),
+  ])
+  if (orderError) return { values: null, error: { message: orderError.message } }
+  if (itemsError) return { values: null, error: { message: itemsError.message } }
+
+  return {
+    values: {
+      customer_id: order!.customer_id,
+      fulfillment_type: order!.fulfillment_type,
+      needed_date: order!.needed_date,
+      bake_date: order!.bake_date,
+      pickup_place: order!.pickup_place,
+      pickup_time: order!.pickup_time,
+      ship_recipient_name: order!.ship_recipient_name,
+      ship_recipient_phone: order!.ship_recipient_phone,
+      ship_address_text: order!.ship_address_text,
+      shipping_fee: Number(order!.shipping_fee),
+      discount_type: order!.discount_type,
+      discount_value: Number(order!.discount_value),
+      note: order!.note,
+      items: (items ?? []).map((it) => ({
+        product_id: it.product_id,
+        product_name: it.product_name,
+        unit_price: Number(it.unit_price),
+        unit_cost: Number(it.unit_cost),
+        qty: Number(it.qty),
+        note: it.note,
+      })),
+    },
+    error: null,
+  }
+}
+
 /** ยืนยันออเดอร์ — เรียก RPC อะตอมมิกเท่านั้น ห้ามแยกขอเลขกับบันทึกแถวเป็นสองคำสั่ง */
 export async function confirmOrder(orderId: string, order: OrderDraftInput) {
   const { data, error } = await supabase.rpc('confirm_order', {
@@ -63,6 +114,12 @@ export async function confirmOrder(orderId: string, order: OrderDraftInput) {
     p_items: order.items,
   })
   return { orderNo: data as string | null, error: error ? { message: error.message } : null }
+}
+
+/** พนักงานปฏิเสธออเดอร์ที่ลูกค้าส่งมาเอง (เช่น คิวอบเต็มวันนั้น) — ตั้งสถานะรอคืนเงินให้อัตโนมัติถ้าลูกค้าจ่ายมาแล้ว */
+export async function rejectCustomerOrder(orderId: string, reason: string) {
+  const { error } = await supabase.rpc('reject_customer_order', { p_order_id: orderId, p_reason: reason })
+  return { error: error ? { message: error.message } : null }
 }
 
 export async function cancelOrder(

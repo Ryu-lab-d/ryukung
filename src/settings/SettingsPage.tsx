@@ -19,6 +19,13 @@ export function SettingsPage() {
   const [draft, setDraft] = useState<Draft | null>(restoredDraft)
   const [message, setMessage] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [menuLinkCopied, setMenuLinkCopied] = useState(false)
+
+  async function handleCopyMenuLink() {
+    await navigator.clipboard.writeText(`${window.location.origin}/menu`)
+    setMenuLinkCopied(true)
+    setTimeout(() => setMenuLinkCopied(false), 2000)
+  }
   // hydrate ค่าเริ่มต้นของฟอร์มจาก settings แค่ครั้งแรกครั้งเดียวเท่านั้น (ข้ามไปเลยถ้ามีร่างค้างอยู่แล้ว) —
   // กันไม่ให้การกระทำอื่นในหน้านี้ที่ทำให้ settings รีโหลดใหม่ระหว่างทาง (เช่นอัปโหลดโลโก้ ซึ่งเซฟทันทีแยก
   // จากปุ่ม "บันทึก" หลัก) มาเขียนทับข้อมูลช่องอื่นที่ผู้ใช้กำลังแก้ไขอยู่แต่ยังไม่ได้กดบันทึกทิ้งไปเฉยๆ —
@@ -194,6 +201,23 @@ export function SettingsPage() {
           {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
         </section>
       )}
+
+      <section className="space-y-2">
+        <h2 className="text-sm font-semibold text-stone-500">เมนูออนไลน์ให้ลูกค้าสั่งเอง</h2>
+        <p className="text-xs text-stone-400">
+          ส่งลิงก์นี้ให้ลูกค้าเลือกสินค้า/สั่งซื้อได้เอง — ออเดอร์ที่ส่งเข้ามาจะรอร้านตรวจสอบและกดยืนยันก่อนเสมอ ยังไม่เข้าคิวอบทันที
+        </p>
+        <button
+          type="button"
+          onClick={() => void handleCopyMenuLink()}
+          className={
+            'w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ' +
+            (menuLinkCopied ? 'bg-green-600 text-white' : 'bg-stone-900 text-white')
+          }
+        >
+          {menuLinkCopied ? '✅ คัดลอกลิงก์แล้ว!' : '🔗 คัดลอกลิงก์เมนูออนไลน์'}
+        </button>
+      </section>
 
       <section className="space-y-3">
         <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>

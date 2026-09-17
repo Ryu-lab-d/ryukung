@@ -3,6 +3,7 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useOrder } from './useOrder'
 import { changeWorkStatus, deleteOrder, assignOrder, reorderFromOrder } from './api'
 import { CancelOrderDialog } from './CancelOrderDialog'
+import { RejectCustomerOrderDialog } from './RejectCustomerOrderDialog'
 import { PaymentsSection } from './PaymentsSection'
 import { ShippingSection } from './ShippingSection'
 import { CopyPublicLinkButton } from './CopyPublicLinkButton'
@@ -37,6 +38,7 @@ export function OrderDetailPage() {
   const { order, items, payments, loading, reload } = useOrder(id ?? null)
   const { settings } = useSettings()
   const [showCancel, setShowCancel] = useState(false)
+  const [showReject, setShowReject] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -116,6 +118,27 @@ export function OrderDetailPage() {
       <Link to="/" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
         ← กลับหน้าออเดอร์
       </Link>
+
+      {order.is_draft && order.order_source === 'customer' && (
+        <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 space-y-2">
+          <p className="text-sm font-medium text-indigo-800">🛒 ลูกค้าส่งออเดอร์นี้มาเองจากหน้าเมนูออนไลน์ — รอร้านตรวจสอบและยืนยัน</p>
+          <div className="flex gap-2">
+            <Link
+              to={`/orders/${order.id}/edit`}
+              className="flex-1 text-center rounded-lg bg-stone-900 text-white text-sm font-medium py-2.5"
+            >
+              ตรวจสอบ & ยืนยันออเดอร์
+            </Link>
+            <button
+              type="button"
+              onClick={() => setShowReject(true)}
+              className="flex-1 rounded-lg border-2 border-red-300 text-red-700 text-sm font-medium py-2.5"
+            >
+              ปฏิเสธออเดอร์
+            </button>
+          </div>
+        </div>
+      )}
 
       {order.customers?.note && (
         <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
@@ -318,6 +341,15 @@ export function OrderDetailPage() {
           hasPayments={payments.length > 0}
           onClose={() => setShowCancel(false)}
           onDone={() => { setShowCancel(false); navigate('/') }}
+        />
+      )}
+
+      {showReject && (
+        <RejectCustomerOrderDialog
+          orderId={order.id}
+          hasPaid={!!order.payment_claimed_at}
+          onClose={() => setShowReject(false)}
+          onDone={() => { setShowReject(false); navigate('/') }}
         />
       )}
 

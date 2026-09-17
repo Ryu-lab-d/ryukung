@@ -4,7 +4,7 @@ import { FormProvider, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useSettings } from '../settings/useSettings'
 import { buildOrderSchema, type OrderFormValues } from './schema'
-import { createDraft, saveDraft, confirmOrder } from './api'
+import { createDraft, saveDraft, confirmOrder, fetchOrderForEdit } from './api'
 import { useGuardedSubmit } from '../lib/guardedSubmit'
 import {
   useOrderDraftAutosave,
@@ -77,6 +77,17 @@ export function OrderFormPage() {
       })
     }
   }, [orderId])
+
+  // เปิดแก้ไขออเดอร์ที่มีอยู่แล้ว (id มาจาก URL) แต่เครื่องนี้ไม่มีร่างใน localStorage เลย (เช่นเปิดจากอุปกรณ์
+  // คนละเครื่อง หรือเป็นออเดอร์ที่ลูกค้าส่งเข้ามาเองจากหน้า /menu ซึ่งไม่เคยมีร่างในเครื่องพนักงานอยู่แล้ว) —
+  // ถ้าไม่ดึงจากฐานข้อมูลมาเติม ฟอร์มจะเริ่มจาก EMPTY_ORDER ว่างเปล่า แล้วกด "ยืนยันออเดอร์" จะเขียนทับ
+  // ข้อมูลจริงที่มีอยู่แล้วในฐานข้อมูลด้วยค่าว่างทันที
+  useEffect(() => {
+    if (!id || loadDraftFromLocalStorage<OrderFormValues>(id)) return
+    void fetchOrderForEdit(id).then(({ values }) => {
+      if (values) methods.reset(values)
+    })
+  }, [id, methods])
 
   useOrderDraftAutosave(orderId, methods.watch())
 

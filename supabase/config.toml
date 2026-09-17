@@ -447,3 +447,15 @@ entrypoint = "./functions/notify-payment-claim/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/notify-payment-claim/*.html" ]
+
+[functions.sync-sheets-tab]
+enabled = true
+verify_jwt = false
+import_map = "./functions/sync-sheets-tab/deno.json"
+entrypoint = "./functions/sync-sheets-tab/index.ts"
+
+[functions.notify-customer-order]
+enabled = true
+verify_jwt = false
+import_map = "./functions/notify-customer-order/deno.json"
+entrypoint = "./functions/notify-customer-order/index.ts"

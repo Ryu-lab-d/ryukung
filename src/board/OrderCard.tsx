@@ -22,6 +22,9 @@ export function OrderCard({ order }: { order: BoardOrder }) {
             : 'border-stone-200')
       }
     >
+      {order.is_draft && order.order_source === 'customer' && (
+        <p className="text-xs font-medium text-indigo-700 flex items-center gap-1">🛒 ลูกค้าสั่งเอง รอยืนยัน</p>
+      )}
       {order.address_edited_at && (
         <p className="text-xs font-medium text-blue-700 flex items-center gap-1">📮 ลูกค้าแก้ที่อยู่ใหม่</p>
       )}

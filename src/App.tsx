@@ -20,6 +20,7 @@ import { OrderDetailPage } from './orders/OrderDetailPage'
 import { ReceiptPage } from './receipts/ReceiptPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
+import { CustomerOrderPage } from './public/CustomerOrderPage'
 import { StorageManagementPage } from './storage/StorageManagementPage'
 import { CalendarPage } from './calendar/CalendarPage'
 import { ChatbotManagementPage } from './chatbot/ChatbotManagementPage'
@@ -145,6 +146,7 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/o/:token" element={<PublicOrderPage />} />
+          <Route path="/menu" element={<CustomerOrderPage />} />
           <Route path="/staff/join" element={<StaffJoinPage />} />
           <Route path="/*" element={<AuthenticatedApp />} />
         </Routes>

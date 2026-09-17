@@ -23,6 +23,7 @@ export function useAbandonedDrafts() {
       .from('orders')
       .select('id, created_at, customers(name), order_items(product_name, qty)')
       .eq('is_draft', true)
+      .eq('order_source', 'staff')
       .lte('created_at', cutoff)
       .order('created_at', { ascending: true })
 
