@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:db": "vitest run --config vitest.db.config.ts",
-    "sync:sheets": "tsx scripts/syncToSheets.ts"
+    "sync:sheets": "tsx scripts/syncToSheets.ts",
+    "cleanup:test-orders": "tsx scripts/cleanupTestOrders.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
