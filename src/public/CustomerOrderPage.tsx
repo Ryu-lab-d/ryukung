@@ -735,7 +735,9 @@ export function CustomerOrderPage() {
         </div>
       )}
 
-      <ChatBot shopName={menu.shop_name} faqs={menu.faqs} lineUrl={menu.line_url} />
+      {/* menu.faqs ?? [] กันพังก่อน migration ที่เพิ่ม faqs ให้ get_public_menu ถูก push ขึ้นจริง (ฟังก์ชันเก่า
+          ไม่คืนคีย์นี้มาเลย จะได้ undefined ไม่ใช่ array) */}
+      <ChatBot shopName={menu.shop_name} faqs={menu.faqs ?? []} lineUrl={menu.line_url} />
 
       {onboardingPopups}
     </div>
