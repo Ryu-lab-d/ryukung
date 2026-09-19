@@ -70,74 +70,6 @@ function FloatingDecor() {
   )
 }
 
-/** ป็อปอัพแนะนำร้าน โชว์ก่อนอันอื่นเสมอตอนเข้าหน้านี้ครั้งแรก — เนื้อหาเดียวกับหน้าติดตามออเดอร์ (/o/:token) */
-function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
-  const { closing, requestClose } = useClosingTransition(onClose)
-  return (
-    <div
-      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
-      onClick={requestClose}
-    >
-      <div
-        className={'relative bg-white rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
-        onClick={(e) => e.stopPropagation()}
-      >
-        <button
-          type="button"
-          onClick={requestClose}
-          aria-label="ปิด"
-          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-600 grid place-items-center text-lg font-bold shadow-md z-10"
-        >
-          ✕
-        </button>
-
-        <div
-          className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3"
-          style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
-        >
-          {logoPath && (
-            <img
-              src={productImageUrl(logoPath)}
-              alt=""
-              className="w-20 h-20 rounded-full mx-auto object-cover border-2"
-              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
-            />
-          )}
-          <p className="text-4xl">🍪</p>
-          <h2 className="text-2xl font-extrabold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
-            {shopName} คืออะไร?
-          </p>
-        </div>
-
-        <div className="px-5 py-5 space-y-3 text-sm text-stone-700 leading-relaxed">
-          <p>
-            RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
-            เน้นขนมที่ทำสดใหม่ เหมาะทั้งกับการซื้อกินเองและซื้อเป็นของฝากในโอกาสพิเศษ
-          </p>
-          <p>
-            จุดเด่นของร้านคือการทำขนมแบบ Pre-order เพื่อเตรียมสินค้าให้พอดีกับจำนวนที่สั่ง และรักษาคุณภาพความสดใหม่ในทุกรอบการผลิต
-            เมนูของร้านมีทั้ง Soft Cookie, S'more, Mini Cornflake และอื่นๆ อีกมากมาย รวมถึงบริการรับผลิตขนมจำนวนมากสำหรับงานสัมมนา งานเลี้ยง และ Snack Box
-          </p>
-          <p>
-            สั่งของจากหน้านี้ได้เลย เลือกสินค้าที่ชอบ กรอกข้อมูลรับของ แล้วโอนเงินผ่าน QR พร้อมเพย์ ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด
-          </p>
-        </div>
-
-        <div className="px-5 pb-5">
-          <button
-            type="button"
-            onClick={requestClose}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
-          >
-            เริ่มเลือกเมนูกันเลย
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 /** ป็อปอัพสอนวิธีใช้งานหน้านี้ โชว์ต่อจากป็อปอัพแนะนำร้านเสมอ เปิดซ้ำเองได้ทุกเมื่อ */
 function HowToUsePopup({ onClose }: { onClose: () => void }) {
   const items = [
@@ -272,8 +204,6 @@ export function CustomerOrderPage() {
   const [showLineReminder, setShowLineReminder] = useState(false)
   const [pendingToken, setPendingToken] = useState<string | null>(null)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
-  const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
-  const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
 
   useFormDraft(CART_DRAFT_KEY, items)
@@ -392,23 +322,9 @@ export function CustomerOrderPage() {
     )
   }
 
-  // ป็อปอัพวิธีใช้งานโผล่เองครั้งแรกตามลำดับ onboarding (ต่อจากป็อปอัพแนะนำร้าน) หรือเปิดซ้ำเองได้ทุกเมื่อ
-  // จากปุ่ม "วิธีสั่งซื้อจากหน้านี้" — ปิดแล้วต้องเคลียร์ทั้งสองทางเสมอ กันเปิดค้างจากอีกทางนึงโดยไม่ตั้งใจ
-  const showHowTo = (aboutPopupDismissed && !howToPopupDismissed) || manualHowTo
-  function closeHowTo() {
-    setManualHowTo(false)
-    if (!howToPopupDismissed) setHowToPopupDismissed(true)
-  }
-
-  const onboardingPopups = (
-    <>
-      {!aboutPopupDismissed ? (
-        <AboutShopPopup shopName={menu.shop_name} logoPath={menu.logo_path} onClose={() => setAboutPopupDismissed(true)} />
-      ) : (
-        showHowTo && <HowToUsePopup onClose={closeHowTo} />
-      )}
-    </>
-  )
+  // ป็อปอัพ "วิธีสั่งซื้อ" เปิดเฉพาะตอนลูกค้ากดเรียกดูเองเท่านั้น (ไม่ auto-show ตอนเข้าเพจ) — หน้านี้มีเนื้อหา
+  // "เกี่ยวกับร้าน" อยู่ถาวรในหน้าอยู่แล้ว (ดู section ด้านล่าง) ถ้าบังคับเปิดป็อปอัพซ้ำเนื้อหาเดิมทันทีตอนเข้าเพจ
+  // จะไปบัง hero ที่เพิ่งออกแบบให้ค่อยๆ โผล่สวยๆ ไม่ให้เห็นเลย
 
   if (step === 'checkout') {
     return (
@@ -553,16 +469,18 @@ export function CustomerOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-28 animate-page-in">
+    <div className="min-h-screen bg-stone-50 pb-28">
       <FloatingDecor />
 
-      {/* Hero — ให้หน้านี้รู้สึกเหมือนเว็บไซต์ของร้านจริงๆ ไม่ใช่แค่หน้าเลือกสินค้าล้วนๆ */}
-      <div className="text-center px-4 pt-12 pb-9" style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}>
+      {/* Hero — ให้หน้านี้รู้สึกเหมือนเว็บไซต์ของร้านจริงๆ ไม่ใช่แค่หน้าเลือกสินค้าล้วนๆ
+          ไล่จังหวะโผล่ทีละ section (hero -> เกี่ยวกับร้าน -> เมนู) แทนที่จะโผล่มาพร้อมกันทั้งหน้าแบบแข็งๆ —
+          ไม่มีป็อปอัพบังคับเปิดทับตรงนี้แล้ว (ดูคอมเมนต์ตรง onboarding ด้านล่าง) ลูกค้าจะได้เห็นจังหวะนี้จริงๆ */}
+      <div className="text-center px-4 pt-12 pb-9 animate-form-in" style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}>
         {menu.logo_path && (
           <img
             src={productImageUrl(menu.logo_path)}
             alt=""
-            className="w-24 h-24 rounded-full object-cover mx-auto border-2"
+            className="w-24 h-24 rounded-full object-cover mx-auto border-2 animate-icon-pop"
             style={{ borderColor: 'rgba(255,255,255,0.4)' }}
           />
         )}
@@ -600,7 +518,10 @@ export function CustomerOrderPage() {
 
       <div className="max-w-5xl mx-auto px-4 -mt-4 space-y-6">
         {/* เกี่ยวกับร้าน */}
-        <section className="bg-white rounded-2xl shadow-sm p-6 space-y-3 text-sm text-stone-700 leading-relaxed">
+        <section
+          className="bg-white rounded-2xl shadow-sm p-6 space-y-3 text-sm text-stone-700 leading-relaxed animate-form-in"
+          style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
+        >
           <h2 className="text-lg font-bold text-stone-900">เกี่ยวกับร้าน</h2>
           <p>
             RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
@@ -626,7 +547,11 @@ export function CustomerOrderPage() {
         </section>
 
         {/* เมนูสินค้า */}
-        <section id="menu-section" className="space-y-4 scroll-mt-4">
+        <section
+          id="menu-section"
+          className="space-y-4 scroll-mt-4 animate-form-in"
+          style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
+        >
           <h2 className="text-lg font-bold text-stone-900 text-center">เมนูสินค้า</h2>
 
           <LineContactButton lineUrl={menu.line_url} />
@@ -739,7 +664,7 @@ export function CustomerOrderPage() {
           ไม่คืนคีย์นี้มาเลย จะได้ undefined ไม่ใช่ array) */}
       <ChatBot shopName={menu.shop_name} faqs={menu.faqs ?? []} lineUrl={menu.line_url} />
 
-      {onboardingPopups}
+      {manualHowTo && <HowToUsePopup onClose={() => setManualHowTo(false)} />}
     </div>
   )
 }
