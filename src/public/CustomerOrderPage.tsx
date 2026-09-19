@@ -51,18 +51,25 @@ function useClosingTransition(onClose: () => void, durationMs = 200) {
   return { closing, requestClose }
 }
 
-/** ของตกแต่งลอยเบาๆ อยู่หลังเนื้อหาทั้งหมด (aria-hidden, ไม่กันคลิก) — เหมือนหน้าติดตามออเดอร์ (/o/:token) */
+/** ของตกแต่งลอยพื้นหลังทั้งหน้า (aria-hidden, ไม่กันคลิก) — ให้เห็นชัดพอจริงๆ (ไม่ใช่แค่จางๆ จนมองไม่เห็น
+ * เหมือนหน้าติดตามออเดอร์เดิม) เพราะหน้านี้เป็นเว็บไซต์ร้านที่เนื้อหาแน่นเกือบเต็มความกว้างจอ ต้องใหญ่/เข้มพอ
+ * ถึงจะโผล่ให้เห็นในช่องว่างแคบๆ ระหว่าง section ได้จริง พื้นหลังไล่สีอุ่นๆ (warm gradient) แทนสีเทาเรียบๆ เดิมด้วย */
 function FloatingDecor() {
   const items: { icon: string; style: CSSProperties }[] = [
-    { icon: '🥐', style: { top: '8%', left: '6%' } },
-    { icon: '🧁', style: { top: '18%', right: '8%', animationDelay: '1.5s' } },
-    { icon: '🍪', style: { bottom: '18%', left: '10%', animationDelay: '3s' } },
-    { icon: '✨', style: { bottom: '32%', right: '12%', animationDelay: '0.8s' } },
+    { icon: '🥐', style: { top: '3%', left: '4%' } },
+    { icon: '🧁', style: { top: '14%', right: '5%', animationDelay: '1.2s' } },
+    { icon: '🍪', style: { top: '38%', left: '2%', animationDelay: '2.4s' } },
+    { icon: '✨', style: { top: '46%', right: '3%', animationDelay: '0.6s' } },
+    { icon: '🍰', style: { bottom: '22%', left: '6%', animationDelay: '1.8s' } },
+    { icon: '🧈', style: { bottom: '12%', right: '7%', animationDelay: '3s' } },
   ]
   return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div
+      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-gradient-to-b from-amber-50 via-stone-50 to-stone-100"
+      aria-hidden="true"
+    >
       {items.map((it, i) => (
-        <span key={i} className="absolute text-4xl opacity-10 animate-float-slow" style={it.style}>
+        <span key={i} className="absolute text-5xl sm:text-6xl opacity-25 animate-float-slow" style={it.style}>
           {it.icon}
         </span>
       ))}
@@ -469,7 +476,7 @@ export function CustomerOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 pb-28">
+    <div className="min-h-screen pb-28">
       <FloatingDecor />
 
       {/* Hero — ให้หน้านี้รู้สึกเหมือนเว็บไซต์ของร้านจริงๆ ไม่ใช่แค่หน้าเลือกสินค้าล้วนๆ
