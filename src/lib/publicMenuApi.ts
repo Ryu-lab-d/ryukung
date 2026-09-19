@@ -14,6 +14,9 @@ export type PublicMenu = {
   logo_path: string | null
   promptpay: string | null
   line_url: string | null
+  phone: string | null
+  address: string | null
+  faqs: { keywords: string[]; answer: string }[]
   shipping_lead_days: number
   categories: PublicMenuCategory[]
   products: PublicMenuProduct[]
