@@ -40,6 +40,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     const { data, error } = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-ลูกค้าสั่งเอง',
       p_customer_phone: '081-234-5678',
+      p_customer_email: 'test-customer@example.com',
       p_fulfillment_type: 'pickup',
       p_needed_date: '2026-09-01',
       p_pickup_place: 'หน้าร้าน',
@@ -62,9 +63,55 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     expect(order.data!.payment_claimed_at).not.toBeNull()
     expect(order.data!.order_no).toBeNull()
 
-    const customer = await db.from('customers').select('id').eq('phone', '081-234-5678').maybeSingle()
+    const customer = await db.from('customers').select('id, email').eq('phone', '081-234-5678').maybeSingle()
     expect(customer.data).toBeTruthy()
+    expect(customer.data!.email).toBe('test-customer@example.com')
     if (customer.data) cleanupIds.customers.push(customer.data.id)
+  })
+
+  it('ไม่กรอกอีเมล หรือกรอกรูปแบบผิด ถูกปฏิเสธ', async () => {
+    const pub = anonClient()
+    const missing = await pub.rpc('submit_customer_order', {
+      p_customer_name: 'ทดสอบ-ไม่มีอีเมล', p_customer_phone: '0899990000', p_customer_email: '',
+      p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
+    })
+    expect(missing.error).not.toBeNull()
+
+    const malformed = await pub.rpc('submit_customer_order', {
+      p_customer_name: 'ทดสอบ-อีเมลผิด', p_customer_phone: '0899990001', p_customer_email: 'ไม่ใช่อีเมล',
+      p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
+    })
+    expect(malformed.error).not.toBeNull()
+  })
+
+  it('ลูกค้าเดิมยังไม่เคยมีอีเมล — สั่งซ้ำพร้อมกรอกอีเมล ต้องซิงค์อีเมลเข้า customers ให้', async () => {
+    const db = await signedInClient()
+    const prod = await db.from('products').insert({ name: 'ทดสอบ-ซิงค์อีเมล', price: 40, cost: 15 }).select().single()
+    cleanupIds.products.push(prod.data!.id)
+
+    const pub = anonClient()
+    const before = await db.from('customers').insert({ name: 'ทดสอบ-รออีเมล', phone: '0877776666' }).select().single()
+    cleanupIds.customers.push(before.data!.id)
+    expect(before.data!.email).toBeNull()
+
+    const submitted = await pub.rpc('submit_customer_order', {
+      p_customer_name: 'ทดสอบ-รออีเมล', p_customer_phone: '087-777-6666', p_customer_email: 'synced@example.com',
+      p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: prod.data!.id, qty: 1 }],
+    })
+    expect(submitted.error).toBeNull()
+    cleanupIds.orders.push(submitted.data.order_id)
+
+    const after = await db.from('customers').select('id, email').eq('id', before.data!.id).single()
+    expect(after.data!.email).toBe('synced@example.com')
   })
 
   it('ลูกค้าคนเดิม (เบอร์เดียวกัน รูปแบบต่าง) สั่งซ้ำ จับคู่ customer_id เดิม ไม่สร้างลูกค้าใหม่ซ้ำ', async () => {
@@ -74,7 +121,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
 
     const pub = anonClient()
     const first = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-ลูกค้าซ้ำ', p_customer_phone: '0899998888',
+      p_customer_name: 'ทดสอบ-ลูกค้าซ้ำ', p_customer_phone: '0899998888', p_customer_email: 'zam1@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
@@ -84,7 +131,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     cleanupIds.orders.push(first.data.order_id)
 
     const second = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-ลูกค้าซ้ำ', p_customer_phone: '089-999-8888', // รูปแบบมีขีดต่างจากครั้งแรก
+      p_customer_name: 'ทดสอบ-ลูกค้าซ้ำ', p_customer_phone: '089-999-8888', p_customer_email: 'zam1@example.com', // รูปแบบมีขีดต่างจากครั้งแรก
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-02',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '11:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
@@ -108,7 +155,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     // RPC ไม่มีช่องให้ส่ง unit_price มาเลยในพารามิเตอร์ p_items (มีแค่ product_id, qty) — พิสูจน์ว่าฝั่ง client
     // ไม่มีทางระบุราคาเองได้ตั้งแต่ต้น (ต่างจาก confirm_order ที่รับ unit_price มาจาก client เพราะเป็นฝั่งพนักงาน)
     const { data, error } = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-กันปลอมราคา', p_customer_phone: '0812223333',
+      p_customer_name: 'ทดสอบ-กันปลอมราคา', p_customer_phone: '0812223333', p_customer_email: 'fakeprice@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
@@ -129,7 +176,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
   it('product_id ปลอม/ปิดขายแล้ว ถูกปฏิเสธ ไม่สร้างออเดอร์', async () => {
     const pub = anonClient()
     const { error } = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-สินค้าไม่มีจริง', p_customer_phone: '0800001111',
+      p_customer_name: 'ทดสอบ-สินค้าไม่มีจริง', p_customer_phone: '0800001111', p_customer_email: 'noproduct@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
@@ -141,7 +188,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
   it('ไม่กรอกชื่อ/เบอร์ ถูกปฏิเสธ', async () => {
     const pub = anonClient()
     const { error } = await pub.rpc('submit_customer_order', {
-      p_customer_name: '', p_customer_phone: '', p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_customer_name: '', p_customer_phone: '', p_customer_email: '', p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
       p_pickup_place: null, p_pickup_time: null, p_ship_recipient_name: null, p_ship_recipient_phone: null,
       p_ship_address_text: null, p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
     })
@@ -157,7 +204,7 @@ describe('พนักงานยืนยัน/ปฏิเสธออเด
 
     const pub = anonClient()
     const submitted = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-รอยืนยัน', p_customer_phone: '0855554444',
+      p_customer_name: 'ทดสอบ-รอยืนยัน', p_customer_phone: '0855554444', p_customer_email: 'confirm-flow@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-05',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
@@ -204,7 +251,7 @@ describe('พนักงานยืนยัน/ปฏิเสธออเด
 
     const pub = anonClient()
     const submitted = await pub.rpc('submit_customer_order', {
-      p_customer_name: 'ทดสอบ-รอปฏิเสธ', p_customer_phone: '0866667777',
+      p_customer_name: 'ทดสอบ-รอปฏิเสธ', p_customer_phone: '0866667777', p_customer_email: 'reject-flow@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-05',
       p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
       p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,

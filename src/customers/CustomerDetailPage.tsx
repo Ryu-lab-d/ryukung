@@ -6,6 +6,7 @@ import { useCustomerOrders } from './useCustomerOrders'
 import { formatBaht } from '../lib/money'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { reorderFromOrder } from '../orders/api'
+import { avatarStyle, initials } from './avatar'
 
 const WORK_STATUS_LABELS: Record<string, string> = {
   to_bake: 'รออบ', baking: 'กำลังทำ', ready: 'แพ็คแล้วรอส่ง', delivered: 'ส่งมอบแล้ว', cancelled: 'ยกเลิกแล้ว',
@@ -55,25 +56,35 @@ export function CustomerDetailPage() {
         ← กลับหน้าลูกค้า
       </Link>
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{customer.name}</h1>
-          <p className="text-sm text-stone-500">
-            {customer.phone}
+      <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <div
+          className={'flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold ' + avatarStyle(customer.name)}
+        >
+          {initials(customer.name)}
+        </div>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-semibold text-stone-900 truncate">{customer.name}</h1>
+          <p className="text-sm text-stone-500 truncate">
+            {customer.phone || 'ไม่มีเบอร์โทร'}
             {customer.channel && ` · ${customer.channel} (${customer.channel_handle ?? '-'})`}
           </p>
         </div>
-        <Link to={`/customers/${customer.id}/edit`} className="text-sm text-stone-600 underline shrink-0">แก้ไข</Link>
+        <Link
+          to={`/customers/${customer.id}/edit`}
+          className="shrink-0 rounded-lg border border-stone-300 text-stone-600 text-sm px-3 py-1.5 hover:bg-stone-50 transition-colors"
+        >
+          แก้ไข
+        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-xs text-stone-500">จำนวนออเดอร์</p>
-          <p className="text-xl font-semibold">{customer.order_count}</p>
+          <p className="text-xs text-stone-500">📦 จำนวนออเดอร์</p>
+          <p className="text-xl font-semibold text-stone-900">{customer.order_count}</p>
         </div>
         <div className="rounded-xl border border-stone-200 bg-white p-3">
-          <p className="text-xs text-stone-500">ยอดซื้อรวม</p>
-          <p className="text-xl font-semibold">{formatBaht(customer.total_spend)}</p>
+          <p className="text-xs text-stone-500">💰 ยอดซื้อรวม</p>
+          <p className="text-xl font-semibold text-stone-900">{formatBaht(customer.total_spend)}</p>
         </div>
       </div>
 
@@ -85,16 +96,24 @@ export function CustomerDetailPage() {
 
       <section className="rounded-xl border border-stone-200 bg-white p-3 space-y-2">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold">ที่อยู่จัดส่ง</h2>
-          <Link to={`/customers/${customer.id}/addresses/new`} className="text-xs text-stone-500 underline">
+          <h2 className="text-sm font-semibold text-stone-900">📍 ที่อยู่จัดส่ง</h2>
+          <Link
+            to={`/customers/${customer.id}/addresses/new`}
+            className="text-xs font-medium text-stone-600 rounded-full bg-stone-100 px-2.5 py-1 hover:bg-stone-200 transition-colors"
+          >
             + เพิ่มที่อยู่
           </Link>
         </div>
         {addresses.map((a) => (
-          <div key={a.id} className="rounded-lg border border-stone-200 px-3 py-2 text-sm flex items-start justify-between gap-2">
-            <div>
-              <p className="font-medium">
-                {a.label} {a.is_default && <span className="text-xs text-stone-500">(ที่อยู่หลัก)</span>}
+          <div key={a.id} className="rounded-lg border border-stone-200 px-3 py-2.5 text-sm flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <p className="font-medium text-stone-900 flex items-center gap-1.5">
+                {a.label}
+                {a.is_default && (
+                  <span className="text-[11px] font-medium rounded-full bg-amber-100 text-amber-700 px-2 py-0.5">
+                    ⭐ ที่อยู่หลัก
+                  </span>
+                )}
               </p>
               {(a.recipient_name || a.recipient_phone) && (
                 <p className="text-stone-600">{a.recipient_name} {a.recipient_phone}</p>
@@ -109,11 +128,11 @@ export function CustomerDetailPage() {
             </Link>
           </div>
         ))}
-        {addresses.length === 0 && <p className="text-sm text-stone-400">ยังไม่มีที่อยู่</p>}
+        {addresses.length === 0 && <p className="text-sm text-stone-400 py-2">ยังไม่มีที่อยู่</p>}
       </section>
 
       <section className="rounded-xl border border-stone-200 bg-white p-3 space-y-1">
-        <h2 className="text-sm font-semibold mb-1">ประวัติการซื้อ</h2>
+        <h2 className="text-sm font-semibold text-stone-900 mb-1">🧾 ประวัติการซื้อ</h2>
         {reorderError && <p className="text-xs text-red-600 pb-1">{reorderError}</p>}
         {orders.map((o) => (
           <div key={o.id} className="flex items-center justify-between gap-2 text-sm py-2 border-b border-stone-100 last:border-0">

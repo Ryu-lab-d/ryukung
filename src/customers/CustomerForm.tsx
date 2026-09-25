@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
@@ -14,6 +14,15 @@ const CHANNELS = [
 ] as const
 
 type CustomerDraft = { name: string; phone: string; email: string; channel: string; channelHandle: string; note: string }
+
+const fieldClass =
+  'w-full rounded-lg border border-stone-300 pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400'
+const plainFieldClass =
+  'w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400'
+
+function FieldIcon({ icon }: { icon: string }) {
+  return <span className="pointer-events-none absolute left-3 top-[13px] text-stone-400 text-sm">{icon}</span>
+}
 
 export function CustomerForm() {
   const { id } = useParams()
@@ -76,55 +85,80 @@ export function CustomerForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-4 max-w-lg space-y-4">
-      <h1 className="text-lg font-semibold">{id ? 'แก้ไขลูกค้า' : 'เพิ่มลูกค้า'}</h1>
+    <div className="p-4 max-w-lg mx-auto space-y-4">
+      <Link to={id ? `/customers/${id}` : '/customers'} className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+        ← กลับ
+      </Link>
 
-      <div className="space-y-1">
-        <label htmlFor="name" className="text-sm text-stone-600">ชื่อลูกค้า</label>
-        <input id="name" value={name} onChange={(e) => setName(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
-      </div>
+      <h1 className="flex items-center gap-2 text-lg font-semibold text-stone-900">
+        <span className="text-xl">👤</span> {id ? 'แก้ไขลูกค้า' : 'เพิ่มลูกค้า'}
+      </h1>
 
-      <div className="space-y-1">
-        <label htmlFor="phone" className="text-sm text-stone-600">เบอร์โทร</label>
-        <input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
-      </div>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm space-y-4">
+          <p className="text-xs font-medium uppercase tracking-wide text-stone-400">ข้อมูลส่วนตัว</p>
 
-      <div className="space-y-1">
-        <label htmlFor="email" className="text-sm text-stone-600">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
-        <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
-      </div>
+          <div className="space-y-1">
+            <label htmlFor="name" className="text-sm text-stone-600">ชื่อลูกค้า</label>
+            <div className="relative">
+              <FieldIcon icon="👤" />
+              <input id="name" required value={name} onChange={(e) => setName(e.target.value)} className={fieldClass} />
+            </div>
+          </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="channel" className="text-sm text-stone-600">ช่องทาง</label>
-          <select id="channel" value={channel} onChange={(e) => setChannel(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2">
-            {CHANNELS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
-          </select>
+          <div className="space-y-1">
+            <label htmlFor="phone" className="text-sm text-stone-600">เบอร์โทร</label>
+            <div className="relative">
+              <FieldIcon icon="📞" />
+              <input id="phone" type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} className={fieldClass} />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="email" className="text-sm text-stone-600">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
+            <div className="relative">
+              <FieldIcon icon="✉️" />
+              <input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="channel" className="text-sm text-stone-600">ช่องทาง</label>
+              <select id="channel" value={channel} onChange={(e) => setChannel(e.target.value)} className={plainFieldClass}>
+                {CHANNELS.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="handle" className="text-sm text-stone-600">ชื่อในแชท</label>
+              <input id="handle" value={channelHandle} onChange={(e) => setChannelHandle(e.target.value)} className={plainFieldClass} />
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (แพ้อาหาร คำขอพิเศษ)</label>
+            <textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} rows={3} className={plainFieldClass} />
+          </div>
         </div>
-        <div className="space-y-1">
-          <label htmlFor="handle" className="text-sm text-stone-600">ชื่อในแชท</label>
-          <input id="handle" value={channelHandle} onChange={(e) => setChannelHandle(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
-        </div>
-      </div>
 
-      <div className="space-y-1">
-        <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (แพ้อาหาร คำขอพิเศษ)</label>
-        <textarea id="note" value={note} onChange={(e) => setNote(e.target.value)} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
-      </div>
+        {error && <p className="text-sm text-red-600 animate-field-error">{error}</p>}
 
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <button type="submit" disabled={busy} className="w-full rounded-lg bg-stone-900 text-white px-4 py-2.5 font-medium disabled:opacity-50">
-        {busy ? 'กำลังบันทึก...' : 'บันทึก'}
-      </button>
+        <button
+          type="submit"
+          disabled={busy}
+          className="w-full rounded-xl bg-stone-900 text-white px-4 py-3 font-medium shadow-sm hover:bg-stone-800 transition-colors disabled:opacity-50"
+        >
+          {busy ? 'กำลังบันทึก...' : '💾 บันทึก'}
+        </button>
+      </form>
 
       {id && (
-        <div className="border-t border-stone-100 pt-4">
+        <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4">
           <button
             type="button"
             onClick={() => setShowDeleteConfirm(true)}
             disabled={busy}
-            className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+            className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 hover:bg-red-700 transition-colors disabled:opacity-50"
           >
             🗑️ ลบลูกค้าถาวร
           </button>
@@ -142,6 +176,6 @@ export function CustomerForm() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
-    </form>
+    </div>
   )
 }

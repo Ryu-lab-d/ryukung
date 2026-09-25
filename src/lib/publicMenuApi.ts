@@ -31,6 +31,7 @@ export async function getPublicMenu(): Promise<{ menu: PublicMenu | null; error:
 export type SubmitCustomerOrderInput = {
   customerName: string
   customerPhone: string
+  customerEmail: string
   fulfillmentType: 'pickup' | 'shipping'
   neededDate: string
   pickupPlace: string | null
@@ -50,6 +51,7 @@ export async function submitCustomerOrder(
   const { data, error } = await supabase.rpc('submit_customer_order', {
     p_customer_name: input.customerName,
     p_customer_phone: input.customerPhone,
+    p_customer_email: input.customerEmail,
     p_fulfillment_type: input.fulfillmentType,
     p_needed_date: input.neededDate,
     p_pickup_place: input.pickupPlace,

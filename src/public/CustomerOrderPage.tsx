@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getPublicMenu, submitCustomerOrder, notifyCustomerOrder, type PublicMenu } from '../lib/publicMenuApi'
 import { productImageUrl } from '../products/ProductCard'
 import { formatBaht } from '../lib/money'
@@ -8,7 +8,19 @@ import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { playAddSound, playPaymentSound } from '../lib/uiSound'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { PromptPayQR } from './PromptPayQR'
-import { ChatBot } from './ChatBot'
+import {
+  AmbientGlow,
+  CartFab,
+  PageTexture,
+  PublicNav,
+  PublicFooter,
+  Reveal,
+  SquiggleUnderline,
+  WaveDivider,
+  flyToCart,
+  type SiteTab,
+} from './PublicSiteChrome'
+import { AboutTabContent } from './AboutTabContent'
 
 type Step = 'menu' | 'checkout' | 'payment'
 
@@ -17,12 +29,11 @@ type CartItem = { product_id: string; product_name: string; unit_price: number; 
 type CheckoutForm = {
   customerName: string
   customerPhone: string
+  customerEmail: string
   fulfillmentType: 'pickup' | 'shipping'
   neededDate: string
   pickupPlace: string
   pickupTime: string
-  shipRecipientName: string
-  shipRecipientPhone: string
   shipAddressText: string
   note: string
 }
@@ -31,8 +42,8 @@ const CART_DRAFT_KEY = 'public-menu-cart'
 const CHECKOUT_DRAFT_KEY = 'public-menu-checkout'
 
 const emptyCheckout: CheckoutForm = {
-  customerName: '', customerPhone: '', fulfillmentType: 'pickup', neededDate: '',
-  pickupPlace: '', pickupTime: '', shipRecipientName: '', shipRecipientPhone: '', shipAddressText: '', note: '',
+  customerName: '', customerPhone: '', customerEmail: '', fulfillmentType: 'pickup', neededDate: '',
+  pickupPlace: '', pickupTime: '', shipAddressText: '', note: '',
 }
 
 function todayStr(): string {
@@ -51,36 +62,10 @@ function useClosingTransition(onClose: () => void, durationMs = 200) {
   return { closing, requestClose }
 }
 
-/** ของตกแต่งลอยพื้นหลังทั้งหน้า (aria-hidden, ไม่กันคลิก) — ให้เห็นชัดพอจริงๆ (ไม่ใช่แค่จางๆ จนมองไม่เห็น
- * เหมือนหน้าติดตามออเดอร์เดิม) เพราะหน้านี้เป็นเว็บไซต์ร้านที่เนื้อหาแน่นเกือบเต็มความกว้างจอ ต้องใหญ่/เข้มพอ
- * ถึงจะโผล่ให้เห็นในช่องว่างแคบๆ ระหว่าง section ได้จริง พื้นหลังไล่สีอุ่นๆ (warm gradient) แทนสีเทาเรียบๆ เดิมด้วย */
-function FloatingDecor() {
-  const items: { icon: string; style: CSSProperties }[] = [
-    { icon: '🥐', style: { top: '3%', left: '4%' } },
-    { icon: '🧁', style: { top: '14%', right: '5%', animationDelay: '1.2s' } },
-    { icon: '🍪', style: { top: '38%', left: '2%', animationDelay: '2.4s' } },
-    { icon: '✨', style: { top: '46%', right: '3%', animationDelay: '0.6s' } },
-    { icon: '🍰', style: { bottom: '22%', left: '6%', animationDelay: '1.8s' } },
-    { icon: '🧈', style: { bottom: '12%', right: '7%', animationDelay: '3s' } },
-  ]
-  return (
-    <div
-      className="fixed inset-0 -z-10 overflow-hidden pointer-events-none bg-gradient-to-b from-amber-50 via-stone-50 to-stone-100"
-      aria-hidden="true"
-    >
-      {items.map((it, i) => (
-        <span key={i} className="absolute text-5xl sm:text-6xl opacity-25 animate-float-slow" style={it.style}>
-          {it.icon}
-        </span>
-      ))}
-    </div>
-  )
-}
-
-/** ป็อปอัพสอนวิธีใช้งานหน้านี้ โชว์ต่อจากป็อปอัพแนะนำร้านเสมอ เปิดซ้ำเองได้ทุกเมื่อ */
+/** ป็อปอัพสอนวิธีใช้งานหน้านี้ เปิดจากปุ่ม 💡 มุมขวาบนของแถบนำทาง เปิดซ้ำเองได้ทุกเมื่อ */
 function HowToUsePopup({ onClose }: { onClose: () => void }) {
   const items = [
-    { icon: '🛒', text: 'เลือกสินค้าที่ต้องการ ปรับจำนวนแล้วกด "สั่งเลย" ด้านล่างได้ทันที' },
+    { icon: '🛒', text: 'เลือกสินค้าที่ต้องการ ปรับจำนวนแล้วกดปุ่มตะกร้ามุมขวาล่างได้ทันที' },
     { icon: '📝', text: 'กรอกชื่อ เบอร์โทร และวันที่ต้องการรับของให้ครบ' },
     { icon: '💳', text: 'สแกน QR พร้อมเพย์จ่ายเงินก่อน แล้วกดยืนยันว่าโอนแล้ว' },
     { icon: '⏳', text: 'ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด (ยังไม่เข้าคิวอบจนกว่าร้านจะยืนยัน)' },
@@ -91,7 +76,7 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
     <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
       <div className={'bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}>
         <p className="text-4xl">💡</p>
-        <h2 className="text-lg font-bold text-stone-900">วิธีสั่งซื้อจากหน้านี้</h2>
+        <h2 className="text-lg font-display font-semibold text-stone-900">วิธีสั่งซื้อจากหน้านี้</h2>
         <div className="space-y-2.5 text-left">
           {items.map((it, i) => (
             <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
@@ -198,6 +183,8 @@ function CartSummaryList({ items, grandTotal }: { items: CartItem[]; grandTotal:
 
 export function CustomerOrderPage() {
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab: SiteTab = searchParams.get('tab') === 'about' ? 'about' : 'menu'
   const [menu, setMenu] = useState<PublicMenu | null | undefined>(undefined)
   const [step, setStep] = useState<Step>('menu')
   const [search, setSearch] = useState('')
@@ -211,7 +198,14 @@ export function CustomerOrderPage() {
   const [showLineReminder, setShowLineReminder] = useState(false)
   const [pendingToken, setPendingToken] = useState<string | null>(null)
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
+  const [cartBumping, setCartBumping] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
+  const [splashActive, setSplashActive] = useState(true)
+  const cartFabRef = useRef<HTMLButtonElement>(null)
+
+  function setTab(next: SiteTab) {
+    setSearchParams(next === 'menu' ? {} : { tab: 'about' }, { replace: true })
+  }
 
   useFormDraft(CART_DRAFT_KEY, items)
   useFormDraft(CHECKOUT_DRAFT_KEY, form)
@@ -219,6 +213,14 @@ export function CustomerOrderPage() {
   useEffect(() => {
     getPublicMenu().then(({ menu, error }) => setMenu(error ? null : menu))
   }, [])
+
+  // โลโก้เต็มจอตอนเปิดหน้าครั้งแรก ค้างไว้สั้นๆ แล้วหดเล็กจางหายไป (ดู .animate-splash-shrink ใน index.css)
+  // เผยหน้าเว็บที่เตรียมพร้อมอยู่แล้วด้านหลัง (hero เล่นอนิเมชันของตัวเองคู่ขนานอยู่แล้วใต้โลโก้)
+  useEffect(() => {
+    if (!menu || !splashActive) return
+    const t = setTimeout(() => setSplashActive(false), 1100)
+    return () => clearTimeout(t)
+  }, [menu, splashActive])
 
   const filtered = useMemo(() => {
     if (!menu) return []
@@ -234,12 +236,21 @@ export function CustomerOrderPage() {
     ? addDays(todayStr(), form.fulfillmentType === 'shipping' ? menu.shipping_lead_days : 1)
     : todayStr()
 
-  function addProduct(p: PublicMenu['products'][number]) {
+  function addProduct(p: PublicMenu['products'][number], sourceEl: HTMLElement | null) {
     // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
     // เดียวกันตอนสร้าง AudioContext ครั้งแรก (เหมือน POSPage.tsx)
     playAddSound()
     setJustAddedId(p.id)
     setTimeout(() => setJustAddedId((cur) => (cur === p.id ? null : cur)), 300)
+
+    // อนิเมชันสินค้าบินโค้งเข้าตะกร้าจริงๆ แทนที่จะมีอะไรโผล่ตรงกลางจอ — ดู flyToCart ใน PublicSiteChrome.tsx
+    if (sourceEl && cartFabRef.current) {
+      flyToCart(sourceEl, cartFabRef.current, p.image_path ? '🧁' : '🧁')
+      setTimeout(() => {
+        setCartBumping(true)
+        setTimeout(() => setCartBumping(false), 300)
+      }, 550)
+    }
 
     const existingIndex = items.findIndex((it) => it.product_id === p.id)
     if (existingIndex >= 0) {
@@ -270,12 +281,15 @@ export function CustomerOrderPage() {
     const { orderId, publicToken, error: submitError } = await submitCustomerOrder({
       customerName: form.customerName,
       customerPhone: form.customerPhone,
+      customerEmail: form.customerEmail,
       fulfillmentType: form.fulfillmentType,
       neededDate: form.neededDate,
       pickupPlace: form.fulfillmentType === 'pickup' ? form.pickupPlace || null : null,
       pickupTime: form.fulfillmentType === 'pickup' ? form.pickupTime || null : null,
-      shipRecipientName: form.fulfillmentType === 'shipping' ? form.shipRecipientName || null : null,
-      shipRecipientPhone: form.fulfillmentType === 'shipping' ? form.shipRecipientPhone || null : null,
+      // ผู้รับของคือคนสั่งซื้อเอง (ระบบสั่งเองไม่มีช่องแยกกรอกชื่อ/เบอร์ผู้รับต่างหาก) — ซิงค์จากข้อมูล
+      // ผู้สั่งซื้อโดยตรงเสมอ กันเคสเดิมที่ค่านี้ไม่เคยถูกตั้งเลยเพราะไม่มี input ให้กรอก
+      shipRecipientName: form.fulfillmentType === 'shipping' ? form.customerName : null,
+      shipRecipientPhone: form.fulfillmentType === 'shipping' ? form.customerPhone : null,
       shipAddressText: form.fulfillmentType === 'shipping' ? form.shipAddressText || null : null,
       note: form.note || null,
       items: items.map((it) => ({ product_id: it.product_id, qty: it.qty })),
@@ -313,9 +327,14 @@ export function CustomerOrderPage() {
     if (pendingToken) navigate(`/o/${pendingToken}`)
   }
 
+  function goToMenuAndScroll() {
+    setTab('menu')
+    requestAnimationFrame(() => document.getElementById('menu-section')?.scrollIntoView({ behavior: 'smooth' }))
+  }
+
   if (menu === undefined) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center space-y-3">
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center space-y-3 font-warm">
         <div className="text-4xl animate-icon-pop">🧁</div>
         <p className="text-stone-500">กำลังโหลดเมนู...</p>
       </div>
@@ -323,24 +342,20 @@ export function CustomerOrderPage() {
   }
   if (menu === null) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center font-warm">
         <p className="text-stone-500">โหลดเมนูไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</p>
       </div>
     )
   }
 
-  // ป็อปอัพ "วิธีสั่งซื้อ" เปิดเฉพาะตอนลูกค้ากดเรียกดูเองเท่านั้น (ไม่ auto-show ตอนเข้าเพจ) — หน้านี้มีเนื้อหา
-  // "เกี่ยวกับร้าน" อยู่ถาวรในหน้าอยู่แล้ว (ดู section ด้านล่าง) ถ้าบังคับเปิดป็อปอัพซ้ำเนื้อหาเดิมทันทีตอนเข้าเพจ
-  // จะไปบัง hero ที่เพิ่งออกแบบให้ค่อยๆ โผล่สวยๆ ไม่ให้เห็นเลย
-
   if (step === 'checkout') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in">
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
         <div className="max-w-md mx-auto space-y-4">
           <button type="button" onClick={() => setStep('menu')} className="text-sm text-stone-600 underline">
             ← กลับไปแก้ตะกร้า
           </button>
-          <h1 className="text-lg font-bold">กรอกข้อมูลรับของ</h1>
+          <h1 className="text-lg font-display font-semibold">กรอกข้อมูลรับของ</h1>
           <CartSummaryList items={items} grandTotal={grandTotal} />
           <form onSubmit={handleCheckoutSubmit} className="space-y-4 bg-white rounded-2xl shadow-sm p-5 animate-form-in">
             <div className="space-y-1">
@@ -356,6 +371,14 @@ export function CustomerOrderPage() {
               <input
                 id="customerPhone" required type="tel" value={form.customerPhone}
                 onChange={(e) => setForm((f) => ({ ...f, customerPhone: e.target.value }))}
+                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
+              />
+            </div>
+            <div className="space-y-1">
+              <label htmlFor="customerEmail" className="text-sm text-stone-600">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
+              <input
+                id="customerEmail" required type="email" value={form.customerEmail}
+                onChange={(e) => setForm((f) => ({ ...f, customerEmail: e.target.value }))}
                 className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
               />
             </div>
@@ -433,7 +456,7 @@ export function CustomerOrderPage() {
 
   if (step === 'payment') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in">
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
         <div className="max-w-md mx-auto space-y-4">
           <button type="button" onClick={() => setStep('checkout')} className="text-sm text-stone-600 underline">
             ← กลับไปแก้ข้อมูล
@@ -476,200 +499,184 @@ export function CustomerOrderPage() {
   }
 
   return (
-    <div className="min-h-screen pb-28">
-      <FloatingDecor />
+    <div className="min-h-screen pb-16 font-warm">
+      <PageTexture />
+      <PublicNav
+        shopName={menu.shop_name}
+        logoPath={menu.logo_path}
+        activeTab={tab}
+        onTabChange={setTab}
+        onHowToClick={() => setManualHowTo(true)}
+      />
 
-      {/* Hero — ให้หน้านี้รู้สึกเหมือนเว็บไซต์ของร้านจริงๆ ไม่ใช่แค่หน้าเลือกสินค้าล้วนๆ
-          ไล่จังหวะโผล่ทีละ section (hero -> เกี่ยวกับร้าน -> เมนู) แทนที่จะโผล่มาพร้อมกันทั้งหน้าแบบแข็งๆ —
-          ไม่มีป็อปอัพบังคับเปิดทับตรงนี้แล้ว (ดูคอมเมนต์ตรง onboarding ด้านล่าง) ลูกค้าจะได้เห็นจังหวะนี้จริงๆ */}
-      <div className="text-center px-4 pt-12 pb-9 animate-form-in" style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}>
-        {menu.logo_path && (
-          <img
-            src={productImageUrl(menu.logo_path)}
-            alt=""
-            className="w-24 h-24 rounded-full object-cover mx-auto border-2 animate-icon-pop"
-            style={{ borderColor: 'rgba(255,255,255,0.4)' }}
-          />
-        )}
-        <h1 className="text-3xl font-extrabold text-white mt-4">{menu.shop_name}</h1>
-        <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.8)' }}>ร้านเบเกอรี่ของเด็กอายุ 13 ปี 🍪</p>
-
-        <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-          {menu.line_url && (
-            <a
-              href={menu.line_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 rounded-full bg-[#06C755] text-white font-medium px-4 py-2 text-sm"
-            >
-              💬 แอดไลน์ร้าน
-            </a>
+      {splashActive && (
+        <div className="fixed inset-0 z-[60] grid place-items-center bg-brand-shader" aria-hidden="true">
+          {menu.logo_path ? (
+            <img
+              src={productImageUrl(menu.logo_path)}
+              alt=""
+              className="w-36 h-36 sm:w-44 sm:h-44 rounded-full object-cover border-4 animate-splash-shrink"
+              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+            />
+          ) : (
+            <div className="text-8xl animate-splash-shrink">🧁</div>
           )}
-          {menu.phone && (
-            <a
-              href={`tel:${menu.phone}`}
-              className="flex items-center gap-1.5 rounded-full bg-white/15 text-white font-medium px-4 py-2 text-sm border border-white/30"
-            >
-              📞 {menu.phone}
-            </a>
-          )}
-        </div>
-
-        <a
-          href="#menu-section"
-          className="inline-block mt-6 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm"
-        >
-          🛒 ดูเมนู สั่งเลย
-        </a>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 -mt-4 space-y-6">
-        {/* เกี่ยวกับร้าน */}
-        <section
-          className="bg-white rounded-2xl shadow-sm p-6 space-y-3 text-sm text-stone-700 leading-relaxed animate-form-in"
-          style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}
-        >
-          <h2 className="text-lg font-bold text-stone-900">เกี่ยวกับร้าน</h2>
-          <p>
-            RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
-            เน้นขนมที่ทำสดใหม่ เหมาะทั้งกับการซื้อกินเองและซื้อเป็นของฝากในโอกาสพิเศษ
-          </p>
-          <p>
-            จุดเด่นของร้านคือการทำขนมแบบ Pre-order เพื่อเตรียมสินค้าให้พอดีกับจำนวนที่สั่ง และรักษาคุณภาพความสดใหม่ในทุกรอบการผลิต
-            เมนูของร้านมีทั้ง Soft Cookie, S'more, Mini Cornflake และอื่นๆ อีกมากมาย รวมถึงบริการรับผลิตขนมจำนวนมากสำหรับงานสัมมนา งานเลี้ยง และ Snack Box
-          </p>
-          {menu.address && (
-            <p className="pt-1 border-t border-stone-100">
-              <span className="text-stone-500">📍 ที่อยู่ร้าน: </span>
-              {menu.address}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setManualHowTo(true)}
-            className="text-sm text-stone-500 underline underline-offset-2"
-          >
-            💡 วิธีสั่งซื้อจากหน้านี้
-          </button>
-        </section>
-
-        {/* เมนูสินค้า */}
-        <section
-          id="menu-section"
-          className="space-y-4 scroll-mt-4 animate-form-in"
-          style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}
-        >
-          <h2 className="text-lg font-bold text-stone-900 text-center">เมนูสินค้า</h2>
-
-          <LineContactButton lineUrl={menu.line_url} />
-
-          <input
-            placeholder="ค้นหาสินค้า" value={search} onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button" onClick={() => setCategoryId(null)}
-              className={'rounded-full px-3 py-1.5 text-sm ' + (!categoryId ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-            >
-              ทั้งหมด
-            </button>
-            {menu.categories.map((c) => (
-              <button
-                key={c.id} type="button" onClick={() => setCategoryId(c.id)}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (categoryId === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {filtered.map((p) => {
-              const inCart = items.find((it) => it.product_id === p.id)
-              return (
-                <div
-                  key={p.id}
-                  className={'rounded-xl border border-stone-200 bg-white overflow-hidden' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
-                >
-                  <div className="aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs">
-                    {p.image_path ? (
-                      <img src={productImageUrl(p.image_path)} alt={p.name} className="w-full h-full object-cover" />
-                    ) : 'ไม่มีรูป'}
-                  </div>
-                  <div className="p-2 space-y-1.5">
-                    <p className="text-sm font-medium truncate">{p.name}</p>
-                    <p className="text-sm text-stone-900">{formatBaht(p.price)} บาท <span className="text-xs text-stone-400">/{p.unit}</span></p>
-                    {inCart ? (
-                      <div className="flex items-center justify-between">
-                        <button
-                          type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty - 1)}
-                          className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
-                        >
-                          −
-                        </button>
-                        <span className="text-sm font-medium tabular-nums">{inCart.qty}</span>
-                        <button
-                          type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty + 1)}
-                          className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
-                        >
-                          +
-                        </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button" onClick={() => addProduct(p)}
-                        className="w-full rounded-lg bg-stone-900 text-white text-sm py-1.5"
-                      >
-                        เพิ่มลงตะกร้า
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )
-            })}
-            {filtered.length === 0 && <p className="col-span-full text-center text-sm text-stone-400 py-8">ไม่พบสินค้า</p>}
-          </div>
-        </section>
-      </div>
-
-      {/* Footer — ข้อมูลติดต่อ/ที่อยู่ร้านซ้ำอีกครั้งท้ายหน้า ให้ครบแบบเว็บไซต์ร้านทั่วไป */}
-      <footer className="mt-10 border-t border-stone-200 bg-white px-4 py-8 text-center text-sm text-stone-500 space-y-1.5">
-        <p className="font-semibold text-stone-700">{menu.shop_name}</p>
-        {menu.address && <p>{menu.address}</p>}
-        {menu.phone && (
-          <p>
-            โทร <a href={`tel:${menu.phone}`} className="underline">{menu.phone}</a>
-          </p>
-        )}
-        {menu.line_url && (
-          <a href={menu.line_url} target="_blank" rel="noopener noreferrer" className="inline-block underline">
-            ไลน์ร้าน
-          </a>
-        )}
-        <p className="text-xs text-stone-400 pt-1">สั่งซื้อออนไลน์ผ่านหน้านี้ได้ตลอด 24 ชั่วโมง</p>
-      </footer>
-
-      {items.length > 0 && (
-        <div className="fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3">
-          <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
-            <div>
-              <p className="text-xs text-stone-500">ยอดรวม ({items.length} รายการ)</p>
-              <p className="text-xl font-bold text-stone-900">{formatBaht(grandTotal)} บาท</p>
-            </div>
-            <button
-              type="button" onClick={() => setStep('checkout')}
-              className="rounded-xl bg-stone-900 text-white font-semibold px-6 py-3"
-            >
-              สั่งเลย →
-            </button>
-          </div>
         </div>
       )}
 
-      {/* menu.faqs ?? [] กันพังก่อน migration ที่เพิ่ม faqs ให้ get_public_menu ถูก push ขึ้นจริง (ฟังก์ชันเก่า
-          ไม่คืนคีย์นี้มาเลย จะได้ undefined ไม่ใช่ array) */}
-      <ChatBot shopName={menu.shop_name} faqs={menu.faqs ?? []} lineUrl={menu.line_url} />
+      {/* Hero — คงอยู่เหนือทั้ง 2 แท็บเสมอ (แบรนด์หลักของหน้า) ไล่สีเข้ากับเนื้อหาด้านล่างด้วยขอบคลื่น (WaveDivider)
+          แทนตัดพรวดเป็นเส้นตรง + มีแสงอุ่นเคลื่อนไหวช้าๆ ตลอดเวลา (AmbientGlow) ให้ดูมีชีวิตกว่า gradient นิ่งๆ */}
+      <div className="relative overflow-hidden animate-form-in bg-brand-shader">
+        <AmbientGlow />
+        <div className="relative z-10 text-center px-4 pt-12 pb-10">
+          {menu.logo_path && (
+            <img
+              src={productImageUrl(menu.logo_path)}
+              alt=""
+              className="w-24 h-24 rounded-full object-cover mx-auto border-2 animate-icon-pop"
+              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+            />
+          )}
+          <h1 className="text-3xl font-display font-bold text-white mt-4">{menu.shop_name}</h1>
+          <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1.5 text-white/40" />
+          <p className="text-sm mt-2.5" style={{ color: 'rgba(255,255,255,0.85)' }}>หวานน้อย อร่อยแน่ ไม่เหมือนใคร — ทำมือทุกชิ้นโดยเด็กอายุ 13 ปี</p>
+
+          <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
+            {menu.line_url && (
+              <a
+                href={menu.line_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-full bg-[#06C755] text-white font-medium px-4 py-2 text-sm"
+              >
+                💬 แอดไลน์ร้าน
+              </a>
+            )}
+            {menu.phone && (
+              <a
+                href={`tel:${menu.phone}`}
+                className="flex items-center gap-1.5 rounded-full bg-white/15 text-white font-medium px-4 py-2 text-sm border border-white/30"
+              >
+                📞 {menu.phone}
+              </a>
+            )}
+          </div>
+
+          {tab === 'about' && (
+            <button
+              type="button"
+              onClick={goToMenuAndScroll}
+              className="inline-block mt-6 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm"
+            >
+              🛒 ดูเมนู สั่งเลย
+            </button>
+          )}
+          {tab === 'menu' && (
+            <a
+              href="#menu-section"
+              className="inline-block mt-6 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm"
+            >
+              🛒 ดูเมนู สั่งเลย
+            </a>
+          )}
+        </div>
+        <WaveDivider />
+      </div>
+
+      {/* สลับเนื้อหาด้วยแท็บล้วนๆ ไม่เปลี่ยนหน้าเว็บจริง (ไม่ remount ทั้งหน้า ไม่กระพริบ) key={tab} ทำให้เล่น
+          อนิเมชัน crossfade ใหม่ทุกครั้งที่สลับแท็บ */}
+      {tab === 'menu' ? (
+        <div key="menu" className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-form-in">
+          <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
+            <h2 className="text-lg font-display font-semibold text-stone-900 text-center">เมนูสินค้า</h2>
+
+            <LineContactButton lineUrl={menu.line_url} />
+
+            <input
+              placeholder="ค้นหาสินค้า" value={search} onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button" onClick={() => setCategoryId(null)}
+                className={'rounded-full px-3 py-1.5 text-sm ' + (!categoryId ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+              >
+                ทั้งหมด
+              </button>
+              {menu.categories.map((c) => (
+                <button
+                  key={c.id} type="button" onClick={() => setCategoryId(c.id)}
+                  className={'rounded-full px-3 py-1.5 text-sm ' + (categoryId === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+                >
+                  {c.name}
+                </button>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {filtered.map((p) => {
+                const inCart = items.find((it) => it.product_id === p.id)
+                return (
+                  <div
+                    key={p.id}
+                    className={'rounded-xl border border-stone-200/70 bg-white overflow-hidden shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
+                  >
+                    <div className="aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs">
+                      {p.image_path ? (
+                        <img src={productImageUrl(p.image_path)} alt={p.name} className="w-full h-full object-cover" />
+                      ) : 'ไม่มีรูป'}
+                    </div>
+                    <div className="p-2 space-y-1.5">
+                      <p className="text-sm font-medium truncate">{p.name}</p>
+                      <p className="text-sm text-stone-900">{formatBaht(p.price)} บาท <span className="text-xs text-stone-400">/{p.unit}</span></p>
+                      {inCart ? (
+                        <div className="flex items-center justify-between">
+                          <button
+                            type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty - 1)}
+                            className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                          >
+                            −
+                          </button>
+                          <span className="text-sm font-medium tabular-nums">{inCart.qty}</span>
+                          <button
+                            type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty + 1)}
+                            className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                          >
+                            +
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button" onClick={(e) => addProduct(p, e.currentTarget)}
+                          className="w-full rounded-lg bg-stone-900 text-white text-sm py-1.5"
+                        >
+                          เพิ่มลงตะกร้า
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {filtered.length === 0 && <p className="col-span-full text-center text-sm text-stone-400 py-8">ไม่พบสินค้า</p>}
+            </div>
+          </Reveal>
+        </div>
+      ) : (
+        <div key="about" className="mt-6 animate-form-in">
+          <AboutTabContent onGoToMenu={() => setTab('menu')} />
+        </div>
+      )}
+
+      <PublicFooter
+        shopName={menu.shop_name}
+        address={menu.address}
+        phone={menu.phone}
+        lineUrl={menu.line_url}
+        activeTab={tab}
+        onTabChange={setTab}
+      />
+
+      <CartFab ref={cartFabRef} count={items.length} total={grandTotal} bumping={cartBumping} onClick={() => setStep('checkout')} />
 
       {manualHowTo && <HowToUsePopup onClose={() => setManualHowTo(false)} />}
     </div>
