@@ -147,6 +147,7 @@ export default function App() {
         <Routes>
           <Route path="/o/:token" element={<PublicOrderPage />} />
           <Route path="/menu" element={<CustomerOrderPage />} />
+          <Route path="/about" element={<Navigate to="/menu?tab=about" replace />} />
           <Route path="/staff/join" element={<StaffJoinPage />} />
           <Route path="/*" element={<AuthenticatedApp />} />
         </Routes>

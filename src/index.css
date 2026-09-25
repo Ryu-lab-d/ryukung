@@ -16,6 +16,12 @@
   --color-stone-800: #4a2e15;
   --color-stone-900: #33200e;
   --color-stone-950: #21150a;
+
+  /* ฟอนต์เฉพาะเว็บไซต์ลูกค้า (หน้า /menu, /about, /o/:token) — ให้ความรู้สึก "งานฝีมืออบอุ่น" ไม่ใช่ฟอนต์ default
+     ระบบของเบราว์เซอร์ ใช้แค่ใน public pages เท่านั้น (ผ่าน class font-display/font-warm) ไม่กระทบหน้า backend
+     เดิมที่พนักงานใช้ประจำ — ดู src/public/PublicSiteChrome.tsx */
+  --font-display: "Mitr", "Noto Sans Thai", sans-serif;
+  --font-warm: "Sarabun", "Noto Sans Thai", sans-serif;
 }
 
 body {
@@ -287,4 +293,87 @@ a:focus-visible {
 }
 .animate-cart-bump {
   animation: cart-bump 0.3s ease-out;
+}
+
+/* โลโก้ตอนเปิดหน้าเมนูลูกค้า (/menu) ครั้งแรก — ค้างตัวใหญ่เต็มจอกลางจอสั้นๆ ก่อน แล้วค่อยๆ หดเล็กลงพร้อมจางหาย
+   เผยหน้าเว็บที่เตรียมพร้อมอยู่แล้วด้านหลัง ให้ความรู้สึกเหมือนเว็บไซต์แบรนด์จริงๆ ตอนเปิดเข้ามาครั้งแรก */
+@keyframes splash-shrink {
+  0% { transform: scale(1); opacity: 1; }
+  55% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(0.3); opacity: 0; }
+}
+.animate-splash-shrink {
+  animation: splash-shrink 1.1s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+}
+
+/* พื้นหลังลายกระดาษคราฟท์จางๆ ของเว็บไซต์ลูกค้า (แทนอิโมจิลอยกระจายพื้นหลังแบบเดิม) — จุดเล็กๆ ถี่ๆ +
+   ไล่สีอุ่นมุมบนซ้าย ให้ความรู้สึกงานฝีมือ/กระดาษคราฟท์แบบจริงจัง ไม่ใช่แค่ gradient เรียบๆ แต่ก็ไม่จัดจ้านจนแย่งซีน
+   เนื้อหา ใช้กับ container หลักสุดของหน้า (ดู src/public/PublicSiteChrome.tsx -> PageTexture) */
+.bg-paper-texture {
+  background-color: var(--color-stone-50);
+  background-image:
+    radial-gradient(circle at 1px 1px, rgb(51 32 14 / 0.07) 1px, transparent 0),
+    linear-gradient(160deg, rgb(217 161 93 / 0.16), transparent 55%);
+  background-size: 22px 22px, auto;
+}
+
+/* แสงครีม/ทองอ่อนเคลื่อนไหวช้าๆ วนลูปทับ .bg-paper-texture (ดู PageTexture ใน PublicSiteChrome.tsx) ให้พื้นหลัง
+   สีครีมทั้งเว็บมีลูกเล่นเบาๆ ตลอดเวลาเหมือนกัน ไม่ใช่มีแค่ hero สีน้ำตาลเท่านั้นที่ขยับ — จางกว่า AmbientGlow ของ
+   hero มาก เพราะพื้นหลังนี้อยู่ใต้เนื้อหาที่ต้องอ่านได้สบายตาตลอดเวลา ไม่ใช่แบนเนอร์แบรนด์ */
+.bg-cream-shine {
+  background-image:
+    radial-gradient(circle at 25% 20%, rgb(255 224 178 / 0.55), transparent 45%),
+    radial-gradient(circle at 75% 70%, rgb(240 199 140 / 0.4), transparent 50%);
+}
+@keyframes cream-shine {
+  0%, 100% { transform: translate(-8%, -6%) scale(1); }
+  50% { transform: translate(10%, 8%) scale(1.2); }
+}
+.animate-cream-shine {
+  animation: cream-shine 16s ease-in-out infinite;
+}
+
+/* ระบบ "โผล่ตอน scroll เข้ามาเห็นจริง" ของเว็บไซต์ลูกค้า — ต่างจาก animate-form-in/page-in เดิมที่เล่นครั้งเดียว
+   ตอน mount (ถ้า section อยู่ใต้จอตอนโหลด จะเล่นอนิเมชันจบไปเงียบๆ ก่อนผู้ใช้เลื่อนมาเห็นด้วยซ้ำ) คลาสนี้ใช้คู่กับ
+   useReveal()/<Reveal> ใน PublicSiteChrome.tsx ที่ใส่คลาสนี้ให้ก็ต่อเมื่อ section เข้า viewport จริงๆ เท่านั้น */
+@keyframes reveal-up {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-reveal-up {
+  animation: reveal-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* แสงอุ่นๆ เคลื่อนไหววนลูปช้าๆ ตลอดเวลาเหนือพื้นหลัง hero (ดู AmbientGlow ใน src/public/PublicSiteChrome.tsx)
+   เป็นเลเยอร์เสริมเหนือ .bg-brand-shader อีกที ให้มีมิติความลึกเพิ่มขึ้น — วนรอบละ 14s นุ่มๆ */
+@keyframes ambient-shine {
+  0%, 100% { transform: translate(-10%, -10%) scale(1); }
+  50% { transform: translate(12%, 14%) scale(1.25); }
+}
+.animate-ambient-shine {
+  animation: ambient-shine 14s ease-in-out infinite;
+}
+
+/* พื้นหลัง "shader" ของแบรนด์ — ไล่สีน้ำตาล/คาราเมล/ส้มไหม้/ทองอำพันแล้ววนลูปเคลื่อนตำแหน่งตลอดเวลา (ไม่ใช่
+   gradient สีน้ำตาลนิ่งๆ สีเดียวแบบเดิมที่โดนบ่นว่า "ไม่สวย") ใช้กับ hero, splash, และแบนเนอร์ CTA สีแบรนด์ทุกจุด
+   แทนการเขียน inline style gradient ซ้ำๆ — ลูกเล่นเห็นชัดเจนจริง (ไม่ subtle เกินจนสังเกตไม่ออกเหมือนรอบก่อน) */
+.bg-brand-shader {
+  background-image: linear-gradient(
+    120deg,
+    #201409 0%,
+    #4a2e18 14%,
+    #7a4423 30%,
+    #a8551f 44%,
+    #d98a2e 56%,
+    #a8551f 68%,
+    #4a2e18 84%,
+    #201409 100%
+  );
+  background-size: 260% 260%;
+  animation: brand-shader-move 11s ease-in-out infinite;
+}
+@keyframes brand-shader-move {
+  0% { background-position: 0% 30%; }
+  50% { background-position: 100% 70%; }
+  100% { background-position: 0% 30%; }
 }

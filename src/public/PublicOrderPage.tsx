@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react'
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
 import { supabase } from '../lib/supabase'
@@ -13,6 +13,10 @@ import { AddToCalendarButton } from './AddToCalendarButton'
 import { ShareOrderButton } from './ShareOrderButton'
 import { productImageUrl } from '../products/ProductCard'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { PageTexture, Reveal } from './PublicSiteChrome'
+
+/** สไตล์การ์ดมาตรฐานของเว็บไซต์ลูกค้า (เข้าชุดกับ /menu) — เงาอุ่นมีมิติแทน shadow-sm เทาแบนๆ */
+const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
@@ -156,18 +160,18 @@ function StatusTimeline({
             <div className="flex flex-col items-center">
               <div
                 className={
-                  'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 ' +
+                  'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
                   (isDone
                     ? 'bg-stone-900 text-white'
                     : isCurrent
-                      ? 'bg-stone-900 text-white ring-4 ring-stone-200 animate-pulse'
+                      ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-pulse'
                       : 'bg-white text-stone-400 border-2 border-stone-200')
                 }
               >
                 {isDone ? '✓' : i + 1}
               </div>
               {i < WORK_STAGES.length - 1 && (
-                <div className={'w-0.5 flex-1 min-h-8 ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')} />
+                <div className={'w-0.5 flex-1 min-h-8 transition-colors duration-500 ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')} />
               )}
             </div>
             <div className={'pb-8 -mt-0.5 ' + (isCurrent ? 'text-stone-900' : isDone ? 'text-stone-600' : 'text-stone-400')}>
@@ -219,7 +223,7 @@ function AddressEditForm({
   return (
     <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade">
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 animate-toast-pop">
-        <h2 className="text-lg font-semibold">แก้ไขที่อยู่จัดส่ง</h2>
+        <h2 className="text-lg font-display font-semibold">แก้ไขที่อยู่จัดส่ง</h2>
         <div className="space-y-1">
           <label htmlFor="pub-recipient-name" className="text-sm text-stone-600">ชื่อผู้รับ</label>
           <input
@@ -366,7 +370,7 @@ function UnpaidPaymentPopup({
 
         <div className="bg-gradient-to-b from-red-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
           <div className="w-16 h-16 rounded-full bg-red-100 grid place-items-center mx-auto text-3xl">💳</div>
-          <h2 className="text-xl font-bold text-red-700 leading-snug">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
+          <h2 className="text-xl font-display font-bold text-red-700 leading-snug">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
         </div>
 
         <div className="px-5 pb-5 space-y-3">
@@ -432,10 +436,7 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
           ✕
         </button>
 
-        <div
-          className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3"
-          style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
-        >
+        <div className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3 bg-brand-shader">
           {logoPath && (
             <img
               src={productImageUrl(logoPath)}
@@ -445,7 +446,7 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
             />
           )}
           <p className="text-4xl">🍪</p>
-          <h2 className="text-2xl font-extrabold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
+          <h2 className="text-2xl font-display font-bold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
           <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
             {shopName} คืออะไร?
           </p>
@@ -453,19 +454,12 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
 
         <div className="px-5 py-5 space-y-3 text-sm text-stone-700 leading-relaxed">
           <p>
-            RYUKUNG_BAKERY เริ่มต้นจากความชอบในการทำขนมเล็กๆ ของเด็กอายุ 13 ปีคนหนึ่ง แล้วค่อยๆ เติบโตขึ้นมาเป็นร้านเบเกอรี่ที่รับทำขนมตามออร์เดอร์จริงจัง
-            เน้นขนมที่ทำสดใหม่ เหมาะทั้งกับการซื้อกินเองและซื้อเป็นของฝากในโอกาสพิเศษ
+            {shopName} เป็นร้านเบเกอรี่ที่เริ่มต้นและลงมือทำเองทุกขั้นตอนโดย "ริว" เจ้าของร้านวัย 13 ปี
+            หวานน้อย อร่อยแน่ ไม่เหมือนใคร รับทำตามออร์เดอร์ (Pre-order) เพื่อคุมความสดใหม่ทุกรอบผลิต
           </p>
           <p>
-            จุดเด่นของร้านคือการทำขนมแบบ Pre-order เพื่อเตรียมสินค้าให้พอดีกับจำนวนที่สั่ง และรักษาคุณภาพความสดใหม่ในทุกรอบการผลิต
-            เมนูของร้านมีทั้ง Soft Cookie, S'more, Mini Cornflake และอื่นๆ อีกมากมาย รวมถึงบริการรับผลิตขนมจำนวนมากสำหรับงานสัมมนา งานเลี้ยง และ Snack Box
-          </p>
-          <p>
-            สิ่งที่ร้านให้ความสำคัญไม่ใช่แค่รสชาติของขนม แต่ยังรวมถึงการนำเทคโนโลยีเข้ามาช่วยบริหารจัดการ ทั้งระบบสั่งซื้อ ติดตามสถานะออร์เดอร์
-            ตรวจสอบการชำระเงิน และระบบ POS เพื่อให้ทุกขั้นตอนมีประสิทธิภาพมากขึ้น
-          </p>
-          <p>
-            RYUKUNG_BAKERY จึงไม่ใช่แค่ร้านขายขนม แต่เป็นธุรกิจเล็กๆ ที่กำลังค่อยๆ เติบโตไปด้วยกัน ทั้งด้านสินค้า การบริการ และเทคโนโลยี
+            สั่งของ ติดตามสถานะออเดอร์ และแจ้งชำระเงินได้ครบในหน้านี้หน้าเดียว — อยากอ่านเรื่องราวร้านแบบเต็มๆ
+            แวะไปที่แท็บ "เกี่ยวกับร้าน" ในหน้าเมนูออนไลน์ได้เลย
           </p>
         </div>
 
@@ -496,7 +490,7 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
     <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
       <div className={'bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}>
         <p className="text-4xl">💡</p>
-        <h2 className="text-lg font-bold text-stone-900">วิธีใช้งานหน้านี้</h2>
+        <h2 className="text-lg font-display font-bold text-stone-900">วิธีใช้งานหน้านี้</h2>
         <div className="space-y-2.5 text-left">
           {items.map((it, i) => (
             <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
@@ -509,25 +503,6 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
           เข้าใจแล้ว เริ่มดูออเดอร์
         </button>
       </div>
-    </div>
-  )
-}
-
-/** ของตกแต่งลอยเบาๆ อยู่หลังเนื้อหาทั้งหมด (aria-hidden, ไม่กันคลิก) เพิ่มความมีชีวิตชีวาให้หน้าลูกค้า */
-function FloatingDecor() {
-  const items: { icon: string; style: CSSProperties }[] = [
-    { icon: '🥐', style: { top: '8%', left: '6%' } },
-    { icon: '🧁', style: { top: '18%', right: '8%', animationDelay: '1.5s' } },
-    { icon: '🍪', style: { bottom: '18%', left: '10%', animationDelay: '3s' } },
-    { icon: '✨', style: { bottom: '32%', right: '12%', animationDelay: '0.8s' } },
-  ]
-  return (
-    <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none" aria-hidden="true">
-      {items.map((it, i) => (
-        <span key={i} className="absolute text-4xl opacity-10 animate-float-slow" style={it.style}>
-          {it.icon}
-        </span>
-      ))}
     </div>
   )
 }
@@ -554,7 +529,7 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
 
   return (
     <div className="space-y-2">
-      <div ref={cardRef} className="bg-white rounded-2xl shadow-sm p-5 space-y-3">
+      <div ref={cardRef} className={CARD + ' p-5 space-y-3'}>
         <div className="space-y-1">
           {order.items.map((it, i) => (
             <div key={i} className="flex justify-between text-sm">
@@ -672,7 +647,7 @@ export function PublicOrderPage() {
   // ออเดอร์นี้มีจริง แต่ไม่มีทั้งชื่อและเบอร์ลูกค้าผูกไว้ในระบบเลย ไม่มีทางตรวจสอบตัวตนได้ ต้องหยุดตรงนี้เสมอ ไม่ปล่อยให้ใครพิมพ์อะไรก็เข้าได้
   if (noNameOnFile) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center font-warm">
         <div className="max-w-sm">
           <p className="text-4xl mb-2">🔒</p>
           <p className="text-stone-700 font-medium">ออเดอร์นี้ไม่มีชื่อหรือเบอร์ลูกค้าผูกไว้ในระบบ</p>
@@ -685,17 +660,17 @@ export function PublicOrderPage() {
   // ขั้นที่ 1: ยืนยันชื่อหรือเบอร์ก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อ/เบอร์คืออะไร
   if (customerName === null) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4">
-        <FloatingDecor />
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 font-warm">
+        <PageTexture />
         <form
           onSubmit={handleConfirmName}
           className={
-            'w-full max-w-sm bg-white rounded-2xl shadow-sm p-6 space-y-4 text-center animate-form-in' +
+            'w-full max-w-sm ' + CARD + ' p-6 space-y-4 text-center animate-form-in' +
             (shake ? ' animate-shake' : '')
           }
         >
           <div className="text-4xl animate-icon-pop">🥐</div>
-          <h1 className="text-lg font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
+          <h1 className="text-lg font-display font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
           {order && <p className="text-xs text-stone-400 font-mono tracking-wide">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>}
           <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
           <div className="space-y-1.5 text-left">
@@ -782,7 +757,7 @@ export function PublicOrderPage() {
     // order === undefined ในจุดนี้แทบไม่เกิดจริง เพราะปุ่มยืนยันชื่อกดไม่ได้จนกว่าจะโหลดเสร็จ
     // แต่เขียนดักไว้ให้ TypeScript แน่ใจว่าตั้งแต่บรรทัดนี้ลงไป order ไม่มีทาง undefined อีกแล้ว
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center">
+      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center font-warm">
         <div>
           <p className="text-4xl mb-2">🔍</p>
           <p className="text-stone-500">ไม่พบออเดอร์นี้ ลิงก์อาจไม่ถูกต้อง</p>
@@ -800,12 +775,12 @@ export function PublicOrderPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 p-4">
-      <FloatingDecor />
+    <div className="min-h-screen bg-stone-50 p-4 font-warm">
+      <PageTexture />
       <div className="max-w-md mx-auto space-y-4">
-        <div className="text-center pt-2">
+        <div className="text-center pt-2 animate-page-in">
           <p className="text-sm text-stone-500">สวัสดีคุณ{customerName} 👋</p>
-          <h1 className="text-xl font-bold mt-1">{order.shop_name}</h1>
+          <h1 className="text-xl font-display font-bold mt-1">{order.shop_name}</h1>
           <p className="text-sm text-stone-500">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>
           {order.pending_confirmation && (
             <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-3 py-1 mt-1">
@@ -826,14 +801,15 @@ export function PublicOrderPage() {
             href={order.line_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm animate-form-in"
+            style={{ animationDelay: '0.06s', animationFillMode: 'backwards' }}
           >
             💬 ติดต่อพนักงาน (แอดไลน์)
           </a>
         )}
 
-        <div className="bg-white rounded-2xl shadow-sm p-5">
-          <h2 className="text-sm font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
+        <div className={CARD + ' p-5 animate-form-in'} style={{ animationDelay: '0.12s', animationFillMode: 'backwards' }}>
+          <h2 className="text-sm font-display font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
           <StatusTimeline
             workStatus={order.work_status}
             paymentStatus={order.payment_status}
@@ -876,9 +852,9 @@ export function PublicOrderPage() {
           )}
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm p-5 space-y-2">
+        <Reveal className={CARD + ' p-5 space-y-2'}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-stone-500">กำหนดการจัดส่ง</h2>
+            <h2 className="text-sm font-display font-semibold text-stone-500">กำหนดการจัดส่ง</h2>
             {order.address_editable && (
               <button type="button" onClick={() => setShowAddressEdit(true)} className="text-xs text-stone-600 underline">
                 แก้ไขที่อยู่
@@ -918,9 +894,9 @@ export function PublicOrderPage() {
                 : 'แพ็คของแล้ว แก้ไขที่อยู่เองไม่ได้แล้ว ติดต่อร้านโดยตรงถ้าจำเป็น'}
             </p>
           )}
-        </div>
+        </Reveal>
 
-        <div className="flex gap-2">
+        <Reveal delay={0.08} className="flex gap-2">
           {order.needed_date && (
             <AddToCalendarButton
               orderNo={order.order_no ?? 'รอเลขที่'}
@@ -935,9 +911,11 @@ export function PublicOrderPage() {
             />
           )}
           <ShareOrderButton shopName={order.shop_name} orderNo={order.order_no ?? 'รอเลขที่'} />
-        </div>
+        </Reveal>
 
-        <OrderSummaryCard order={order} />
+        <Reveal delay={0.14}>
+          <OrderSummaryCard order={order} />
+        </Reveal>
       </div>
 
       {showAddressEdit && token && (
