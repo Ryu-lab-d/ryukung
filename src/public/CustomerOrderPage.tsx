@@ -23,7 +23,7 @@ import {
 import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 
-type Step = 'menu' | 'review' | 'checkout' | 'payment'
+type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
 type CartItem = { product_id: string; product_name: string; unit_price: number; unit: string; qty: number; imagePath: string | null }
 
@@ -77,38 +77,29 @@ function BackButton({ onClick, children }: { onClick: () => void; children: Reac
   )
 }
 
-/** ป็อปอัพเตือนหลังกรอกที่อยู่เสร็จ ก่อนไปหน้าชำระเงินเสมอ — บังคับให้ลูกค้าติ๊กยืนยันว่าจำชื่อผู้รับ/ผู้สั่งซื้อ
- * ได้แล้วก่อนถึงจะกดต่อได้ (ปุ่มเป็นสีเทาจนกว่าจะติ๊ก) เพราะชื่อ/เบอร์นี้คือสิ่งเดียวที่ใช้ยืนยันตัวตนตอนเข้าดู
- * สถานะออเดอร์ทีหลังใน /o/:token — ลูกค้าลืมบ่อยมากถ้าไม่เตือนย้ำตรงนี้ */
-function RememberNamePopup({ onConfirm }: { onConfirm: () => void }) {
+/** กล่องติ๊กยอมรับเงื่อนไข + ปุ่ม "รับทราบ" ท้ายหน้าเงื่อนไขการสั่งซื้อ (step 'terms') — ปุ่มเป็นสีเทากดไม่ได้
+ * จนกว่าจะติ๊กยอมรับก่อนเสมอ ถึงจะเปลี่ยนเป็นสีน้ำตาลแล้วไปหน้าชำระเงินได้ */
+function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
   const [checked, setChecked] = useState(false)
   return (
-    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade">
-      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center animate-toast-pop">
-        <div className="text-4xl animate-icon-pop">📝</div>
-        <h2 className="text-lg font-display font-semibold text-stone-900">อย่าลืมจำไว้!</h2>
-        <p className="text-sm text-stone-600 leading-relaxed">
-          โปรดจำ <strong>ชื่อผู้รับ/ชื่อผู้สั่งซื้อ</strong> ที่กรอกไว้ให้ดี ต้องใช้กรอกยืนยันตัวตนตอนเข้าดู
-          สถานะออเดอร์ภายหลังด้วย
-        </p>
-        <label className="flex items-center justify-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={checked}
-            onChange={(e) => setChecked(e.target.checked)}
-            className="w-4 h-4 accent-stone-900"
-          />
-          ฉันจำได้แล้ว
-        </label>
-        <button
-          type="button"
-          onClick={onConfirm}
-          disabled={!checked}
-          className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm disabled:bg-stone-200 disabled:text-stone-400"
-        >
-          รับทราบ ไปหน้าชำระเงิน →
-        </button>
-      </div>
+    <div className="space-y-3 animate-form-in" style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}>
+      <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          checked={checked}
+          onChange={(e) => setChecked(e.target.checked)}
+          className="w-4 h-4 accent-stone-900 shrink-0"
+        />
+        ฉันอ่านและยอมรับเงื่อนไขการสั่งซื้อข้างต้นแล้ว
+      </label>
+      <button
+        type="button"
+        onClick={onConfirm}
+        disabled={!checked}
+        className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm disabled:bg-stone-200 disabled:text-stone-400"
+      >
+        รับทราบ ไปหน้าชำระเงิน →
+      </button>
     </div>
   )
 }
@@ -252,7 +243,6 @@ export function CustomerOrderPage() {
   const [cartBumping, setCartBumping] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
-  const [showRememberPopup, setShowRememberPopup] = useState(false)
   const [splashActive, setSplashActive] = useState(true)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
@@ -330,13 +320,11 @@ export function CustomerOrderPage() {
 
   function handleCheckoutSubmit(e: FormEvent) {
     e.preventDefault()
-    // ยังไม่ไปหน้าชำระเงินทันที — บังคับเตือนให้จำชื่อผู้รับ/ผู้สั่งซื้อก่อนเสมอ (ดู RememberNamePopup)
-    // เพราะเป็นสิ่งเดียวที่ใช้ยืนยันตัวตนตอนเข้าดูสถานะออเดอร์ทีหลัง
-    setShowRememberPopup(true)
+    // ยังไม่ไปหน้าชำระเงินทันที — ต้องผ่านหน้าเงื่อนไขการสั่งซื้อ (step 'terms') ก่อนเสมอ
+    setStep('terms')
   }
 
-  function handleRememberConfirmed() {
-    setShowRememberPopup(false)
+  function handleTermsConfirmed() {
     setStep('payment')
   }
 
@@ -591,8 +579,57 @@ export function CustomerOrderPage() {
           </form>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
+      </div>
+    )
+  }
 
-        {showRememberPopup && <RememberNamePopup onConfirm={handleRememberConfirmed} />}
+  if (step === 'terms') {
+    const isShipping = form.fulfillmentType === 'shipping'
+    return (
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
+        <div className="max-w-md mx-auto space-y-4">
+          <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
+          <h1 className="text-lg font-display font-semibold">เงื่อนไขการสั่งซื้อ</h1>
+
+          <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-4 text-sm text-stone-700 leading-relaxed animate-form-in">
+            <section className="space-y-1.5">
+              <h2 className="font-semibold text-stone-900">การชำระเงิน</h2>
+              <p>ต้องชำระเงินก่อนเสมอผ่าน QR พร้อมเพย์ในหน้าถัดไป จากนั้นร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด</p>
+              <p>
+                หากขอยกเลิกออเดอร์ <strong>ก่อน</strong>ร้านเริ่มทำ จะได้รับเงินคืนเต็มจำนวน แต่ถ้าร้านเริ่มทำแล้ว
+                ขออนุญาตไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตามคำสั่งซื้อของท่านโดยเฉพาะ
+              </p>
+            </section>
+
+            {isShipping ? (
+              <section className="space-y-1.5">
+                <h2 className="font-semibold text-stone-900">การจัดส่ง</h2>
+                <p>ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล</p>
+                <p>หากพัสดุสูญหายหรือเสียหายระหว่างขนส่ง ทางร้านจะช่วยประสานงานเคลมกับบริษัทขนส่งให้</p>
+              </section>
+            ) : (
+              <section className="space-y-1.5">
+                <h2 className="font-semibold text-stone-900">การนัดรับ</h2>
+                <p>กรุณามารับตามวัน-เวลาที่นัดไว้</p>
+                <p>
+                  หากไม่มารับตามนัดโดยไม่แจ้งล่วงหน้า ร้านขอสงวนสิทธิ์ไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตาม
+                  คำสั่งซื้อของท่านแล้ว
+                </p>
+              </section>
+            )}
+
+            <section className="space-y-1.5">
+              <h2 className="font-semibold text-stone-900">ข้อมูลส่วนตัว</h2>
+              <p>ชื่อ เบอร์โทร อีเมล และที่อยู่ที่กรอกไว้ ใช้เพื่อจัดส่ง/ติดต่อ/แจ้งสถานะออเดอร์เท่านั้น</p>
+              <p>
+                โปรดจำ <strong>ชื่อผู้รับ/ชื่อผู้สั่งซื้อ</strong> ที่กรอกไว้ให้ดี ต้องใช้กรอกยืนยันตัวตนตอนเข้าดู
+                สถานะออเดอร์ภายหลังด้วย
+              </p>
+            </section>
+          </div>
+
+          <TermsAcceptBox onConfirm={handleTermsConfirmed} />
+        </div>
       </div>
     )
   }
@@ -601,7 +638,7 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
         <div className="max-w-md mx-auto space-y-4">
-          <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
+          <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
           <div className="rounded-2xl bg-stone-900 text-white p-5 text-center">
             <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
             <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
