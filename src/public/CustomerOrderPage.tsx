@@ -82,7 +82,7 @@ function BackButton({ onClick, children }: { onClick: () => void; children: Reac
 function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
   const [checked, setChecked] = useState(false)
   return (
-    <div className="space-y-3 animate-form-in" style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}>
+    <div className="space-y-3">
       <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
         <input
           type="checkbox"
@@ -101,6 +101,25 @@ function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
         รับทราบ ไปหน้าชำระเงิน →
       </button>
     </div>
+  )
+}
+
+/** การ์ดหัวข้อย่อยหนึ่งอันของหน้าเงื่อนไขการสั่งซื้อ (step 'terms') — ไอคอนวงกลม+หัวข้อ+เนื้อหา เข้าชุดกับ
+ * การ์ด highlight ของแท็บเกี่ยวกับร้าน (AboutTabContent.tsx) แทนย่อหน้าเปลือยๆ ไม่มีจุดสังเกตให้สแกนอ่านง่าย */
+function TermsSection({ icon, title, delay = 0, children }: { icon: string; title: string; delay?: number; children: ReactNode }) {
+  return (
+    <Reveal
+      delay={delay}
+      className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5"
+    >
+      <div className="flex items-center gap-3 mb-2.5">
+        <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-200 grid place-items-center text-lg shrink-0">
+          {icon}
+        </div>
+        <h2 className="font-display font-semibold text-stone-900">{title}</h2>
+      </div>
+      <div className="space-y-1.5 text-sm text-stone-600 leading-relaxed">{children}</div>
+    </Reveal>
   )
 }
 
@@ -586,49 +605,54 @@ export function CustomerOrderPage() {
   if (step === 'terms') {
     const isShipping = form.fulfillmentType === 'shipping'
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
-        <div className="max-w-md mx-auto space-y-4">
+      <div className="min-h-screen pb-10 font-warm">
+        <PageTexture />
+        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
-          <h1 className="text-lg font-display font-semibold">เงื่อนไขการสั่งซื้อ</h1>
 
-          <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-4 text-sm text-stone-700 leading-relaxed animate-form-in">
-            <section className="space-y-1.5">
-              <h2 className="font-semibold text-stone-900">การชำระเงิน</h2>
-              <p>ต้องชำระเงินก่อนเสมอผ่าน QR พร้อมเพย์ในหน้าถัดไป จากนั้นร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด</p>
-              <p>
-                หากขอยกเลิกออเดอร์ <strong>ก่อน</strong>ร้านเริ่มทำ จะได้รับเงินคืนเต็มจำนวน แต่ถ้าร้านเริ่มทำแล้ว
-                ขออนุญาตไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตามคำสั่งซื้อของท่านโดยเฉพาะ
-              </p>
-            </section>
-
-            {isShipping ? (
-              <section className="space-y-1.5">
-                <h2 className="font-semibold text-stone-900">การจัดส่ง</h2>
-                <p>ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล</p>
-                <p>หากพัสดุสูญหายหรือเสียหายระหว่างขนส่ง ทางร้านจะช่วยประสานงานเคลมกับบริษัทขนส่งให้</p>
-              </section>
-            ) : (
-              <section className="space-y-1.5">
-                <h2 className="font-semibold text-stone-900">การนัดรับ</h2>
-                <p>กรุณามารับตามวัน-เวลาที่นัดไว้</p>
-                <p>
-                  หากไม่มารับตามนัดโดยไม่แจ้งล่วงหน้า ร้านขอสงวนสิทธิ์ไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตาม
-                  คำสั่งซื้อของท่านแล้ว
-                </p>
-              </section>
-            )}
-
-            <section className="space-y-1.5">
-              <h2 className="font-semibold text-stone-900">ข้อมูลส่วนตัว</h2>
-              <p>ชื่อ เบอร์โทร อีเมล และที่อยู่ที่กรอกไว้ ใช้เพื่อจัดส่ง/ติดต่อ/แจ้งสถานะออเดอร์เท่านั้น</p>
-              <p>
-                โปรดจำ <strong>ชื่อผู้รับ/ชื่อผู้สั่งซื้อ</strong> ที่กรอกไว้ให้ดี ต้องใช้กรอกยืนยันตัวตนตอนเข้าดู
-                สถานะออเดอร์ภายหลังด้วย
-              </p>
-            </section>
+          <div className="text-center py-2 animate-page-in">
+            <p className="text-4xl">📋</p>
+            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">เงื่อนไขการสั่งซื้อ</h1>
+            <p className="text-sm text-stone-500 mt-1">อ่านให้ครบก่อนไปหน้าชำระเงินนะ</p>
           </div>
 
-          <TermsAcceptBox onConfirm={handleTermsConfirmed} />
+          <TermsSection icon="💳" title="การชำระเงิน">
+            <p>ต้องชำระเงินก่อนเสมอผ่าน QR พร้อมเพย์ในหน้าถัดไป จากนั้นร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด</p>
+            <p>
+              หากขอยกเลิกออเดอร์ <strong className="text-stone-900">ก่อน</strong>ร้านเริ่มทำ จะได้รับเงินคืนเต็มจำนวน
+              แต่ถ้าร้านเริ่มทำแล้ว ขออนุญาตไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตามคำสั่งซื้อของท่านโดยเฉพาะ
+            </p>
+          </TermsSection>
+
+          {isShipping ? (
+            <TermsSection icon="📦" title="การจัดส่ง" delay={0.08}>
+              <p>ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล</p>
+              <p>หากพัสดุสูญหายหรือเสียหายระหว่างขนส่ง ทางร้านจะช่วยประสานงานเคลมกับบริษัทขนส่งให้</p>
+            </TermsSection>
+          ) : (
+            <TermsSection icon="🏠" title="การนัดรับ" delay={0.08}>
+              <p>กรุณามารับตามวัน-เวลาที่นัดไว้</p>
+              <p>
+                หากไม่มารับตามนัดโดยไม่แจ้งล่วงหน้า ร้านขอสงวนสิทธิ์ไม่คืนเงิน เนื่องจากเป็นขนมที่ทำสดใหม่ตาม
+                คำสั่งซื้อของท่านแล้ว
+              </p>
+            </TermsSection>
+          )}
+
+          <TermsSection icon="🔒" title="ข้อมูลส่วนตัว" delay={0.16}>
+            <p>ชื่อ เบอร์โทร อีเมล และที่อยู่ที่กรอกไว้ ใช้เพื่อจัดส่ง/ติดต่อ/แจ้งสถานะออเดอร์เท่านั้น</p>
+            <p>
+              โปรดจำ <strong className="text-stone-900">ชื่อผู้รับ/ชื่อผู้สั่งซื้อ</strong> ที่กรอกไว้ให้ดี
+              ต้องใช้กรอกยืนยันตัวตนตอนเข้าดูสถานะออเดอร์ภายหลังด้วย
+            </p>
+          </TermsSection>
+
+          <Reveal
+            delay={0.22}
+            className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5"
+          >
+            <TermsAcceptBox onConfirm={handleTermsConfirmed} />
+          </Reveal>
         </div>
       </div>
     )
