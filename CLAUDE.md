@@ -82,3 +82,28 @@
 - `src/public/AboutTabContent.tsx` — เนื้อหาแท็บ "เกี่ยวกับร้าน" ล้วนๆ (ไม่มี chrome ของตัวเอง ถูกฝังใน CustomerOrderPage.tsx) เจ้าของร้าน/เส้นทางการเติบโต/จุดเด่น — เนื้อหาจริงต้องอิงข้อมูลที่เจ้าของร้านให้มาเท่านั้น ห้ามแต่งข้อเท็จจริงเอง (ชื่อ/ปี/เหตุการณ์) ถ้าไม่มีข้อมูลให้ถามก่อน
 - `src/public/PublicSiteChrome.tsx` — ของที่ใช้ร่วมกันทุกหน้าเว็บไซต์ลูกค้า: `PageTexture` (พื้นหลังลายกระดาษ), `PublicNav` (แถบนำทาง+แท็บสลับ+ปุ่มวิธีสั่งซื้อ), `PublicFooter`, `Reveal` (ระบบโผล่ตอน scroll), `SquiggleUnderline`, `WaveDivider` (ขอบคลื่นคั่น hero), `AmbientGlow` (แสงเคลื่อนไหวช้าๆ), `CartFab` + `flyToCart()` (ตะกร้าลอย+อนิเมชันบินเข้าตะกร้า) — เพิ่มหน้า/ฟีเจอร์ public ใหม่ให้ import จากตรงนี้แทนก็อปโค้ดซ้ำ ดูหัวข้อ "ฟอนต์/ดีไซน์ อบอุ่นงานฝีมือ" ด้านบนก่อนแก้ไฟล์นี้เสมอ
 - `src/index.css` — รวม keyframe/utility อนิเมชันทั้งหมดของระบบ เช็คก่อนเขียนใหม่เสมอ
+
+## กฎสำคัญ: submit_customer_order ต้องเรียกผ่าน Edge Function เท่านั้น ห้าม .rpc() ตรงๆ เด็ดขาด
+
+`submit_customer_order` (ออเดอร์ที่ลูกค้าสั่งเองจาก /menu) ถูกล็อกไม่ให้ `anon`/`authenticated`/`public` เรียก
+ตรงผ่าน PostgREST ได้อีกต่อไป (ดู migration `20260926090500`–`20260926090700`) — เรียกได้เฉพาะ `service_role`
+เท่านั้น ของจริงต้องผ่าน Edge Function `submit-customer-order` (ดู `supabase/functions/submit-customer-order/`)
+ที่ตรวจ Cloudflare Turnstile token ก่อนเสมอถึงจะยอมเรียก RPC ให้ — กันบอท/สคริปต์ยิง order ปลอมเข้าระบบตรงๆ
+โดยข้าม CAPTCHA (เจอจริงว่าไม่มี Turnstile แล้วบอทสร้างออเดอร์ปลอมได้ไม่จำกัดมาก่อนแก้)
+
+**ถ้าจะเพิ่มฟังก์ชัน `security definer` ใหม่ที่ anon เรียกได้จากหน้า public**: Postgres ให้สิทธิ์ `EXECUTE` กับ
+`PUBLIC` โดยอัตโนมัติทุกครั้งที่สร้างฟังก์ชันใหม่ — แค่ `grant ... to anon` เฉยๆ **ไม่พอ** ถ้าอยากล็อกให้เรียกได้
+เฉพาะทางที่ต้องการ (เช่นผ่าน Edge Function เท่านั้น) ต้อง `revoke execute ... from public` ด้วยเสมอ ไม่งั้น
+`anon` จะยังเรียกผ่านสิทธิ์ PUBLIC ที่ติดมาแต่แรกได้อยู่ดี (นี่คือบั๊กจริงที่เจอตอนล็อก submit_customer_order —
+revoke จาก anon/authenticated ไปแล้วแต่ลืม public เลยยังเรียกตรงได้เหมือนเดิม) ทุกครั้งที่แก้ grant/revoke ต้อง
+ยิง `notify pgrst, 'reload schema';` ตามท้ายเสมอ แล้วทดสอบด้วย `curl` ตรงๆ ไปที่ `/rest/v1/rpc/<ชื่อฟังก์ชัน>`
+จริงๆ (ไม่ใช่แค่เชื่อเทสต์ supabase-js เฉยๆ) เพื่อยืนยันว่า permission denied จริง ก่อนจะเชื่อว่าล็อกสำเร็จ
+
+- `src/public/TurnstileWidget.tsx` — component ป้ายยืนยันไม่ใช่บอท โหมด managed (ผู้ใช้จริงส่วนใหญ่ผ่านอัตโนมัติ)
+  ใช้ `VITE_TURNSTILE_SITE_KEY` (public, อยู่ใน .env — ปลอดภัยที่จะเห็นในหน้าเว็บ) ส่วน secret คู่กันเก็บแยกไว้ที่
+  Supabase Edge Function secret `TURNSTILE_SECRET_KEY` เท่านั้น (`supabase secrets set`) ห้ามเอา secret มาไว้ที่
+  frontend เด็ดขาด
+- `tests/db/customer-self-order.test.ts` — เทสต์ตรรกะธุรกิจของ `submit_customer_order` ต้องเรียกผ่าน
+  `adminClient()` (service role) ไม่ใช่ `anonClient()` แล้ว (เพราะ RPC ล็อกไว้) มีเทสต์แยกยืนยันด้วยว่า
+  anon/authenticated เรียกตรงไม่ได้จริง — ถ้าจะเพิ่มเทสต์ RPC ที่ยิงไปสร้างออเดอร์ลูกค้าใหม่ ให้เรียกผ่าน
+  adminClient() ตามแพทเทิร์นนี้เสมอ

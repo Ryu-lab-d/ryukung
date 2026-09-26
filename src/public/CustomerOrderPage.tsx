@@ -21,6 +21,7 @@ import {
   type SiteTab,
 } from './PublicSiteChrome'
 import { AboutTabContent } from './AboutTabContent'
+import { TurnstileWidget } from './TurnstileWidget'
 
 type Step = 'menu' | 'checkout' | 'payment'
 
@@ -200,6 +201,7 @@ export function CustomerOrderPage() {
   const [justAddedId, setJustAddedId] = useState<string | null>(null)
   const [cartBumping, setCartBumping] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [splashActive, setSplashActive] = useState(true)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
@@ -300,6 +302,7 @@ export function CustomerOrderPage() {
       shipAddressText: form.fulfillmentType === 'shipping' ? form.shipAddressText || null : null,
       note: form.note || null,
       items: items.map((it) => ({ product_id: it.product_id, qty: it.qty })),
+      turnstileToken: turnstileToken!,
     })
     if (submitError || !orderId || !publicToken) {
       setSubmitting(false)
@@ -447,8 +450,14 @@ export function CustomerOrderPage() {
               />
             </div>
 
+            <TurnstileWidget onToken={setTurnstileToken} />
+
             {menu.promptpay ? (
-              <button type="submit" className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3">
+              <button
+                type="submit"
+                disabled={!turnstileToken}
+                className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+              >
                 ไปหน้าชำระเงิน →
               </button>
             ) : (

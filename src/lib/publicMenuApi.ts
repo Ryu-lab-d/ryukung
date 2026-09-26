@@ -41,28 +41,35 @@ export type SubmitCustomerOrderInput = {
   shipAddressText: string | null
   note: string | null
   items: { product_id: string; qty: number }[]
+  /** ผลยืนยัน Cloudflare Turnstile จากฟอร์ม (ดู TurnstileWidget.tsx) — บังคับเสมอ ไม่งั้น Edge Function ปฏิเสธ */
+  turnstileToken: string
 }
 
 /** ลูกค้ากดส่งคำสั่งซื้อจากหน้าเมนู — ครั้งเดียวจบ (สร้างลูกค้า+ออเดอร์+รายการ+ตั้งว่าจ่ายเงินแล้ว) ออเดอร์ยัง
- * ไม่เข้าคิวอบจนกว่าร้านจะกดยืนยัน (ดู submit_customer_order ใน migration) */
+ * ไม่เข้าคิวอบจนกว่าร้านจะกดยืนยัน — เรียกผ่าน Edge Function submit-customer-order เท่านั้น (ไม่ใช่ .rpc() ตรงๆ
+ * แบบเดิม) เพราะ RPC ถูกล็อกให้ anon เรียกตรงไม่ได้แล้ว (ดู migration 20260926090500) ต้องผ่านการตรวจ
+ * Turnstile ที่ Edge Function ก่อนเสมอ กันบอทข้าม CAPTCHA ไปเรียก RPC ตรงๆ */
 export async function submitCustomerOrder(
   input: SubmitCustomerOrderInput
 ): Promise<{ orderId: string | null; publicToken: string | null; grandTotal: number; error: string | null }> {
-  const { data, error } = await supabase.rpc('submit_customer_order', {
-    p_customer_name: input.customerName,
-    p_customer_phone: input.customerPhone,
-    p_customer_email: input.customerEmail,
-    p_fulfillment_type: input.fulfillmentType,
-    p_needed_date: input.neededDate,
-    p_pickup_place: input.pickupPlace,
-    p_pickup_time: input.pickupTime,
-    p_ship_recipient_name: input.shipRecipientName,
-    p_ship_recipient_phone: input.shipRecipientPhone,
-    p_ship_address_text: input.shipAddressText,
-    p_note: input.note,
-    p_items: input.items,
+  const { data, error } = await supabase.functions.invoke('submit-customer-order', {
+    body: {
+      customer_name: input.customerName,
+      customer_phone: input.customerPhone,
+      customer_email: input.customerEmail,
+      fulfillment_type: input.fulfillmentType,
+      needed_date: input.neededDate,
+      pickup_place: input.pickupPlace,
+      pickup_time: input.pickupTime,
+      ship_recipient_name: input.shipRecipientName,
+      ship_recipient_phone: input.shipRecipientPhone,
+      ship_address_text: input.shipAddressText,
+      note: input.note,
+      items: input.items,
+      turnstile_token: input.turnstileToken,
+    },
   })
-  if (error) return { orderId: null, publicToken: null, grandTotal: 0, error: error.message }
+  if (error || data?.error) return { orderId: null, publicToken: null, grandTotal: 0, error: data?.error ?? error!.message }
   const result = data as { order_id: string; public_token: string; grand_total: number }
   return { orderId: result.order_id, publicToken: result.public_token, grandTotal: Number(result.grand_total), error: null }
 }

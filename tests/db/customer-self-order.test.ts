@@ -1,5 +1,11 @@
 import { describe, it, expect, afterAll } from 'vitest'
-import { anonClient, signedInClient } from './helpers'
+import { adminClient, anonClient, signedInClient } from './helpers'
+
+// submit_customer_order ถูกล็อกให้เรียกได้เฉพาะ service_role แล้ว (ดู migration
+// 20260926090500_lock_submit_customer_order_to_service_role.sql) — ของจริงเรียกผ่าน Edge Function
+// submit-customer-order เท่านั้น (ตรวจ Cloudflare Turnstile ก่อนเสมอ กันบอทข้าม CAPTCHA ไปเรียก RPC ตรงๆ)
+// เทสต์พวกนี้เลยต้องใช้ adminClient() แทน anonClient() ตอนเรียกฟังก์ชันนี้ เพื่อทดสอบ "ตรรกะธุรกิจ" ของ
+// ฟังก์ชันเอง (ไม่ใช่ทดสอบสิทธิ์การเรียก — สิทธิ์การเรียกมีเทสต์แยกอยู่ท้ายไฟล์นี้แล้วว่า anon เรียกตรงไม่ได้)
 
 const cleanupIds = { products: [] as string[], customers: [] as string[], orders: [] as string[] }
 
@@ -36,7 +42,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     expect(prod.error).toBeNull()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     const { data, error } = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-ลูกค้าสั่งเอง',
       p_customer_phone: '081-234-5678',
@@ -70,7 +76,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
   })
 
   it('ไม่กรอกอีเมล หรือกรอกรูปแบบผิด ถูกปฏิเสธ', async () => {
-    const pub = anonClient()
+    const pub = adminClient()
     const missing = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-ไม่มีอีเมล', p_customer_phone: '0899990000', p_customer_email: '',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
@@ -95,7 +101,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     const prod = await db.from('products').insert({ name: 'ทดสอบ-ซิงค์อีเมล', price: 40, cost: 15 }).select().single()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     const before = await db.from('customers').insert({ name: 'ทดสอบ-รออีเมล', phone: '0877776666' }).select().single()
     cleanupIds.customers.push(before.data!.id)
     expect(before.data!.email).toBeNull()
@@ -119,7 +125,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     const prod = await db.from('products').insert({ name: 'ทดสอบ-สั่งเอง-2', price: 30, cost: 10 }).select().single()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     const first = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-ลูกค้าซ้ำ', p_customer_phone: '0899998888', p_customer_email: 'zam1@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
@@ -151,7 +157,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     const prod = await db.from('products').insert({ name: 'ทดสอบ-กันปลอมราคา', price: 100, cost: 40 }).select().single()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     // RPC ไม่มีช่องให้ส่ง unit_price มาเลยในพารามิเตอร์ p_items (มีแค่ product_id, qty) — พิสูจน์ว่าฝั่ง client
     // ไม่มีทางระบุราคาเองได้ตั้งแต่ต้น (ต่างจาก confirm_order ที่รับ unit_price มาจาก client เพราะเป็นฝั่งพนักงาน)
     const { data, error } = await pub.rpc('submit_customer_order', {
@@ -174,7 +180,7 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
   })
 
   it('product_id ปลอม/ปิดขายแล้ว ถูกปฏิเสธ ไม่สร้างออเดอร์', async () => {
-    const pub = anonClient()
+    const pub = adminClient()
     const { error } = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-สินค้าไม่มีจริง', p_customer_phone: '0800001111', p_customer_email: 'noproduct@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
@@ -186,11 +192,37 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
   })
 
   it('ไม่กรอกชื่อ/เบอร์ ถูกปฏิเสธ', async () => {
-    const pub = anonClient()
+    const pub = adminClient()
     const { error } = await pub.rpc('submit_customer_order', {
       p_customer_name: '', p_customer_phone: '', p_customer_email: '', p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
       p_pickup_place: null, p_pickup_time: null, p_ship_recipient_name: null, p_ship_recipient_phone: null,
       p_ship_address_text: null, p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
+    })
+    expect(error).not.toBeNull()
+  })
+})
+
+describe('submit_customer_order ถูกล็อกให้ anon เรียกตรงไม่ได้แล้ว (ต้องผ่าน Edge Function + Turnstile เท่านั้น)', () => {
+  it('anon client เรียก submit_customer_order ตรงๆ ผ่าน RPC ต้องถูกปฏิเสธ (กันบอทข้าม CAPTCHA)', async () => {
+    const pub = anonClient()
+    const { error } = await pub.rpc('submit_customer_order', {
+      p_customer_name: 'ทดสอบ-เจาะระบบ', p_customer_phone: '0899990000', p_customer_email: 'hack@example.com',
+      p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
+    })
+    expect(error).not.toBeNull()
+  })
+
+  it('authenticated client (พนักงาน) เรียก submit_customer_order ตรงๆ ก็ต้องถูกปฏิเสธเหมือนกัน', async () => {
+    const db = await signedInClient()
+    const { error } = await db.rpc('submit_customer_order', {
+      p_customer_name: 'ทดสอบ-เจาะระบบ2', p_customer_phone: '0899990001', p_customer_email: 'hack2@example.com',
+      p_fulfillment_type: 'pickup', p_needed_date: '2026-09-01',
+      p_pickup_place: 'หน้าร้าน', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
     })
     expect(error).not.toBeNull()
   })
@@ -202,7 +234,7 @@ describe('พนักงานยืนยัน/ปฏิเสธออเด
     const prod = await db.from('products').insert({ name: 'ทดสอบ-ยืนยัน-ออเดอร์ลูกค้า', price: 20, cost: 8 }).select().single()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     const submitted = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-รอยืนยัน', p_customer_phone: '0855554444', p_customer_email: 'confirm-flow@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-05',
@@ -249,7 +281,7 @@ describe('พนักงานยืนยัน/ปฏิเสธออเด
     const prod = await db.from('products').insert({ name: 'ทดสอบ-ปฏิเสธ-ออเดอร์ลูกค้า', price: 25, cost: 9 }).select().single()
     cleanupIds.products.push(prod.data!.id)
 
-    const pub = anonClient()
+    const pub = adminClient()
     const submitted = await pub.rpc('submit_customer_order', {
       p_customer_name: 'ทดสอบ-รอปฏิเสธ', p_customer_phone: '0866667777', p_customer_email: 'reject-flow@example.com',
       p_fulfillment_type: 'pickup', p_needed_date: '2026-09-05',
