@@ -25,7 +25,7 @@ import { TurnstileWidget } from './TurnstileWidget'
 
 type Step = 'menu' | 'review' | 'checkout' | 'payment'
 
-type CartItem = { product_id: string; product_name: string; unit_price: number; unit: string; qty: number }
+type CartItem = { product_id: string; product_name: string; unit_price: number; unit: string; qty: number; imagePath: string | null }
 
 type CheckoutForm = {
   customerName: string
@@ -317,7 +317,7 @@ export function CustomerOrderPage() {
       setItems((rows) => rows.map((r, i) => (i === existingIndex ? { ...r, qty: r.qty + 1 } : r)))
       return
     }
-    setItems((rows) => [...rows, { product_id: p.id, product_name: p.name, unit_price: p.price, unit: p.unit, qty: 1 }])
+    setItems((rows) => [...rows, { product_id: p.id, product_name: p.name, unit_price: p.price, unit: p.unit, qty: 1, imagePath: p.image_path }])
   }
 
   function updateQty(index: number, qty: number) {
@@ -434,7 +434,14 @@ export function CustomerOrderPage() {
                   key={it.product_id}
                   className="flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
                 >
-                  <div className="min-w-0">
+                  <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px]">
+                    {it.imagePath ? (
+                      <img src={productImageUrl(it.imagePath)} alt={it.product_name} className="w-full h-full object-cover" />
+                    ) : (
+                      'ไม่มีรูป'
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
                     <p className="text-sm font-medium truncate">{it.product_name}</p>
                     <p className="text-xs text-stone-400">{formatBaht(it.unit_price)} บาท/{it.unit}</p>
                   </div>
