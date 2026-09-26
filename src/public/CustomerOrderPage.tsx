@@ -228,6 +228,13 @@ export function CustomerOrderPage() {
     return menu.products.filter((p) => p.name.toLowerCase().includes(q) && (!categoryId || p.category_id === categoryId))
   }, [menu, search, categoryId])
 
+  // รูปสินค้าจริงชิ้นแรกที่มีรูป ใช้เป็นการ์ดลอยตกแต่ง hero (แทนที่จะมีแต่โลโก้กลมเล็กๆ ลอยเดี่ยวๆ) — ไม่โชว์เลย
+  // ถ้าร้านยังไม่มีรูปสินค้าเลยสักชิ้น กันพังไม่มีอะไรให้โชว์
+  const heroProductImage = useMemo(() => {
+    const withImage = menu?.products.find((p) => p.image_path)
+    return withImage ? productImageUrl(withImage.image_path!) : null
+  }, [menu])
+
   const grandTotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
   // นัดรับเองไม่ควรบังคับรอนานเท่าส่งขนส่ง (shipping_lead_days คือเวลาเตรียมของ+เผื่อขนส่งเฉพาะเคสส่งพัสดุ) —
   // ระบบเดิม (ก่อนแก้) ใช้ shipping_lead_days บังคับกับ "นัดรับเอง" ด้วย ทำให้ลูกค้ามารับหน้าร้านต้องรอนานเกินจำเป็น
@@ -525,59 +532,77 @@ export function CustomerOrderPage() {
       )}
 
       {/* Hero — คงอยู่เหนือทั้ง 2 แท็บเสมอ (แบรนด์หลักของหน้า) ไล่สีเข้ากับเนื้อหาด้านล่างด้วยขอบคลื่น (WaveDivider)
-          แทนตัดพรวดเป็นเส้นตรง + มีแสงอุ่นเคลื่อนไหวช้าๆ ตลอดเวลา (AmbientGlow) ให้ดูมีชีวิตกว่า gradient นิ่งๆ */}
+          แทนตัดพรวดเป็นเส้นตรง + มีแสงอุ่นเคลื่อนไหวช้าๆ ตลอดเวลา (AmbientGlow) ให้ดูมีชีวิตกว่า gradient นิ่งๆ
+          เลย์เอาต์แบบ 2 คอลัมน์บนจอกว้าง (ข้อความ+ปุ่ม ซ้าย / การ์ดรูปสินค้าลอยเอียงเล็กน้อย ขวา) แทนแบบ
+          จัดกลางเรียงต่อกันทื่อๆ (ดู Linktree) ให้ความรู้สึกเว็บไซต์แบรนด์จริงจังกว่า — ปุ่ม "ดูเมนู สั่งเลย"
+          เป็น CTA หลักตัวเดียวที่เด่นที่สุดในหน้า (bg-stone-900 ใหญ่กว่า) ส่วนไลน์/โทรเป็นแค่ทางเลือกรอง */}
       <div className="relative overflow-hidden animate-form-in bg-brand-shader">
         <AmbientGlow />
-        <div className="relative z-10 text-center px-4 pt-12 pb-10">
-          {menu.logo_path && (
-            <img
-              src={productImageUrl(menu.logo_path)}
-              alt=""
-              className="w-24 h-24 rounded-full object-cover mx-auto border-2 animate-icon-pop"
-              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
-            />
-          )}
-          <h1 className="text-3xl font-display font-bold text-white mt-4">{menu.shop_name}</h1>
-          <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1.5 text-white/40" />
-          <p className="text-sm mt-2.5" style={{ color: 'rgba(255,255,255,0.85)' }}>หวานน้อย อร่อยแน่ ไม่เหมือนใคร — ทำมือทุกชิ้นโดยเด็กอายุ 13 ปี</p>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 pt-12 pb-10 md:py-20 md:flex md:items-center md:gap-12">
+          <div className="text-center md:text-left md:flex-1">
+            {menu.logo_path && (
+              <img
+                src={productImageUrl(menu.logo_path)}
+                alt=""
+                className="w-24 h-24 rounded-full object-cover mx-auto md:mx-0 border-2 animate-icon-pop"
+                style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+              />
+            )}
+            <h1 className="text-3xl md:text-5xl font-display font-bold text-white mt-4 leading-tight">{menu.shop_name}</h1>
+            <SquiggleUnderline className="w-20 h-2.5 mx-auto md:mx-0 mt-1.5 text-white/40" />
+            <p className="text-sm md:text-base mt-2.5 max-w-md mx-auto md:mx-0" style={{ color: 'rgba(255,255,255,0.85)' }}>
+              หวานน้อย อร่อยแน่ ไม่เหมือนใคร — ทำมือทุกชิ้นโดยเด็กอายุ 13 ปี
+            </p>
 
-          <div className="flex flex-wrap items-center justify-center gap-2 mt-5">
-            {menu.line_url && (
-              <a
-                href={menu.line_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-full bg-[#06C755] text-white font-medium px-4 py-2 text-sm"
-              >
-                💬 แอดไลน์ร้าน
-              </a>
-            )}
-            {menu.phone && (
-              <a
-                href={`tel:${menu.phone}`}
-                className="flex items-center gap-1.5 rounded-full bg-white/15 text-white font-medium px-4 py-2 text-sm border border-white/30"
-              >
-                📞 {menu.phone}
-              </a>
-            )}
+            <div className="mt-6">
+              {tab === 'about' ? (
+                <button
+                  type="button"
+                  onClick={goToMenuAndScroll}
+                  className="inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)]"
+                >
+                  🛒 ดูเมนู สั่งเลย
+                </button>
+              ) : (
+                <a
+                  href="#menu-section"
+                  className="inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)]"
+                >
+                  🛒 ดูเมนู สั่งเลย
+                </a>
+              )}
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4">
+              {menu.line_url && (
+                <a
+                  href={menu.line_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 text-sm font-medium underline underline-offset-2"
+                  style={{ color: 'rgba(255,255,255,0.9)' }}
+                >
+                  💬 แอดไลน์ร้าน
+                </a>
+              )}
+              {menu.phone && (
+                <a
+                  href={`tel:${menu.phone}`}
+                  className="flex items-center gap-1.5 text-sm font-medium underline underline-offset-2"
+                  style={{ color: 'rgba(255,255,255,0.9)' }}
+                >
+                  📞 {menu.phone}
+                </a>
+              )}
+            </div>
           </div>
 
-          {tab === 'about' && (
-            <button
-              type="button"
-              onClick={goToMenuAndScroll}
-              className="inline-block mt-6 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm"
-            >
-              🛒 ดูเมนู สั่งเลย
-            </button>
-          )}
-          {tab === 'menu' && (
-            <a
-              href="#menu-section"
-              className="inline-block mt-6 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm"
-            >
-              🛒 ดูเมนู สั่งเลย
-            </a>
+          {heroProductImage && (
+            <div className="hidden md:block md:flex-1">
+              <div className="max-w-xs ml-auto rounded-3xl overflow-hidden border-4 border-white/20 shadow-[0_24px_60px_-16px_rgb(0_0_0_/_0.55)] rotate-3 transition-transform hover:rotate-0 duration-500">
+                <img src={heroProductImage} alt="" className="w-full aspect-square object-cover" />
+              </div>
+            </div>
           )}
         </div>
         <WaveDivider />
@@ -619,7 +644,7 @@ export function CustomerOrderPage() {
                 return (
                   <div
                     key={p.id}
-                    className={'rounded-xl border border-stone-200/70 bg-white overflow-hidden shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
+                    className={'rounded-xl border border-stone-200/70 bg-white overflow-hidden shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)] transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-[0_16px_28px_-10px_rgb(51_32_14_/_0.35)]' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
                   >
                     <div className="aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs">
                       {p.image_path ? (
