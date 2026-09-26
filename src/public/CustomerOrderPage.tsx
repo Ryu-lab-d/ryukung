@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { getPublicMenu, submitCustomerOrder, notifyCustomerOrder, type PublicMenu } from '../lib/publicMenuApi'
 import { productImageUrl } from '../products/ProductCard'
@@ -23,7 +23,7 @@ import {
 import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 
-type Step = 'menu' | 'checkout' | 'payment'
+type Step = 'menu' | 'review' | 'checkout' | 'payment'
 
 type CartItem = { product_id: string; product_name: string; unit_price: number; unit: string; qty: number }
 
@@ -61,6 +61,56 @@ function useClosingTransition(onClose: () => void, durationMs = 200) {
     setTimeout(onClose, durationMs)
   }
   return { closing, requestClose }
+}
+
+/** ปุ่ม "ย้อนกลับ" มาตรฐานของทุกขั้นตอนสั่งซื้อ (ทวนรายการ/กรอกที่อยู่/ชำระเงิน) — ต้องเป็นปุ่มจริงมีขอบเสมอ
+ * ห้ามเป็นแค่ตัวหนังสือขีดเส้นใต้ลอยๆ เด็ดขาด (ดูกฎถาวรใน CLAUDE.md เรื่องปุ่มย้อนกลับ) */
+function BackButton({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-1.5 rounded-full border border-stone-300 bg-white text-stone-700 font-medium px-4 py-2 text-sm w-fit"
+    >
+      {children}
+    </button>
+  )
+}
+
+/** ป็อปอัพเตือนหลังกรอกที่อยู่เสร็จ ก่อนไปหน้าชำระเงินเสมอ — บังคับให้ลูกค้าติ๊กยืนยันว่าจำชื่อผู้รับ/ผู้สั่งซื้อ
+ * ได้แล้วก่อนถึงจะกดต่อได้ (ปุ่มเป็นสีเทาจนกว่าจะติ๊ก) เพราะชื่อ/เบอร์นี้คือสิ่งเดียวที่ใช้ยืนยันตัวตนตอนเข้าดู
+ * สถานะออเดอร์ทีหลังใน /o/:token — ลูกค้าลืมบ่อยมากถ้าไม่เตือนย้ำตรงนี้ */
+function RememberNamePopup({ onConfirm }: { onConfirm: () => void }) {
+  const [checked, setChecked] = useState(false)
+  return (
+    <div className="fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 animate-overlay-fade">
+      <div className="bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center animate-toast-pop">
+        <div className="text-4xl animate-icon-pop">📝</div>
+        <h2 className="text-lg font-display font-semibold text-stone-900">อย่าลืมจำไว้!</h2>
+        <p className="text-sm text-stone-600 leading-relaxed">
+          โปรดจำ <strong>ชื่อผู้รับ/ชื่อผู้สั่งซื้อ</strong> ที่กรอกไว้ให้ดี ต้องใช้กรอกยืนยันตัวตนตอนเข้าดู
+          สถานะออเดอร์ภายหลังด้วย
+        </p>
+        <label className="flex items-center justify-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => setChecked(e.target.checked)}
+            className="w-4 h-4 accent-stone-900"
+          />
+          ฉันจำได้แล้ว
+        </label>
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={!checked}
+          className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm disabled:bg-stone-200 disabled:text-stone-400"
+        >
+          รับทราบ ไปหน้าชำระเงิน →
+        </button>
+      </div>
+    </div>
+  )
 }
 
 /** ป็อปอัพสอนวิธีใช้งานหน้านี้ เปิดจากปุ่ม 💡 มุมขวาบนของแถบนำทาง เปิดซ้ำเองได้ทุกเมื่อ */
@@ -202,6 +252,7 @@ export function CustomerOrderPage() {
   const [cartBumping, setCartBumping] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
+  const [showRememberPopup, setShowRememberPopup] = useState(false)
   const [splashActive, setSplashActive] = useState(true)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
@@ -279,6 +330,13 @@ export function CustomerOrderPage() {
 
   function handleCheckoutSubmit(e: FormEvent) {
     e.preventDefault()
+    // ยังไม่ไปหน้าชำระเงินทันที — บังคับเตือนให้จำชื่อผู้รับ/ผู้สั่งซื้อก่อนเสมอ (ดู RememberNamePopup)
+    // เพราะเป็นสิ่งเดียวที่ใช้ยืนยันตัวตนตอนเข้าดูสถานะออเดอร์ทีหลัง
+    setShowRememberPopup(true)
+  }
+
+  function handleRememberConfirmed() {
+    setShowRememberPopup(false)
     setStep('payment')
   }
 
@@ -358,13 +416,73 @@ export function CustomerOrderPage() {
     )
   }
 
+  if (step === 'review') {
+    return (
+      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
+        <div className="max-w-md mx-auto space-y-4">
+          <BackButton onClick={() => setStep('menu')}>← แก้ไขตะกร้า</BackButton>
+          <h1 className="text-lg font-display font-semibold">ทวนรายการที่สั่ง</h1>
+
+          {items.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 text-center text-sm text-stone-500 animate-form-in">
+              ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-4 space-y-3 animate-form-in">
+              {items.map((it, i) => (
+                <div
+                  key={it.product_id}
+                  className="flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
+                >
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{it.product_name}</p>
+                    <p className="text-xs text-stone-400">{formatBaht(it.unit_price)} บาท/{it.unit}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button" onClick={() => updateQty(i, it.qty - 1)}
+                      className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                    >
+                      −
+                    </button>
+                    <span className="text-sm font-medium tabular-nums w-4 text-center">{it.qty}</span>
+                    <button
+                      type="button" onClick={() => updateQty(i, it.qty + 1)}
+                      className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                    >
+                      +
+                    </button>
+                  </div>
+                  <p className="text-sm font-semibold tabular-nums w-16 text-right shrink-0">
+                    {formatBaht(it.unit_price * it.qty)}
+                  </p>
+                </div>
+              ))}
+              <div className="flex justify-between text-base font-bold pt-1">
+                <span>ยอดรวม</span>
+                <span className="tabular-nums">{formatBaht(grandTotal)} บาท</span>
+              </div>
+            </div>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setStep('checkout')}
+            disabled={items.length === 0}
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+          >
+            ยืนยันรายการ ไปกรอกที่อยู่ →
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   if (step === 'checkout') {
     return (
       <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
         <div className="max-w-md mx-auto space-y-4">
-          <button type="button" onClick={() => setStep('menu')} className="text-sm text-stone-600 underline">
-            ← กลับไปแก้ตะกร้า
-          </button>
+          <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
           <h1 className="text-lg font-display font-semibold">กรอกข้อมูลรับของ</h1>
           <CartSummaryList items={items} grandTotal={grandTotal} />
           <form onSubmit={handleCheckoutSubmit} className="space-y-4 bg-white rounded-2xl shadow-sm p-5 animate-form-in">
@@ -466,6 +584,8 @@ export function CustomerOrderPage() {
           </form>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
+
+        {showRememberPopup && <RememberNamePopup onConfirm={handleRememberConfirmed} />}
       </div>
     )
   }
@@ -474,9 +594,7 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
         <div className="max-w-md mx-auto space-y-4">
-          <button type="button" onClick={() => setStep('checkout')} className="text-sm text-stone-600 underline">
-            ← กลับไปแก้ข้อมูล
-          </button>
+          <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
           <div className="rounded-2xl bg-stone-900 text-white p-5 text-center">
             <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
             <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
@@ -710,7 +828,7 @@ export function CustomerOrderPage() {
         onTabChange={setTab}
       />
 
-      <CartFab ref={cartFabRef} count={items.length} total={grandTotal} bumping={cartBumping} onClick={() => setStep('checkout')} />
+      <CartFab ref={cartFabRef} count={items.length} total={grandTotal} bumping={cartBumping} onClick={() => setStep('review')} />
 
       {manualHowTo && <HowToUsePopup onClose={() => setManualHowTo(false)} />}
     </div>
