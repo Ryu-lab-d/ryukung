@@ -84,8 +84,27 @@ describe('ต้นทุนจากสูตรปัจจุบัน (ไ�
 
 afterAll(async () => {
   const db = await signedInClient()
-  if (cleanupIds.orders.length) await db.from('orders').delete().in('id', cleanupIds.orders)
-  if (cleanupIds.products.length) await db.from('products').delete().in('id', cleanupIds.products)
-  if (cleanupIds.ingredients.length) await db.from('ingredients').delete().in('id', cleanupIds.ingredients)
-  if (cleanupIds.categories.length) await db.from('categories').delete().in('id', cleanupIds.categories)
+  // ลำดับสำคัญ: ต้องลบ receipts ก่อน orders เสมอ (receipts.order_id เป็น on delete RESTRICT) ไม่งั้น
+  // orders/products ข้างล่างอาจลบไม่ออกเงียบๆ — ต้องเช็ค .error ทุกจุดด้วย ไม่งั้นจะไม่รู้เลยว่าลบไม่สำเร็จ
+  // แล้วข้อมูลทดสอบค้างในฐานข้อมูลจริง
+  if (cleanupIds.orders.length) {
+    const { error } = await db.from('receipts').delete().in('order_id', cleanupIds.orders)
+    if (error) console.error('cleanup: ลบ receipts ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.orders.length) {
+    const { error } = await db.from('orders').delete().in('id', cleanupIds.orders)
+    if (error) console.error('cleanup: ลบ orders ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.products.length) {
+    const { error } = await db.from('products').delete().in('id', cleanupIds.products)
+    if (error) console.error('cleanup: ลบ products ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.ingredients.length) {
+    const { error } = await db.from('ingredients').delete().in('id', cleanupIds.ingredients)
+    if (error) console.error('cleanup: ลบ ingredients ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.categories.length) {
+    const { error } = await db.from('categories').delete().in('id', cleanupIds.categories)
+    if (error) console.error('cleanup: ลบ categories ไม่สำเร็จ', error.message)
+  }
 })

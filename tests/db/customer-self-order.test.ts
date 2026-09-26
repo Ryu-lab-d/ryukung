@@ -292,7 +292,29 @@ describe('พนักงานยืนยัน/ปฏิเสธออเด
 
 afterAll(async () => {
   const db = await signedInClient()
-  if (cleanupIds.orders.length) await db.from('orders').delete().in('id', cleanupIds.orders)
-  if (cleanupIds.products.length) await db.from('products').delete().in('id', cleanupIds.products)
-  if (cleanupIds.customers.length) await db.from('customers').delete().in('id', [...new Set(cleanupIds.customers)])
+  // ลำดับสำคัญมาก — ต้องลบ receipts ก่อนเสมอ (receipts.order_id เป็น on delete RESTRICT ไม่ใช่ cascade
+  // ถ้ามี receipt ผูกออเดอร์ไหนอยู่ จะลบออเดอร์นั้นไม่ออกเลย) ส่วน order_items จริงๆ cascade เองตาม order
+  // อยู่แล้ว แต่ลบเผื่อไว้ให้ชัดเจน — ที่สำคัญกว่านั้นคือ (supabase-js ไม่ throw ตอน .delete() error เอง
+  // ต้องเช็ค .error เองเสมอ ไม่งั้นจะไม่รู้เลยว่าลบไม่สำเร็จ แล้วข้อมูลทดสอบจะค้างในฐานข้อมูลจริงไปเรื่อยๆ
+  // แบบที่เคยเกิดมาแล้ว — ก่อนแก้ไฟล์นี้ afterAll เดิมไม่เช็ค error เลยสักบรรทัดเดียว)
+  if (cleanupIds.orders.length) {
+    const { error } = await db.from('receipts').delete().in('order_id', cleanupIds.orders)
+    if (error) console.error('cleanup: ลบ receipts ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.orders.length) {
+    const { error } = await db.from('order_items').delete().in('order_id', cleanupIds.orders)
+    if (error) console.error('cleanup: ลบ order_items ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.orders.length) {
+    const { error } = await db.from('orders').delete().in('id', cleanupIds.orders)
+    if (error) console.error('cleanup: ลบ orders ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.products.length) {
+    const { error } = await db.from('products').delete().in('id', cleanupIds.products)
+    if (error) console.error('cleanup: ลบ products ไม่สำเร็จ', error.message)
+  }
+  if (cleanupIds.customers.length) {
+    const { error } = await db.from('customers').delete().in('id', [...new Set(cleanupIds.customers)])
+    if (error) console.error('cleanup: ลบ customers ไม่สำเร็จ', error.message)
+  }
 })
