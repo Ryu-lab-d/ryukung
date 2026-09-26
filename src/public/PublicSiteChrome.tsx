@@ -147,7 +147,7 @@ export function PublicNav({
   onHowToClick: () => void
 }) {
   return (
-    <nav className="sticky top-0 z-40 bg-stone-50/90 backdrop-blur border-b border-stone-200">
+    <nav className="sticky top-0 z-40 bg-stone-50/90 backdrop-blur border-b border-stone-200 pt-[env(safe-area-inset-top)]">
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
         <button type="button" onClick={() => onTabChange('menu')} className="flex items-center gap-2.5 min-w-0 text-stone-900">
           {logoPath ? (
@@ -211,7 +211,7 @@ export function PublicFooter({
   onTabChange: (tab: SiteTab) => void
 }) {
   return (
-    <footer className="mt-10 border-t-2 border-dashed border-stone-300 bg-stone-50 px-4 pt-9 pb-10 text-center text-sm text-stone-500 space-y-4">
+    <footer className="mt-10 border-t-2 border-dashed border-stone-300 bg-stone-50 px-4 pt-9 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-center text-sm text-stone-500 space-y-4">
       <div className="space-y-1">
         <p className="font-display font-semibold text-stone-800 text-lg">{shopName}</p>
         <p className="text-xs text-stone-400">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
@@ -259,10 +259,11 @@ export const CartFab = forwardRef<HTMLButtonElement, { count: number; total: num
         type="button"
         onClick={onClick}
         className={
-          'fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-stone-900 text-white pl-3 pr-4 py-3 ' +
+          'fixed right-5 z-40 flex items-center gap-2 rounded-full bg-stone-900 text-white pl-3 pr-4 py-3 ' +
           'shadow-[0_10px_28px_-6px_rgb(51_32_14_/_0.55)] animate-form-in' +
           (bumping ? ' animate-cart-bump' : '')
         }
+        style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
       >
         <span className="relative text-xl leading-none">
           🧺

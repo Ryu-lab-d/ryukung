@@ -24,6 +24,12 @@
   --font-warm: "Sarabun", "Noto Sans Thai", sans-serif;
 }
 
+/* เอฟเฟกต์ไฮไลต์สีเทาตอนแตะบนมือถือ (default ของเบราว์เซอร์) ทำให้เว็บไซต์ลูกค้ารู้สึกเหมือนเว็บ ไม่ใช่แอป
+   จริงจัง — เอาออกเฉพาะ public site (ผ่าน .font-warm ที่ห่อทุกหน้า public อยู่แล้ว) ไม่กระทบหน้า backend/POS */
+.font-warm {
+  -webkit-tap-highlight-color: transparent;
+}
+
 body {
   background: var(--color-stone-50);
 }
