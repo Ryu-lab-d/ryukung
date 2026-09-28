@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
 
 type FloodStats = { index: number }
 
@@ -37,9 +38,15 @@ export function FloodAlertBanner() {
         <span className="text-lg shrink-0" aria-hidden="true">⚠️</span>
         <p className="flex-1 leading-snug">
           {isHigh
-            ? 'ขณะนี้หลายพื้นที่ในกรุงเทพฯ กำลังมีน้ำท่วม/ฝนตกหนัก การจัดส่งอาจล่าช้า และบางเส้นทางรถผ่านไม่ได้ — ดูรายละเอียดถนน+แผนที่ได้ในหน้าเมนู'
-            : 'ช่วงนี้บางพื้นที่ในกรุงเทพฯ มีฝนตก/น้ำท่วมขังบางจุด อาจกระทบเวลาจัดส่ง โปรดตรวจสอบก่อนเดินทางมารับของ'}
+            ? 'ขณะนี้หลายพื้นที่ในกรุงเทพฯ กำลังมีน้ำท่วม/ฝนตกหนัก การจัดส่งอาจล่าช้า'
+            : 'ช่วงนี้บางพื้นที่ในกรุงเทพฯ มีฝนตก/น้ำท่วมขังบางจุด'}
         </p>
+        <Link
+          to="/flood"
+          className="shrink-0 rounded-full bg-white/20 font-semibold px-3 py-1.5 text-xs whitespace-nowrap"
+        >
+          ดูรายละเอียด →
+        </Link>
         <button
           type="button"
           onClick={() => setDismissed(true)}

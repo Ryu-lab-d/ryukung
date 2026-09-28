@@ -21,6 +21,7 @@ import { ReceiptPage } from './receipts/ReceiptPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { CustomerOrderPage } from './public/CustomerOrderPage'
+import { FloodPage } from './public/FloodPage'
 import { StorageManagementPage } from './storage/StorageManagementPage'
 import { CalendarPage } from './calendar/CalendarPage'
 import { ChatbotManagementPage } from './chatbot/ChatbotManagementPage'
@@ -147,6 +148,7 @@ export default function App() {
         <Routes>
           <Route path="/o/:token" element={<PublicOrderPage />} />
           <Route path="/menu" element={<CustomerOrderPage />} />
+          <Route path="/flood" element={<FloodPage />} />
           <Route path="/about" element={<Navigate to="/menu?tab=about" replace />} />
           <Route path="/staff/join" element={<StaffJoinPage />} />
           <Route path="/*" element={<AuthenticatedApp />} />
