@@ -221,10 +221,12 @@ function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; on
 
 /** สรุปรายการที่สั่งแบบละเอียด (ชื่อ/จำนวน/ราคาต่อชิ้น/รวม) — ใช้ทั้งหน้ากรอกข้อมูลรับของและหน้าชำระเงิน
  * กันลูกค้ากดสั่งไปโดยไม่เคยเห็นรายการที่เลือกไว้ครบๆ เลยสักครั้ง (หน้าตะกร้าเดิมเห็นทีละชิ้นปนอยู่ในกริดสินค้า) */
-function CartSummaryList({ items, grandTotal }: { items: CartItem[]; grandTotal: number }) {
+/** สรุปตะกร้าแบบอ่านอย่างเดียว (ไม่มีรูป/ปรับจำนวน ต่างจากการ์ดในหน้าทวนรายการ) ใช้ซ้ำในหน้ากรอกข้อมูล+หน้า
+ * ชำระเงิน — ห่อ Reveal+เงาอุ่นในตัวเองเลย ไม่ต้องให้หน้าที่เรียกใช้มาห่อซ้ำเอง กันสไตล์เพี้ยนไปคนละแบบ */
+function CartSummaryList({ items, grandTotal, delay = 0 }: { items: CartItem[]; grandTotal: number; delay?: number }) {
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-4 space-y-2">
-      <h2 className="text-sm font-semibold text-stone-600">รายการที่สั่ง ({items.length})</h2>
+    <Reveal delay={delay} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-2.5">
+      <h2 className="text-sm font-display font-semibold text-stone-700">🧺 รายการที่สั่ง ({items.length})</h2>
       <div className="space-y-1.5">
         {items.map((it) => (
           <div key={it.product_id} className="flex justify-between text-sm">
@@ -235,11 +237,11 @@ function CartSummaryList({ items, grandTotal }: { items: CartItem[]; grandTotal:
           </div>
         ))}
       </div>
-      <div className="flex justify-between text-sm font-semibold border-t border-stone-100 pt-2">
+      <div className="flex justify-between text-sm font-semibold border-t border-stone-100 pt-2.5">
         <span>ยอดรวม</span>
         <span className="tabular-nums">{formatBaht(grandTotal)} บาท</span>
       </div>
-    </div>
+    </Reveal>
   )
 }
 
@@ -426,17 +428,23 @@ export function CustomerOrderPage() {
 
   if (step === 'review') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
-        <div className="max-w-md mx-auto space-y-4">
+      <div className="min-h-screen pb-10 font-warm">
+        <PageTexture />
+        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('menu')}>← แก้ไขตะกร้า</BackButton>
-          <h1 className="text-lg font-display font-semibold">ทวนรายการที่สั่ง</h1>
+
+          <div className="text-center py-2 animate-page-in">
+            <p className="text-4xl">🧺</p>
+            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">ทวนรายการที่สั่ง</h1>
+            <p className="text-sm text-stone-500 mt-1">เช็คสินค้า+จำนวนให้ครบก่อนไปขั้นตอนถัดไป</p>
+          </div>
 
           {items.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 text-center text-sm text-stone-500 animate-form-in">
+            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 text-center text-sm text-stone-500">
               ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ
-            </div>
+            </Reveal>
           ) : (
-            <div className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-4 space-y-3 animate-form-in">
+            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-4 space-y-3">
               {items.map((it, i) => (
                 <div
                   key={it.product_id}
@@ -477,17 +485,19 @@ export function CustomerOrderPage() {
                 <span>ยอดรวม</span>
                 <span className="tabular-nums">{formatBaht(grandTotal)} บาท</span>
               </div>
-            </div>
+            </Reveal>
           )}
 
-          <button
-            type="button"
-            onClick={() => setStep('checkout')}
-            disabled={items.length === 0}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
-          >
-            ยืนยันรายการ ไปกรอกที่อยู่ →
-          </button>
+          <Reveal delay={0.08}>
+            <button
+              type="button"
+              onClick={() => setStep('checkout')}
+              disabled={items.length === 0}
+              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+            >
+              ยืนยันรายการ ไปกรอกที่อยู่ →
+            </button>
+          </Reveal>
         </div>
       </div>
     )
@@ -508,9 +518,7 @@ export function CustomerOrderPage() {
             <p className="text-sm text-stone-500 mt-1">กรอกให้ครบเพื่อความรวดเร็วในการจัดส่ง</p>
           </div>
 
-          <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
-            <CartSummaryList items={items} grandTotal={grandTotal} />
-          </Reveal>
+          <CartSummaryList items={items} grandTotal={grandTotal} />
 
           <form onSubmit={handleCheckoutSubmit} className="space-y-4">
             <TermsSection icon="👤" title="ข้อมูลผู้สั่งซื้อ" delay={0.06}>
@@ -683,30 +691,45 @@ export function CustomerOrderPage() {
 
   if (step === 'payment') {
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
-        <div className="max-w-md mx-auto space-y-4">
+      <div className="min-h-screen pb-10 font-warm">
+        <PageTexture />
+        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
-          <div className="rounded-2xl bg-stone-900 text-white p-5 text-center">
+
+          <div className="text-center py-2 animate-page-in">
+            <p className="text-4xl">💳</p>
+            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">ชำระเงิน</h1>
+            <p className="text-sm text-stone-500 mt-1">สแกนจ่ายเงินก่อน แล้วกดยืนยันด้านล่างเพื่อส่งคำสั่งซื้อ</p>
+          </div>
+
+          <Reveal className="rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.5)]">
             <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
             <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
             <p className="text-sm text-stone-300">บาท</p>
-          </div>
-          <div className="rounded-xl border border-stone-200 bg-white p-4">
+          </Reveal>
+
+          <Reveal delay={0.06} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
+            <h2 className="text-sm font-display font-semibold text-stone-700">📷 สแกน QR เพื่อชำระเงิน</h2>
             {menu.promptpay && <PromptPayQR promptpayId={menu.promptpay} amount={grandTotal} />}
-          </div>
-          <p className="text-xs text-stone-500 text-center">
-            สแกนจ่ายเงินก่อน แล้วกดปุ่มด้านล่างเพื่อส่งคำสั่งซื้อ — ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด
-          </p>
-          <CartSummaryList items={items} grandTotal={grandTotal} />
-          <button
-            type="button"
-            onClick={() => void handleConfirmPayment()}
-            disabled={submitting || paymentSuccessVisible || showLineReminder}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
-          >
-            {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
-          </button>
-          {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+            <p className="text-xs text-stone-400 text-center leading-relaxed">
+              ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุดหลังจากกดยืนยันด้านล่าง
+            </p>
+          </Reveal>
+
+          <CartSummaryList items={items} grandTotal={grandTotal} delay={0.12} />
+
+          <Reveal delay={0.18} className="space-y-3">
+            <button
+              type="button"
+              onClick={() => void handleConfirmPayment()}
+              disabled={submitting || paymentSuccessVisible || showLineReminder}
+              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+            >
+              {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
+            </button>
+            {error && <p className="text-sm text-red-600 text-center">{error}</p>}
+          </Reveal>
+
           <LineContactButton lineUrl={menu.line_url} />
         </div>
 

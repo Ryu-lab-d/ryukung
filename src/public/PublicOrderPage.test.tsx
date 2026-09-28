@@ -397,7 +397,9 @@ describe('ป็อปอัพเตือนยังไม่ชำระเ�
   it('กด "ดูวิธีการชำระเงิน" ในป็อปอัพแล้วเห็น QR และปุ่มยืนยันการชำระเงินขึ้นในป็อปอัพเลย', async () => {
     await openOrderKeepPopup({ ...baseOrder, promptpay: '0812345678', balance_due: 80 })
     await userEvent.click(screen.getByRole('button', { name: 'ดูวิธีการชำระเงิน' }))
-    expect(await screen.findByAltText('QR พร้อมเพย์')).toBeInTheDocument()
+    // QR โผล่สองที่พร้อมกันเหมือนปุ่มด้านล่าง (ในป็อปอัพ + การ์ดปกติด้านหลังที่ยังไม่ได้ปิด เพราะ state showPaymentInfo ใช้ร่วมกัน)
+    // — ใช้ findAllByAltText ไม่ใช่ findByAltText (เอกพจน์) เพราะไม่งั้น testing-library โยน error "found multiple elements"
+    expect((await screen.findAllByAltText('QR พร้อมเพย์')).length).toBeGreaterThan(0)
     // ปุ่มยืนยันการชำระเงินโผล่สองที่พร้อมกัน (ในป็อปอัพ + การ์ดปกติด้านหลังที่ยังไม่ได้ปิด เพราะ state showPaymentInfo ใช้ร่วมกัน)
     expect(screen.getAllByRole('button', { name: /ยืนยันการชำระเงิน/ }).length).toBeGreaterThan(0)
   })
