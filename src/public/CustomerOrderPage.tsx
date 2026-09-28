@@ -711,7 +711,7 @@ export function CustomerOrderPage() {
         onTabChange={setTab}
         onHowToClick={() => setManualHowTo(true)}
       />
-      <FloodAlertBanner />
+      {menu.disaster_mode_enabled && <FloodAlertBanner />}
 
       {splashActive && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-brand-shader" aria-hidden="true">

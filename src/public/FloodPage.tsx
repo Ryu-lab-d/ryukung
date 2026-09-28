@@ -1,5 +1,6 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { supabase } from '../lib/supabase'
 import { PageTexture, Reveal } from './PublicSiteChrome'
 import { MAJOR_ROAD_TYPES, VERDICT_LABEL_TH, roadDisplayName, severityScore, type RoadFeature, type VehicleVerdict } from './floodData'
 
@@ -70,6 +71,10 @@ function StatTile({ value, unit, label }: { value: string; unit: string; label: 
  * `VERDICT_LABEL_TH` จาก floodData.ts เสมอ (ข้อมูลดิบจาก Floodboard มีฟิลด์ name ภาษาไทยที่เข้ารหัสถูกต้องแล้ว
  * ไม่ต้อง fallback ไปใช้ nameEn ก่อน) — โหลดไม่สำเร็จก็แค่โชว์ข้อความแจ้งเฉยๆ ไม่ crash ทั้งหน้า */
 export function FloodPage() {
+  // สวิตช์รวมที่เจ้าของร้านคุมจากหน้าตั้งค่า — ปิดไว้ตอนไม่มีเหตุ (ไม่ fetch ข้อมูลอะไรเลย ไม่ใช่แค่ซ่อน UI)
+  // แล้วเปิดกลับมาใช้งานได้ทันทีตอนมีภัยพิบัติจริงโดยไม่ต้องแก้โค้ด/deploy ใหม่ — เช็คไม่สำเร็จ (เช่น เน็ตหลุด)
+  // ให้ fail-safe เป็น "เปิด" ไว้ก่อน เพราะเป็นข้อมูลด้านความปลอดภัย ไม่อยากเสี่ยงซ่อนข้อมูลจริงเพราะเน็ตสะดุด
+  const [disasterMode, setDisasterMode] = useState<boolean | null>(null)
   const [stats, setStats] = useState<FloodStats | null>(null)
   const [statsFailed, setStatsFailed] = useState(false)
   const [roads, setRoads] = useState<RoadFeature[] | null>(null)
@@ -77,6 +82,19 @@ export function FloodPage() {
   const [updatedAt, setUpdatedAt] = useState<Date | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+    async function loadDisasterMode() {
+      const { data, error } = await supabase.rpc('get_disaster_mode')
+      if (!cancelled) setDisasterMode(error ? true : (data ?? true))
+    }
+    void loadDisasterMode()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (disasterMode !== true) return
     let cancelled = false
     async function loadStats() {
       try {
@@ -113,7 +131,7 @@ export function FloodPage() {
       cancelled = true
       clearInterval(timer)
     }
-  }, [])
+  }, [disasterMode])
 
   const level = !stats ? 'low' : stats.index >= 50 ? 'high' : stats.index >= 20 ? 'medium' : 'low'
   const accent = {
@@ -156,12 +174,30 @@ export function FloodPage() {
           <div>
             <h1 className="text-xl font-display font-bold text-stone-900">สถานการณ์น้ำท่วมกรุงเทพฯ</h1>
             <p className="text-xs text-stone-500">
-              {updatedAt ? `อัปเดตล่าสุด ${updatedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.` : 'กำลังโหลดข้อมูล...'}
+              {updatedAt
+                ? `อัปเดตล่าสุด ${updatedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`
+                : disasterMode === false
+                  ? ''
+                  : 'กำลังโหลดข้อมูล...'}
             </p>
           </div>
         </div>
 
-        {statsFailed && !stats && (
+        {disasterMode === null && (
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center text-sm text-stone-400">
+            กำลังโหลด...
+          </div>
+        )}
+
+        {disasterMode === false && (
+          <div className="rounded-2xl border border-stone-200 bg-white p-8 text-center space-y-2">
+            <p className="text-3xl">🌤️</p>
+            <p className="text-sm text-stone-600 font-medium">ตอนนี้ยังไม่มีการเปิดใช้งานระบบติดตามภัยพิบัติ</p>
+            <p className="text-xs text-stone-400">ร้านจะเปิดใช้งานทันทีเมื่อมีสถานการณ์ที่ควรแจ้งให้ลูกค้าทราบ</p>
+          </div>
+        )}
+
+        {disasterMode === true && statsFailed && !stats && (
           <div className="rounded-2xl border border-stone-200 bg-white p-5 text-center text-sm text-stone-500">
             ตอนนี้โหลดข้อมูลไม่สำเร็จ ลองรีเฟรชหน้าอีกครั้ง หรือดูโดยตรงที่{' '}
             <a href="https://floodboard.org" target="_blank" rel="noopener noreferrer" className="underline">
@@ -170,7 +206,7 @@ export function FloodPage() {
           </div>
         )}
 
-        {stats && (
+        {disasterMode === true && stats && (
           <Reveal as="section" className={`rounded-2xl border ${accent.border} ${accent.bg} p-5`}>
             <div className="flex items-center gap-2.5">
               <span className={`w-2.5 h-2.5 rounded-full ${accent.dot} shrink-0 animate-pulse`} aria-hidden="true" />
@@ -182,7 +218,7 @@ export function FloodPage() {
           </Reveal>
         )}
 
-        {stats && (
+        {disasterMode === true && stats && (
           <div className="space-y-3.5">
             <StatSection icon="🛣️" title="สถานะถนน" accent="bg-orange-50">
               <StatTile value={stats.floodedKm.toFixed(1)} unit="กม." label="ถนนน้ำท่วมรวม" />
@@ -207,6 +243,8 @@ export function FloodPage() {
           </div>
         )}
 
+        {disasterMode === true && (
+        <>
         <Reveal as="section" className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
           <div className="flex items-center gap-3 mb-3.5">
             <div className="w-10 h-10 rounded-full bg-blue-50 grid place-items-center text-lg shrink-0">🗺️</div>
@@ -277,6 +315,8 @@ export function FloodPage() {
           ข้อมูลจาก Floodboard.org (รวมข้อมูลจาก กทม./กรมทางหลวง/ThaiWater/Traffy Fondue) อัปเดตอัตโนมัติทุก 5 นาที
           — เป็นข้อมูลชุมชนไม่ใช่ทางการ 100% โปรดใช้วิจารณญาณก่อนเดินทาง
         </p>
+        </>
+        )}
       </div>
     </div>
   )

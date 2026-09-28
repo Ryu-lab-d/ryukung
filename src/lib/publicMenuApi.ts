@@ -18,6 +18,7 @@ export type PublicMenu = {
   address: string | null
   faqs: { keywords: string[]; answer: string }[]
   shipping_lead_days: number
+  disaster_mode_enabled: boolean
   categories: PublicMenuCategory[]
   products: PublicMenuProduct[]
 }

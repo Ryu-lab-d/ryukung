@@ -27,6 +27,7 @@ const baseSettings: Settings = {
   line_url: null,
   faqs: [],
   owner_notification_email: null,
+  disaster_mode_enabled: true,
 }
 
 const createPOSSale = vi.fn()

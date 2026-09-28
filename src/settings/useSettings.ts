@@ -21,6 +21,7 @@ export type Settings = {
   line_url: string | null
   faqs: { keywords: string[]; answer: string }[]
   owner_notification_email: string | null
+  disaster_mode_enabled: boolean
 }
 
 export function useSettings() {

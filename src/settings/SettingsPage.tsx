@@ -101,7 +101,13 @@ export function SettingsPage() {
 
   function checkbox(
     label: string,
-    key: 'receipt_show_logo' | 'receipt_show_address' | 'receipt_show_phone' | 'receipt_show_promptpay' | 'require_full_customer_info'
+    key:
+      | 'receipt_show_logo'
+      | 'receipt_show_address'
+      | 'receipt_show_phone'
+      | 'receipt_show_promptpay'
+      | 'require_full_customer_info'
+      | 'disaster_mode_enabled'
   ) {
     return (
       <label className="flex items-center gap-2 text-sm">
@@ -223,6 +229,17 @@ export function SettingsPage() {
         <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
         {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
       </section>
+
+      {isOwner && (
+        <section className="space-y-2">
+          <h2 className="text-sm font-semibold text-stone-500">ระบบแจ้งเตือนภัยพิบัติ</h2>
+          <p className="text-xs text-stone-400">
+            สวิตช์รวมของระบบติดตาม/แจ้งเตือนภัยพิบัติทั้งหมด (ตอนนี้มีโมดูลติดตามสถานการณ์น้ำท่วมกรุงเทพฯ) — ปิดไว้ได้เมื่อไม่มีเหตุ
+            โดยไม่ต้องลบอะไรออก แถบแจ้งเตือนในหน้าเมนูและหน้า /flood จะซ่อนไปเอง พอมีภัยพิบัติจริงค่อยกลับมาติ๊กเปิด ใช้งานได้ทันที
+          </p>
+          {checkbox('เปิดใช้งานระบบแจ้งเตือนภัยพิบัติ', 'disaster_mode_enabled')}
+        </section>
+      )}
 
       {isOwnerOrExec && (
         <section className="space-y-3">
