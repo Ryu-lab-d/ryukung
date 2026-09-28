@@ -12,14 +12,49 @@ type FloodStats = {
   index: number
 }
 
+type VehicleVerdict = 'ok' | 'caution' | 'risky' | 'blocked'
+type RoadFeature = {
+  properties: {
+    name: string
+    nameEn: string | null
+    hw: string
+    depthCm: number | null
+    verdict: { motorbike: VehicleVerdict; sedan: VehicleVerdict; pickup: VehicleVerdict; truck: VehicleVerdict }
+  }
+}
+
 const REFRESH_MS = 5 * 60 * 1000
+const VEHICLE_ORDER = { ok: 0, caution: 1, risky: 2, blocked: 3 } as const
+// เอาเฉพาะถนนสายหลักที่มีผลต่อการเดินทางจริง ตัดซอยเล็กๆ (residential/unclassified) ออก ไม่งั้นรายการยาวเกินไป
+const MAJOR_ROAD_TYPES = new Set(['motorway', 'trunk', 'primary', 'primary_link', 'secondary', 'secondary_link'])
+const VEHICLE_ICONS: { key: keyof RoadFeature['properties']['verdict']; icon: string }[] = [
+  { key: 'motorbike', icon: '🏍️' },
+  { key: 'sedan', icon: '🚗' },
+  { key: 'pickup', icon: '🛻' },
+  { key: 'truck', icon: '🚚' },
+]
+const VERDICT_STYLE: Record<VehicleVerdict, string> = {
+  ok: 'bg-green-100 text-green-700',
+  caution: 'bg-amber-100 text-amber-700',
+  risky: 'bg-orange-100 text-orange-700',
+  blocked: 'bg-red-100 text-red-700',
+}
+
+function severityScore(v: RoadFeature['properties']['verdict']): number {
+  return VEHICLE_ORDER[v.motorbike] + VEHICLE_ORDER[v.sedan] + VEHICLE_ORDER[v.pickup] + VEHICLE_ORDER[v.truck]
+}
 
 /** ดึงข้อมูลสรุประดับ Floodboard.org (community-run, รวมข้อมูลจาก กทม./กรมทางหลวง/ThaiWater/Traffy Fondue —
  * เปิด API ให้ใช้ฟรีแบบ CORS จริง ไม่ได้ scrape) — ตั้งใจโชว์แค่ตัวเลขดิบที่มาจากเขาตรงๆ ไม่ตีความ/ตั้งชื่อ
  * ระดับความรุนแรงเอง (เช่น "วิกฤต/อันตราย") เพราะเราไม่รู้เกณฑ์จริงของเขา ใช้แค่ไล่สีอ่อน-เข้มตาม index
- * เป็นตัวช่วยสายตาเท่านั้น ไม่ได้ฟันธงแทนเขา — โหลดไม่สำเร็จก็แค่ไม่โชว์อะไรเลย (ฟีเจอร์เสริม ไม่ใช่แกนหลัก) */
+ * เป็นตัวช่วยสายตาเท่านั้น ไม่ได้ฟันธงแทนเขา — โหลดไม่สำเร็จก็แค่ไม่โชว์อะไรเลย (ฟีเจอร์เสริม ไม่ใช่แกนหลัก)
+ * ส่วนรายการถนน (roads.geojson) โหลดแบบ lazy ตอนกดขยายเท่านั้น ประหยัด bandwidth ถ้าไม่มีใครสนใจดู — ค่า
+ * "ผ่านได้/ไม่ได้" ต่อรถแต่ละแบบ (verdict) เป็นการตัดสินของ Floodboard เองที่มากับข้อมูลอยู่แล้ว ไม่ใช่เราคิดเอง */
 export function FloodStatusBanner() {
   const [stats, setStats] = useState<FloodStats | null>(null)
+  const [expanded, setExpanded] = useState(false)
+  const [roads, setRoads] = useState<RoadFeature[] | null>(null)
+  const [roadsLoading, setRoadsLoading] = useState(false)
 
   useEffect(() => {
     let cancelled = false
@@ -41,6 +76,23 @@ export function FloodStatusBanner() {
     }
   }, [])
 
+  async function handleToggleExpand() {
+    const next = !expanded
+    setExpanded(next)
+    if (next && !roads) {
+      setRoadsLoading(true)
+      try {
+        const res = await fetch('https://floodboard.org/api/export/roads.geojson')
+        const data = await res.json()
+        setRoads((data.features ?? []) as RoadFeature[])
+      } catch {
+        setRoads([])
+      } finally {
+        setRoadsLoading(false)
+      }
+    }
+  }
+
   if (!stats) return null
 
   const level = stats.index >= 50 ? 'high' : stats.index >= 20 ? 'medium' : 'low'
@@ -49,6 +101,26 @@ export function FloodStatusBanner() {
     medium: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
     low: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500' },
   }[level]
+
+  // เอาถนนสายหลักที่สาหัสที่สุดมาโชว์ ตัดชื่อซ้ำ (ถนนเส้นเดียวมักถูกตัดเป็นหลายท่อนในข้อมูลดิบ) เอาแค่ท่อน
+  // ที่หนักสุดของแต่ละชื่อถนนพอ ไม่งั้นรายการจะซ้ำถนนเดิมหลายรอบ
+  const worstRoads = roads
+    ? Object.values(
+        roads
+          .filter((f) => MAJOR_ROAD_TYPES.has(f.properties.hw))
+          .reduce<Record<string, RoadFeature>>((acc, f) => {
+            const name = f.properties.nameEn || f.properties.name
+            if (!name) return acc
+            const existing = acc[name]
+            if (!existing || severityScore(f.properties.verdict) > severityScore(existing.properties.verdict)) {
+              acc[name] = f
+            }
+            return acc
+          }, {})
+      )
+        .sort((a, b) => severityScore(b.properties.verdict) - severityScore(a.properties.verdict))
+        .slice(0, 8)
+    : []
 
   return (
     <Reveal as="section" className={`rounded-2xl border ${accent.border} ${accent.bg} p-5 space-y-3`}>
@@ -71,6 +143,45 @@ export function FloodStatusBanner() {
           <p className="text-[11px] text-stone-500">มม. ฝน (24 ชม.)</p>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={() => void handleToggleExpand()}
+        className="w-full rounded-xl border border-stone-300 bg-white text-stone-700 font-medium py-2.5 text-sm"
+      >
+        {expanded ? '▲ ซ่อนรายชื่อถนน' : '▼ ดูถนนที่ได้รับผลกระทบหนักสุด'}
+      </button>
+
+      {expanded && (
+        <div className="space-y-2">
+          {roadsLoading ? (
+            <p className="text-sm text-stone-500 text-center py-2">กำลังโหลด...</p>
+          ) : worstRoads.length === 0 ? (
+            <p className="text-sm text-stone-500 text-center py-2">ไม่มีข้อมูลถนนสายหลักที่ได้รับผลกระทบตอนนี้</p>
+          ) : (
+            worstRoads.map((f, i) => (
+              <div key={i} className="bg-white rounded-xl border border-stone-200 p-3">
+                <div className="flex items-center justify-between gap-2 mb-1.5">
+                  <p className="text-sm font-medium text-stone-900 truncate">{f.properties.nameEn || f.properties.name}</p>
+                  {f.properties.depthCm != null && (
+                    <p className="text-xs text-stone-400 shrink-0">ลึก {f.properties.depthCm} ซม.</p>
+                  )}
+                </div>
+                <div className="flex gap-1.5">
+                  {VEHICLE_ICONS.map(({ key, icon }) => (
+                    <span
+                      key={key}
+                      className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${VERDICT_STYLE[f.properties.verdict[key]]}`}
+                    >
+                      {icon} {f.properties.verdict[key]}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      )}
 
       <a
         href="https://floodboard.org"
