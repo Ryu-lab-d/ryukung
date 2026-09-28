@@ -41,6 +41,9 @@ type PublicOrderView = {
   ship_address_text: string | null
   work_status: string
   payment_status: string
+  cancelled_reason: string | null
+  refund_status: 'none' | 'pending' | 'refunded'
+  previous_needed_date: string | null
   items_total: number
   discount_amount: number
   shipping_fee: number
@@ -415,6 +418,143 @@ function UnpaidPaymentPopup({
   )
 }
 
+function formatOrderDate(d: string | null): string {
+  if (!d) return '-'
+  return new Date(d).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/** ป็อปอัพแจ้งยกเลิกออเดอร์ — โผล่ทุกครั้งที่เข้าดูออเดอร์ตราบใดที่ work_status ยังเป็น 'cancelled' อยู่ (ไม่ใช้
+ * flag "เห็นแล้ว" แบบป็อปอัพเปลี่ยนกำหนดการ เพราะสถานะยกเลิกเป็นสถานะถาวรที่มักต้องการให้ลูกค้าจำได้ โดยเฉพาะ
+ * เคสที่ต้องคืนเงินผ่านไลน์แต่ลูกค้ายังไม่ได้ทักมา — ปิดได้แค่ชั่วคราว เปิดหน้าใหม่ก็โผล่อีก) */
+function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClose: () => void }) {
+  const { closing, requestClose } = useClosingTransition(onClose)
+  return (
+    <div
+      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
+    >
+      <div
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={requestClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-500 grid place-items-center text-lg font-bold shadow-md z-10"
+        >
+          ✕
+        </button>
+
+        <div className="bg-gradient-to-b from-red-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
+          <div className="w-16 h-16 rounded-full bg-red-100 grid place-items-center mx-auto text-3xl">😔</div>
+          <h2 className="text-xl font-display font-bold text-red-700 leading-snug">ออเดอร์นี้ถูกยกเลิกแล้ว</h2>
+        </div>
+
+        <div className="px-5 pb-5 space-y-3">
+          <p className="text-sm text-stone-600 text-center leading-relaxed">ทางร้านต้องขออภัยในความไม่สะดวกเป็นอย่างสูงค่ะ</p>
+
+          {order.cancelled_reason && (
+            <div className="rounded-xl bg-stone-50 border border-stone-200 px-3.5 py-3 text-sm text-stone-600">
+              <p className="text-xs font-medium text-stone-400 mb-1">เหตุผล</p>
+              <p>{order.cancelled_reason}</p>
+            </div>
+          )}
+
+          {order.refund_status === 'pending' && (
+            <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3 text-sm text-amber-800 space-y-1">
+              <p className="font-medium">💰 มีเงินที่ต้องคืนให้คุณลูกค้า</p>
+              <p>ทางร้านจะโอนเงินคืนผ่านไลน์ กรุณาแอดไลน์ร้านและแจ้งชื่อผู้สั่งซื้อเพื่อยืนยันตัวตนก่อนโอนคืนด้วยนะคะ</p>
+            </div>
+          )}
+
+          {order.line_url && (
+            <a
+              href={order.line_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm"
+            >
+              💬 แอดไลน์ร้าน
+            </a>
+          )}
+
+          <button
+            type="button"
+            onClick={requestClose}
+            className="w-full rounded-xl border border-stone-300 text-stone-600 font-medium py-2.5 text-sm"
+          >
+            รับทราบแล้ว
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+/** ป็อปอัพแจ้งเปลี่ยนแปลงกำหนดการ (needed_date) — โผล่ครั้งเดียวตอนเข้าดูออเดอร์หลังร้านเปลี่ยนวันที่ กดรับทราบแล้ว
+ * บันทึกไว้ที่ฐานข้อมูลผ่าน acknowledge_needed_date_change (ไม่ใช่แค่ state ในเครื่อง) กันโผล่ซ้ำถ้าเข้าจาก
+ * อุปกรณ์อื่นหรือรีเฟรชหน้าใหม่ */
+function DateChangePopup({ order, onClose }: { order: PublicOrderView; onClose: () => void }) {
+  const { closing, requestClose } = useClosingTransition(onClose)
+  return (
+    <div
+      className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
+    >
+      <div
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-sm w-full max-h-[90vh] overflow-y-auto ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={requestClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 w-9 h-9 rounded-full bg-white text-stone-500 grid place-items-center text-lg font-bold shadow-md z-10"
+        >
+          ✕
+        </button>
+
+        <div className="bg-gradient-to-b from-amber-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
+          <div className="w-16 h-16 rounded-full bg-amber-100 grid place-items-center mx-auto text-3xl">📅</div>
+          <h2 className="text-xl font-display font-bold text-amber-700 leading-snug">มีการเปลี่ยนแปลงกำหนดการ</h2>
+        </div>
+
+        <div className="px-5 pb-5 space-y-3">
+          <p className="text-sm text-stone-600 text-center leading-relaxed">
+            ทางร้านต้องขออภัยในความไม่สะดวกเป็นอย่างสูงค่ะ กำหนดการของออเดอร์นี้มีการเปลี่ยนแปลง
+          </p>
+
+          <div className="rounded-xl bg-stone-50 border border-stone-200 px-3.5 py-3.5 flex items-center justify-center gap-2.5 text-sm">
+            <span className="line-through text-stone-400">{formatOrderDate(order.previous_needed_date)}</span>
+            <span className="text-stone-400">→</span>
+            <span className="font-semibold text-amber-700">{formatOrderDate(order.needed_date)}</span>
+          </div>
+
+          {order.line_url && (
+            <a
+              href={order.line_url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center gap-1.5 w-full rounded-xl border border-[#06C755] text-[#06C755] font-medium py-2.5 text-sm"
+            >
+              💬 มีคำถาม? ทักไลน์ร้าน
+            </a>
+          )}
+
+          <button
+            type="button"
+            onClick={requestClose}
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
+          >
+            รับทราบแล้ว
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** ป็อปอัพแนะนำร้าน โชว์ก่อนป็อปอัพเตือนชำระเงินเสมอ ทุกครั้งที่เข้าดูออเดอร์ */
 function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; logoPath: string | null; onClose: () => void }) {
   const { closing, requestClose } = useClosingTransition(onClose)
@@ -575,6 +715,8 @@ export function PublicOrderPage() {
   const [claiming, setClaiming] = useState(false)
   const [claimError, setClaimError] = useState<string | null>(null)
   const [unpaidPopupDismissed, setUnpaidPopupDismissed] = useState(false)
+  const [cancelledPopupDismissed, setCancelledPopupDismissed] = useState(false)
+  const [dateChangePopupDismissed, setDateChangePopupDismissed] = useState(false)
   const [aboutPopupDismissed, setAboutPopupDismissed] = useState(false)
   const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
@@ -591,6 +733,11 @@ export function PublicOrderPage() {
   }, [token])
 
   useEffect(() => { fetchOrder() }, [fetchOrder])
+
+  async function handleAcknowledgeDateChange() {
+    setDateChangePopupDismissed(true)
+    if (token) await supabase.rpc('acknowledge_needed_date_change', { p_token: token })
+  }
 
   async function handleClaimPayment() {
     if (!token) return
@@ -943,6 +1090,10 @@ export function PublicOrderPage() {
         <AboutShopPopup shopName={order.shop_name} logoPath={order.logo_path} onClose={() => setAboutPopupDismissed(true)} />
       ) : showHowTo ? (
         <HowToUsePopup onClose={closeHowTo} />
+      ) : order.work_status === 'cancelled' && !cancelledPopupDismissed ? (
+        <CancelledOrderPopup order={order} onClose={() => setCancelledPopupDismissed(true)} />
+      ) : order.previous_needed_date && !dateChangePopupDismissed ? (
+        <DateChangePopup order={order} onClose={() => void handleAcknowledgeDateChange()} />
       ) : (
         !unpaidPopupDismissed &&
         !order.payment_claimed_at &&
