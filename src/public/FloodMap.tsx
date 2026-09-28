@@ -28,10 +28,10 @@ export function FloodMap({ roads }: { roads: RoadFeature[] }) {
   const bangkokMajorRoads = roads.filter((f) => MAJOR_ROAD_TYPES.has(f.properties.hw) && isInBangkok(f))
 
   return (
-    <div className="rounded-xl overflow-hidden border border-stone-200" style={{ height: 320 }}>
+    <div className="rounded-xl overflow-hidden border border-stone-200 h-[440px] sm:h-[580px] lg:h-[680px]">
       <MapContainer
         center={BANGKOK_CENTER}
-        zoom={11}
+        zoom={12}
         scrollWheelZoom={false}
         style={{ height: '100%', width: '100%' }}
         maxBounds={MAP_BOUNDS}
@@ -46,7 +46,7 @@ export function FloodMap({ roads }: { roads: RoadFeature[] }) {
             <Polyline
               key={`${i}-${j}`}
               positions={positions}
-              pathOptions={{ color: severityColor(f.properties.verdict), weight: 4, opacity: 0.8 }}
+              pathOptions={{ color: severityColor(f.properties.verdict), weight: 5, opacity: 0.85 }}
             >
               <Tooltip sticky>
                 <span className="text-xs">
