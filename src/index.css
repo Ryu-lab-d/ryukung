@@ -383,3 +383,10 @@ a:focus-visible {
   50% { background-position: 100% 70%; }
   100% { background-position: 0% 30%; }
 }
+
+/* ทำให้พื้น tile ของแผนที่ (FloodMap) จืดลง เพราะ OSM tile มาตรฐานมีถนนสีแดง/ส้ม/เหลืองของตัวเองอยู่แล้ว
+   (ตามระดับถนน) พอมาซ้อนเส้นสีสถานะน้ำท่วมของเราด้วยโทนใกล้เคียงกันเลยแยกไม่ออก — ลด saturation ของพื้นหลัง
+   ให้เส้นสีของเราเด่นขึ้นมาชัดๆ แทน */
+.flood-map .leaflet-tile-pane {
+  filter: grayscale(0.85) saturate(0.4) brightness(1.08) contrast(0.95);
+}
