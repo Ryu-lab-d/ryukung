@@ -1,5 +1,10 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Reveal } from './PublicSiteChrome'
+import { MAJOR_ROAD_TYPES, severityScore, type RoadFeature, type VehicleVerdict } from './floodData'
+
+// โหลด Leaflet (ไลบรารีแผนที่ ~150KB) แบบ lazy — โชว์เฉพาะตอนลูกค้ากดขยายดูจริงๆ ไม่ต้องแบกน้ำหนักนี้ตั้งแต่โหลดหน้าแรก
+// (ลูกค้าส่วนใหญ่สั่งผ่านมือถือ เน็ตช้าเสียเวลาโหลดของที่อาจไม่ได้ใช้)
+const FloodMap = lazy(() => import('./FloodMap').then((m) => ({ default: m.FloodMap })))
 
 type FloodStats = {
   blockedKm: number
@@ -12,21 +17,7 @@ type FloodStats = {
   index: number
 }
 
-type VehicleVerdict = 'ok' | 'caution' | 'risky' | 'blocked'
-type RoadFeature = {
-  properties: {
-    name: string
-    nameEn: string | null
-    hw: string
-    depthCm: number | null
-    verdict: { motorbike: VehicleVerdict; sedan: VehicleVerdict; pickup: VehicleVerdict; truck: VehicleVerdict }
-  }
-}
-
 const REFRESH_MS = 5 * 60 * 1000
-const VEHICLE_ORDER = { ok: 0, caution: 1, risky: 2, blocked: 3 } as const
-// เอาเฉพาะถนนสายหลักที่มีผลต่อการเดินทางจริง ตัดซอยเล็กๆ (residential/unclassified) ออก ไม่งั้นรายการยาวเกินไป
-const MAJOR_ROAD_TYPES = new Set(['motorway', 'trunk', 'primary', 'primary_link', 'secondary', 'secondary_link'])
 const VEHICLE_ICONS: { key: keyof RoadFeature['properties']['verdict']; icon: string }[] = [
   { key: 'motorbike', icon: '🏍️' },
   { key: 'sedan', icon: '🚗' },
@@ -38,10 +29,6 @@ const VERDICT_STYLE: Record<VehicleVerdict, string> = {
   caution: 'bg-amber-100 text-amber-700',
   risky: 'bg-orange-100 text-orange-700',
   blocked: 'bg-red-100 text-red-700',
-}
-
-function severityScore(v: RoadFeature['properties']['verdict']): number {
-  return VEHICLE_ORDER[v.motorbike] + VEHICLE_ORDER[v.sedan] + VEHICLE_ORDER[v.pickup] + VEHICLE_ORDER[v.truck]
 }
 
 /** ดึงข้อมูลสรุประดับ Floodboard.org (community-run, รวมข้อมูลจาก กทม./กรมทางหลวง/ThaiWater/Traffy Fondue —
@@ -149,14 +136,19 @@ export function FloodStatusBanner() {
         onClick={() => void handleToggleExpand()}
         className="w-full rounded-xl border border-stone-300 bg-white text-stone-700 font-medium py-2.5 text-sm"
       >
-        {expanded ? '▲ ซ่อนรายชื่อถนน' : '▼ ดูถนนที่ได้รับผลกระทบหนักสุด'}
+        {expanded ? '▲ ซ่อนแผนที่+รายชื่อถนน' : '▼ ดูแผนที่ + ถนนที่ได้รับผลกระทบหนักสุด'}
       </button>
 
       {expanded && (
         <div className="space-y-2">
           {roadsLoading ? (
             <p className="text-sm text-stone-500 text-center py-2">กำลังโหลด...</p>
-          ) : worstRoads.length === 0 ? (
+          ) : (roads?.length ?? 0) > 0 ? (
+            <Suspense fallback={<p className="text-sm text-stone-500 text-center py-2">กำลังโหลดแผนที่...</p>}>
+              <FloodMap roads={roads!} />
+            </Suspense>
+          ) : null}
+          {roadsLoading ? null : worstRoads.length === 0 ? (
             <p className="text-sm text-stone-500 text-center py-2">ไม่มีข้อมูลถนนสายหลักที่ได้รับผลกระทบตอนนี้</p>
           ) : (
             worstRoads.map((f, i) => (

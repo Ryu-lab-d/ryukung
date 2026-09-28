@@ -23,6 +23,7 @@ import {
 import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 import { FloodStatusBanner } from './FloodStatusBanner'
+import { FloodAlertBanner } from './FloodAlertBanner'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -711,6 +712,7 @@ export function CustomerOrderPage() {
         onTabChange={setTab}
         onHowToClick={() => setManualHowTo(true)}
       />
+      <FloodAlertBanner />
 
       {splashActive && (
         <div className="fixed inset-0 z-[60] grid place-items-center bg-brand-shader" aria-hidden="true">
