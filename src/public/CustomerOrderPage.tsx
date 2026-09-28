@@ -22,6 +22,7 @@ import {
 } from './PublicSiteChrome'
 import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
+import { FloodStatusBanner } from './FloodStatusBanner'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -807,6 +808,8 @@ export function CustomerOrderPage() {
           อนิเมชัน crossfade ใหม่ทุกครั้งที่สลับแท็บ */}
       {tab === 'menu' ? (
         <div key="menu" className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-form-in">
+          <FloodStatusBanner />
+
           <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
             <h2 className="text-lg font-display font-semibold text-stone-900 text-center">เมนูสินค้า</h2>
 
