@@ -1,7 +1,7 @@
-import { lazy, Suspense, useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { PageTexture, Reveal } from './PublicSiteChrome'
-import { MAJOR_ROAD_TYPES, severityScore, type RoadFeature, type VehicleVerdict } from './floodData'
+import { MAJOR_ROAD_TYPES, VERDICT_LABEL_TH, roadDisplayName, severityScore, type RoadFeature, type VehicleVerdict } from './floodData'
 
 // โหลด Leaflet (ไลบรารีแผนที่ ~150KB) แบบ lazy — แยกเป็นชิ้นของตัวเอง ไม่ให้ปนไปกับ bundle หลักของเว็บ
 // (ลูกค้าส่วนใหญ่สั่งผ่านมือถือ ใครไม่ได้เข้าหน้านี้ก็ไม่ต้องโหลด)
@@ -25,11 +25,11 @@ type FloodStats = {
 }
 
 const REFRESH_MS = 5 * 60 * 1000
-const VEHICLE_ICONS: { key: keyof RoadFeature['properties']['verdict']; icon: string }[] = [
-  { key: 'motorbike', icon: '🏍️' },
-  { key: 'sedan', icon: '🚗' },
-  { key: 'pickup', icon: '🛻' },
-  { key: 'truck', icon: '🚚' },
+const VEHICLE_ICONS: { key: keyof RoadFeature['properties']['verdict']; icon: string; label: string }[] = [
+  { key: 'motorbike', icon: '🏍️', label: 'มอเตอร์ไซค์' },
+  { key: 'sedan', icon: '🚗', label: 'รถเก๋ง' },
+  { key: 'pickup', icon: '🛻', label: 'กระบะ' },
+  { key: 'truck', icon: '🚚', label: 'รถบรรทุก' },
 ]
 const VERDICT_STYLE: Record<VehicleVerdict, string> = {
   ok: 'bg-green-100 text-green-700',
@@ -38,10 +38,37 @@ const VERDICT_STYLE: Record<VehicleVerdict, string> = {
   blocked: 'bg-red-100 text-red-700',
 }
 
+/** การ์ดหมวดหมู่ตัวเลข — ไอคอนวงกลม+หัวข้อ เข้าชุดกับ TermsSection ในหน้าเงื่อนไขการสั่งซื้อ ให้ทั้งเว็บดูเป็น
+ * ระบบเดียวกัน แทนที่จะเป็นกริดตัวเลขแบนๆ ไม่มีจุดสังเกต */
+function StatSection({ icon, title, accent, children }: { icon: string; title: string; accent: string; children: ReactNode }) {
+  return (
+    <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+      <div className="flex items-center gap-3 mb-3.5">
+        <div className={`w-10 h-10 rounded-full grid place-items-center text-lg shrink-0 ${accent}`}>{icon}</div>
+        <h2 className="font-display font-semibold text-stone-900">{title}</h2>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">{children}</div>
+    </Reveal>
+  )
+}
+
+function StatTile({ value, unit, label }: { value: string; unit: string; label: string }) {
+  return (
+    <div className="bg-stone-50 rounded-xl border border-stone-200/70 p-3 text-center">
+      <p className="text-lg font-bold tabular-nums text-stone-900">
+        {value} <span className="text-[11px] font-normal text-stone-400">{unit}</span>
+      </p>
+      <p className="text-[11px] text-stone-500 leading-tight mt-0.5">{label}</p>
+    </div>
+  )
+}
+
 /** หน้ารวมสถานการณ์น้ำท่วมกรุงเทพฯ แยกออกมาเป็นหน้าของตัวเอง (ไม่ฝังในหน้าเมนูแล้ว เพราะทำให้หน้าเมนูรก) —
  * ดึงข้อมูลจาก Floodboard.org (community-run, เปิด API ฟรีแบบ CORS จริง ไม่ได้ scrape) โชว์ตัวเลขดิบตรงๆ
  * **ห้ามตีความ/ตั้งชื่อระดับความรุนแรงเอง** เพราะไม่รู้เกณฑ์จริงของเขา ใช้ index แค่ไล่สีเป็นตัวช่วยสายตา —
- * โหลดไม่สำเร็จก็แค่โชว์ข้อความแจ้งเฉยๆ ไม่ crash ทั้งหน้า */
+ * ทั้งหน้านี้ต้องเป็นภาษาไทยล้วน ห้ามโชว์ชื่อถนน/สถานะรถผ่านเป็นภาษาอังกฤษดิบๆ — ใช้ `roadDisplayName`/
+ * `VERDICT_LABEL_TH` จาก floodData.ts เสมอ (ข้อมูลดิบจาก Floodboard มีฟิลด์ name ภาษาไทยที่เข้ารหัสถูกต้องแล้ว
+ * ไม่ต้อง fallback ไปใช้ nameEn ก่อน) — โหลดไม่สำเร็จก็แค่โชว์ข้อความแจ้งเฉยๆ ไม่ crash ทั้งหน้า */
 export function FloodPage() {
   const [stats, setStats] = useState<FloodStats | null>(null)
   const [statsFailed, setStatsFailed] = useState(false)
@@ -90,27 +117,10 @@ export function FloodPage() {
 
   const level = !stats ? 'low' : stats.index >= 50 ? 'high' : stats.index >= 20 ? 'medium' : 'low'
   const accent = {
-    high: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500' },
-    medium: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500' },
-    low: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500' },
+    high: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', label: 'รุนแรง' },
+    medium: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500', label: 'ปานกลาง' },
+    low: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500', label: 'เบาบาง' },
   }[level]
-
-  const statCards = stats
-    ? [
-        { label: 'กม. ถนนน้ำท่วม', value: stats.floodedKm.toFixed(1), unit: 'กม.' },
-        { label: 'ตัดขาดสมบูรณ์', value: stats.blockedKm.toFixed(1), unit: 'กม.' },
-        { label: 'เสี่ยง ผ่านลำบาก', value: stats.riskyKm.toFixed(1), unit: 'กม.' },
-        { label: 'ต้องระวัง', value: stats.cautionKm.toFixed(1), unit: 'กม.' },
-        { label: 'กลับมาใช้ได้แล้ว', value: stats.clearedKm.toFixed(1), unit: 'กม.' },
-        { label: 'รายงานทั้งหมด', value: stats.reports.toString(), unit: 'รายงาน' },
-        { label: 'รายงาน (1 ชม. ล่าสุด)', value: stats.reports1h.toString(), unit: 'รายงาน' },
-        { label: 'ฝนสูงสุด (1 ชม.)', value: stats.rainMax1h.toFixed(1), unit: 'มม.' },
-        { label: 'ฝนสูงสุด (24 ชม.)', value: stats.rainMax24h.toFixed(1), unit: 'มม.' },
-        { label: 'จุดระดับน้ำสูง', value: stats.wlHigh.toString(), unit: 'จุด' },
-        { label: 'จุดน้ำล้นตลิ่ง', value: stats.wlOver.toString(), unit: 'จุด' },
-        { label: 'คาดการณ์ฝน 3 ชม. (สูงสุด)', value: stats.forecastMax3h.toFixed(1), unit: 'มม.' },
-      ]
-    : []
 
   // เอาถนนสายหลักที่สาหัสที่สุดมาโชว์ ตัดชื่อซ้ำ (ถนนเส้นเดียวมักถูกตัดเป็นหลายท่อนในข้อมูลดิบ) เอาแค่ท่อน
   // ที่หนักสุดของแต่ละชื่อถนนพอ ไม่งั้นรายการจะซ้ำถนนเดิมหลายรอบ
@@ -119,8 +129,7 @@ export function FloodPage() {
         roads
           .filter((f) => MAJOR_ROAD_TYPES.has(f.properties.hw))
           .reduce<Record<string, RoadFeature>>((acc, f) => {
-            const name = f.properties.nameEn || f.properties.name
-            if (!name) return acc
+            const name = roadDisplayName(f)
             const existing = acc[name]
             if (!existing || severityScore(f.properties.verdict) > severityScore(existing.properties.verdict)) {
               acc[name] = f
@@ -162,30 +171,47 @@ export function FloodPage() {
         )}
 
         {stats && (
-          <Reveal as="section" className={`rounded-2xl border ${accent.border} ${accent.bg} p-5 space-y-4`}>
+          <Reveal as="section" className={`rounded-2xl border ${accent.border} ${accent.bg} p-5`}>
             <div className="flex items-center gap-2.5">
               <span className={`w-2.5 h-2.5 rounded-full ${accent.dot} shrink-0 animate-pulse`} aria-hidden="true" />
               <h2 className="font-display font-semibold text-stone-900">ภาพรวมตอนนี้</h2>
-              <span className={`ml-auto text-xs font-semibold tabular-nums px-2 py-0.5 rounded-full bg-white ${accent.text}`}>
-                index {stats.index}
+              <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-white ${accent.text}`}>
+                ระดับ{accent.label} (ดัชนี {stats.index})
               </span>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-              {statCards.map((s) => (
-                <div key={s.label} className="bg-white rounded-xl border border-stone-200 p-2.5 text-center">
-                  <p className="text-base font-bold tabular-nums text-stone-900">
-                    {s.value} <span className="text-[10px] font-normal text-stone-400">{s.unit}</span>
-                  </p>
-                  <p className="text-[11px] text-stone-500 leading-tight mt-0.5">{s.label}</p>
-                </div>
-              ))}
             </div>
           </Reveal>
         )}
 
-        <Reveal as="section" delay={0.06} className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
-          <h2 className="font-display font-semibold text-stone-900 px-1">แผนที่ถนนสายหลัก</h2>
+        {stats && (
+          <div className="space-y-3.5">
+            <StatSection icon="🛣️" title="สถานะถนน" accent="bg-orange-50">
+              <StatTile value={stats.floodedKm.toFixed(1)} unit="กม." label="ถนนน้ำท่วมรวม" />
+              <StatTile value={stats.blockedKm.toFixed(1)} unit="กม." label="ตัดขาดสมบูรณ์" />
+              <StatTile value={stats.riskyKm.toFixed(1)} unit="กม." label="เสี่ยง ผ่านลำบาก" />
+              <StatTile value={stats.cautionKm.toFixed(1)} unit="กม." label="ต้องระวัง" />
+              <StatTile value={stats.clearedKm.toFixed(1)} unit="กม." label="กลับมาใช้ได้แล้ว" />
+            </StatSection>
+
+            <StatSection icon="🌧️" title="ฝนและระดับน้ำ" accent="bg-sky-50">
+              <StatTile value={stats.rainMax1h.toFixed(1)} unit="มม." label="ฝนสูงสุด (1 ชม.)" />
+              <StatTile value={stats.rainMax24h.toFixed(1)} unit="มม." label="ฝนสูงสุด (24 ชม.)" />
+              <StatTile value={stats.forecastMax3h.toFixed(1)} unit="มม." label="คาดการณ์ฝน 3 ชม.หน้า" />
+              <StatTile value={stats.wlHigh.toString()} unit="จุด" label="ระดับน้ำสูง" />
+              <StatTile value={stats.wlOver.toString()} unit="จุด" label="น้ำล้นตลิ่ง" />
+            </StatSection>
+
+            <StatSection icon="📢" title="รายงานจากประชาชน" accent="bg-violet-50">
+              <StatTile value={stats.reports.toString()} unit="รายงาน" label="รายงานทั้งหมด" />
+              <StatTile value={stats.reports1h.toString()} unit="รายงาน" label="ใน 1 ชม. ล่าสุด" />
+            </StatSection>
+          </div>
+        )}
+
+        <Reveal as="section" className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+          <div className="flex items-center gap-3 mb-3.5">
+            <div className="w-10 h-10 rounded-full bg-blue-50 grid place-items-center text-lg shrink-0">🗺️</div>
+            <h2 className="font-display font-semibold text-stone-900">แผนที่ถนนสายหลัก</h2>
+          </div>
           {roadsLoading ? (
             <p className="text-sm text-stone-500 text-center py-6">กำลังโหลดแผนที่...</p>
           ) : (
@@ -193,13 +219,20 @@ export function FloodPage() {
               <FloodMap roads={roads ?? []} />
             </Suspense>
           )}
-          <p className="text-[11px] text-stone-400 px-1">
-            🟢 ผ่านได้ปกติ · 🟡 ควรระวัง · 🟠 เสี่ยง · 🔴 ผ่านไม่ได้ — แตะเส้นถนนเพื่อดูชื่อ+ความลึก
-          </p>
+          <div className="flex flex-wrap gap-x-4 gap-y-1 justify-center mt-3 text-[11px] text-stone-500">
+            <span>🟢 ผ่านได้ปกติ</span>
+            <span>🟡 ควรระวัง</span>
+            <span>🟠 เสี่ยง</span>
+            <span>🔴 ผ่านไม่ได้</span>
+            <span className="text-stone-400">— แตะเส้นถนนเพื่อดูชื่อ+ความลึก</span>
+          </div>
         </Reveal>
 
-        <Reveal as="section" delay={0.12} className="rounded-2xl border border-stone-200 bg-white p-4 space-y-2.5">
-          <h2 className="font-display font-semibold text-stone-900 px-1">ถนนที่ได้รับผลกระทบหนักสุด</h2>
+        <Reveal as="section" className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+          <div className="flex items-center gap-3 mb-3.5">
+            <div className="w-10 h-10 rounded-full bg-red-50 grid place-items-center text-lg shrink-0">🚧</div>
+            <h2 className="font-display font-semibold text-stone-900">ถนนที่ได้รับผลกระทบหนักสุด</h2>
+          </div>
           {roadsLoading ? (
             <p className="text-sm text-stone-500 text-center py-4">กำลังโหลด...</p>
           ) : worstRoads.length === 0 ? (
@@ -207,20 +240,21 @@ export function FloodPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-2.5">
               {worstRoads.map((f, i) => (
-                <div key={i} className="bg-stone-50 rounded-xl border border-stone-200 p-3">
+                <div key={i} className="bg-stone-50 rounded-xl border border-stone-200/70 p-3">
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <p className="text-sm font-medium text-stone-900 truncate">{f.properties.nameEn || f.properties.name}</p>
+                    <p className="text-sm font-medium text-stone-900 truncate">{roadDisplayName(f)}</p>
                     {f.properties.depthCm != null && (
                       <p className="text-xs text-stone-400 shrink-0">ลึก {f.properties.depthCm} ซม.</p>
                     )}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {VEHICLE_ICONS.map(({ key, icon }) => (
+                    {VEHICLE_ICONS.map(({ key, icon, label }) => (
                       <span
                         key={key}
+                        title={label}
                         className={`flex items-center gap-1 rounded-full px-2 py-0.5 text-xs ${VERDICT_STYLE[f.properties.verdict[key]]}`}
                       >
-                        {icon} {f.properties.verdict[key]}
+                        {icon} {VERDICT_LABEL_TH[f.properties.verdict[key]]}
                       </span>
                     ))}
                   </div>

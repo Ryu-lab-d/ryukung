@@ -23,6 +23,21 @@ export function severityScore(v: RoadFeature['properties']['verdict']): number {
   return VEHICLE_ORDER[v.motorbike] + VEHICLE_ORDER[v.sedan] + VEHICLE_ORDER[v.pickup] + VEHICLE_ORDER[v.truck]
 }
 
+// คำแปลผลตัดสิน (verdict) ของ Floodboard เป็นไทย — เว็บนี้ทั้งเว็บใช้ภาษาไทยล้วน ห้ามโชว์คำอังกฤษดิบๆ (ok/caution/
+// risky/blocked) ให้ลูกค้าเห็นตรงๆ
+export const VERDICT_LABEL_TH: Record<VehicleVerdict, string> = {
+  ok: 'ผ่านได้ปกติ',
+  caution: 'ควรระวัง',
+  risky: 'เสี่ยง',
+  blocked: 'ผ่านไม่ได้',
+}
+
+// ชื่อถนนที่จะโชว์ลูกค้า — ข้อมูลจริงจาก Floodboard ตอนนี้ฟิลด์ name (ไทย) เข้ารหัสถูกต้องแล้ว (ไม่ใช่ mojibake
+// เหมือนที่เคยเจอ) เลยใช้ชื่อไทยเป็นหลักเสมอ ใช้ nameEn เป็นสำรองแค่ตอนที่ name ว่างจริงๆ
+export function roadDisplayName(f: RoadFeature): string {
+  return f.properties.name || f.properties.nameEn || 'ถนนไม่ทราบชื่อ'
+}
+
 // กรอบพิกัดคร่าวๆ ของกรุงเทพฯ+ปริมณฑลใกล้เคียง — ใช้กรองข้อมูลถนนทั้งประเทศของ Floodboard ให้เหลือแค่โซนที่ลูกค้าเราสนใจ (ตาม
 // ที่ร้านขอเจาะจงกรุงเทพฯ) ไม่ใช่เขตปกครองที่แม่นยำ 100% แค่พอกรองแผนที่ให้ไม่รกเกินไป
 export const BANGKOK_BOUNDS: [[number, number], [number, number]] = [

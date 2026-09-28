@@ -1,7 +1,7 @@
 import { MapContainer, TileLayer, Polyline, Tooltip } from 'react-leaflet'
 import type { LatLngExpression, LatLngBoundsExpression } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { BANGKOK_BOUNDS, MAJOR_ROAD_TYPES, isInBangkok, severityScore, type RoadFeature } from './floodData'
+import { BANGKOK_BOUNDS, MAJOR_ROAD_TYPES, isInBangkok, roadDisplayName, severityScore, type RoadFeature } from './floodData'
 
 const BANGKOK_CENTER: LatLngExpression = [13.7563, 100.5018]
 const MAP_BOUNDS: LatLngBoundsExpression = BANGKOK_BOUNDS
@@ -61,7 +61,7 @@ export function FloodMap({ roads }: { roads: RoadFeature[] }) {
             >
               <Tooltip sticky>
                 <span className="text-xs">
-                  {f.properties.nameEn || f.properties.name || 'ถนนไม่ทราบชื่อ'}
+                  {roadDisplayName(f)}
                   {f.properties.depthCm != null ? ` — ลึก ${f.properties.depthCm} ซม.` : ''}
                 </span>
               </Tooltip>
