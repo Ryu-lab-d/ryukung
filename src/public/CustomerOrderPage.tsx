@@ -412,16 +412,35 @@ export function CustomerOrderPage() {
 
   if (menu === undefined) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center space-y-3 font-warm">
-        <div className="text-4xl animate-icon-pop">🧁</div>
-        <p className="text-stone-500">กำลังโหลดเมนู...</p>
+      <div className="min-h-screen grid place-items-center p-4 text-center bg-brand-shader font-warm">
+        <div>
+          <div className="w-20 h-20 rounded-full bg-white/15 grid place-items-center mx-auto text-4xl animate-icon-pop">🧁</div>
+          <p className="text-white/90 font-medium mt-4">กำลังโหลดเมนู...</p>
+          <div className="flex items-center justify-center gap-1.5 mt-2.5" aria-hidden="true">
+            <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-loading-dot" style={{ animationDelay: '0s' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-loading-dot" style={{ animationDelay: '0.15s' }} />
+            <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-loading-dot" style={{ animationDelay: '0.3s' }} />
+          </div>
+        </div>
       </div>
     )
   }
   if (menu === null) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 text-center font-warm">
-        <p className="text-stone-500">โหลดเมนูไม่สำเร็จ กรุณาลองใหม่อีกครั้ง</p>
+      <div className="min-h-screen grid place-items-center p-4 text-center font-warm">
+        <PageTexture />
+        <div className="max-w-xs">
+          <p className="text-4xl">😵</p>
+          <p className="text-stone-600 font-medium mt-3">โหลดเมนูไม่สำเร็จ</p>
+          <p className="text-sm text-stone-400 mt-1">อาจเป็นเพราะสัญญาณอินเทอร์เน็ตไม่เสถียร ลองใหม่อีกครั้งได้เลย</p>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="mt-4 rounded-xl bg-stone-900 text-white font-semibold px-6 py-2.5 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)]"
+          >
+            🔄 ลองใหม่
+          </button>
+        </div>
       </div>
     )
   }
