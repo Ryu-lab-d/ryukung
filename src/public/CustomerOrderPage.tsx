@@ -494,108 +494,130 @@ export function CustomerOrderPage() {
   }
 
   if (step === 'checkout') {
+    const inputClass =
+      'w-full rounded-xl border border-stone-300 px-3.5 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/15 focus:border-stone-400'
     return (
-      <div className="min-h-screen bg-stone-50 p-4 animate-page-in font-warm">
-        <div className="max-w-md mx-auto space-y-4">
+      <div className="min-h-screen pb-10 font-warm">
+        <PageTexture />
+        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
-          <h1 className="text-lg font-display font-semibold">กรอกข้อมูลรับของ</h1>
-          <CartSummaryList items={items} grandTotal={grandTotal} />
-          <form onSubmit={handleCheckoutSubmit} className="space-y-4 bg-white rounded-2xl shadow-sm p-5 animate-form-in">
-            <div className="space-y-1">
-              <label htmlFor="customerName" className="text-sm text-stone-600">ชื่อผู้สั่งซื้อ</label>
-              <input
-                id="customerName" required value={form.customerName}
-                onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="customerPhone" className="text-sm text-stone-600">เบอร์โทรศัพท์</label>
-              <input
-                id="customerPhone" required type="tel" value={form.customerPhone}
-                onChange={(e) => setForm((f) => ({ ...f, customerPhone: e.target.value }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="customerEmail" className="text-sm text-stone-600">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
-              <input
-                id="customerEmail" required type="email" value={form.customerEmail}
-                onChange={(e) => setForm((f) => ({ ...f, customerEmail: e.target.value }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-              />
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="fulfillmentType" className="text-sm text-stone-600">วิธีรับของ</label>
-              <select
-                id="fulfillmentType" value={form.fulfillmentType}
-                onChange={(e) => setForm((f) => ({ ...f, fulfillmentType: e.target.value as 'pickup' | 'shipping' }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-              >
-                <option value="pickup">นัดรับเอง</option>
-                <option value="shipping">ส่งไปรษณีย์/ขนส่ง</option>
-              </select>
-            </div>
-            <div className="space-y-1">
-              <label htmlFor="neededDate" className="text-sm text-stone-600">วันที่สะดวกนัดรับ</label>
-              <input
-                id="neededDate" required type="date" min={minNeededDate} value={form.neededDate}
-                onChange={(e) => setForm((f) => ({ ...f, neededDate: e.target.value }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-              />
-              <p className="text-xs text-stone-400">สั่งล่วงหน้าอย่างน้อย {menu.shipping_lead_days} วัน</p>
-            </div>
 
-            {form.fulfillmentType === 'pickup' ? (
-              <div className="space-y-1">
-                <label htmlFor="pickupTime" className="text-sm text-stone-600">เวลาที่สะดวกมารับ (ถ้ามี)</label>
-                <input
-                  id="pickupTime" value={form.pickupTime}
-                  onChange={(e) => setForm((f) => ({ ...f, pickupTime: e.target.value }))}
-                  placeholder="เช่น 10:00" className="w-full rounded-lg border border-stone-300 px-3 py-2.5"
-                />
-              </div>
-            ) : (
-              <div className="space-y-3">
+          <div className="text-center py-2 animate-page-in">
+            <p className="text-4xl">📝</p>
+            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">กรอกข้อมูลรับของ</h1>
+            <p className="text-sm text-stone-500 mt-1">กรอกให้ครบเพื่อความรวดเร็วในการจัดส่ง</p>
+          </div>
+
+          <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+            <CartSummaryList items={items} grandTotal={grandTotal} />
+          </Reveal>
+
+          <form onSubmit={handleCheckoutSubmit} className="space-y-4">
+            <TermsSection icon="👤" title="ข้อมูลผู้สั่งซื้อ" delay={0.06}>
+              <div className="space-y-3.5 text-stone-700">
                 <div className="space-y-1">
-                  <label htmlFor="shipAddressText" className="text-sm text-stone-600">ที่อยู่จัดส่ง</label>
-                  <textarea
-                    id="shipAddressText" required value={form.shipAddressText}
-                    onChange={(e) => setForm((f) => ({ ...f, shipAddressText: e.target.value }))}
-                    className="w-full rounded-lg border border-stone-300 px-3 py-2.5" rows={3}
+                  <label htmlFor="customerName" className="text-xs font-medium text-stone-500">ชื่อผู้สั่งซื้อ</label>
+                  <input
+                    id="customerName" required value={form.customerName}
+                    onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
+                    className={inputClass}
                   />
                 </div>
-                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2.5 text-xs text-amber-800 space-y-1.5">
-                  <p>💰 ตอนนี้จ่ายแค่ค่าสินค้าก่อน ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง</p>
-                  <p>
-                    📦 การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล เมื่อจัดส่งเรียบร้อย
-                    ร้านจะแจ้งเลขพัสดุให้ทราบทางไลน์ — โปรดแอดไลน์ร้านไว้ก่อน
-                  </p>
+                <div className="space-y-1">
+                  <label htmlFor="customerPhone" className="text-xs font-medium text-stone-500">เบอร์โทรศัพท์</label>
+                  <input
+                    id="customerPhone" required type="tel" value={form.customerPhone}
+                    onChange={(e) => setForm((f) => ({ ...f, customerPhone: e.target.value }))}
+                    className={inputClass}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="customerEmail" className="text-xs font-medium text-stone-500">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
+                  <input
+                    id="customerEmail" required type="email" value={form.customerEmail}
+                    onChange={(e) => setForm((f) => ({ ...f, customerEmail: e.target.value }))}
+                    className={inputClass}
+                  />
                 </div>
               </div>
-            )}
+            </TermsSection>
 
-            <div className="space-y-1">
-              <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (ถ้ามี)</label>
+            <TermsSection icon={form.fulfillmentType === 'pickup' ? '🏠' : '📦'} title="วิธีรับของ" delay={0.12}>
+              <div className="space-y-3.5 text-stone-700">
+                <div className="space-y-1">
+                  <label htmlFor="fulfillmentType" className="text-xs font-medium text-stone-500">วิธีรับของ</label>
+                  <select
+                    id="fulfillmentType" value={form.fulfillmentType}
+                    onChange={(e) => setForm((f) => ({ ...f, fulfillmentType: e.target.value as 'pickup' | 'shipping' }))}
+                    className={inputClass}
+                  >
+                    <option value="pickup">นัดรับเอง</option>
+                    <option value="shipping">ส่งไปรษณีย์/ขนส่ง</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="neededDate" className="text-xs font-medium text-stone-500">วันที่สะดวกนัดรับ</label>
+                  <input
+                    id="neededDate" required type="date" min={minNeededDate} value={form.neededDate}
+                    onChange={(e) => setForm((f) => ({ ...f, neededDate: e.target.value }))}
+                    className={inputClass}
+                  />
+                  <p className="text-xs text-stone-400">สั่งล่วงหน้าอย่างน้อย {menu.shipping_lead_days} วัน</p>
+                </div>
+
+                {form.fulfillmentType === 'pickup' ? (
+                  <div className="space-y-1">
+                    <label htmlFor="pickupTime" className="text-xs font-medium text-stone-500">เวลาที่สะดวกมารับ (ถ้ามี)</label>
+                    <input
+                      id="pickupTime" value={form.pickupTime}
+                      onChange={(e) => setForm((f) => ({ ...f, pickupTime: e.target.value }))}
+                      placeholder="เช่น 10:00" className={inputClass}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3.5">
+                    <div className="space-y-1">
+                      <label htmlFor="shipAddressText" className="text-xs font-medium text-stone-500">ที่อยู่จัดส่ง</label>
+                      <textarea
+                        id="shipAddressText" required value={form.shipAddressText}
+                        onChange={(e) => setForm((f) => ({ ...f, shipAddressText: e.target.value }))}
+                        className={inputClass} rows={3}
+                      />
+                    </div>
+                    <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3 text-xs text-amber-800 space-y-1.5">
+                      <p>💰 ตอนนี้จ่ายแค่ค่าสินค้าก่อน ค่าส่งจริงร้านจะแจ้งแยกให้ทราบภายหลัง</p>
+                      <p>
+                        📦 การจัดส่งทางไปรษณีย์ปกติใช้เวลาประมาณ 1-3 วัน ตามช่วงเวลาและเทศกาล เมื่อจัดส่งเรียบร้อย
+                        ร้านจะแจ้งเลขพัสดุให้ทราบทางไลน์ — โปรดแอดไลน์ร้านไว้ก่อน
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TermsSection>
+
+            <TermsSection icon="💬" title="หมายเหตุ (ถ้ามี)" delay={0.18}>
               <textarea
                 id="note" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2.5" rows={2}
+                className={inputClass} rows={2} placeholder="เช่น ไม่ใส่ถั่ว, ห่อของขวัญ"
               />
-            </div>
+            </TermsSection>
 
-            <TurnstileWidget onToken={setTurnstileToken} />
+            <Reveal delay={0.24} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-4">
+              <TurnstileWidget onToken={setTurnstileToken} />
 
-            {menu.promptpay ? (
-              <button
-                type="submit"
-                disabled={!turnstileToken}
-                className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
-              >
-                ไปหน้าชำระเงิน →
-              </button>
-            ) : (
-              <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
-            )}
+              {menu.promptpay ? (
+                <button
+                  type="submit"
+                  disabled={!turnstileToken}
+                  className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+                >
+                  ไปหน้าชำระเงิน →
+                </button>
+              ) : (
+                <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
+              )}
+            </Reveal>
           </form>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
