@@ -82,37 +82,51 @@ function BarChart({ data }: { data: { key: string; label: string; icon?: string;
 export function ContentStatsPage() {
   const { items, loading } = useContentStats()
 
-  if (loading) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center gap-2.5 text-stone-400">
+        <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+        กำลังโหลด...
+      </div>
+    )
+  }
 
   const styles = editingStyleCounts(items)
   const platforms = platformCounts(items)
   const months = monthCounts(items)
   const busiestMonth = months.length > 0 ? months.reduce((a, b) => (b.count > a.count ? b : a)) : null
+  const cardClass = 'rounded-2xl border border-stone-200/70 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] p-4 space-y-3'
 
   return (
-    <div className="p-4 space-y-5 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2">
-        <Link to="/content" className="text-sm text-stone-600 underline">
+    <div className="bg-stone-50 min-h-screen">
+      <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
+        <Link
+          to="/content"
+          className="inline-block rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        >
           ← กลับแผนคอนเทนต์
         </Link>
-      </div>
-      <h1 className="text-lg font-semibold">📊 สรุปสถิติคอนเทนต์</h1>
-      <p className="text-xs text-stone-400">นับจากคอนเทนต์ที่มีสถานะ "โพสต์แล้ว" เท่านั้น</p>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">ส่วนใหญ่เราโพสต์อะไร (แยกตามแนวการตัดต่อ)</h2>
-        <PieChart data={styles} />
-      </div>
+        <div>
+          <h1 className="text-xl font-bold text-stone-900 flex items-center gap-2">📊 สรุปสถิติคอนเทนต์</h1>
+          <p className="text-xs text-stone-400 mt-0.5">นับจากคอนเทนต์ที่มีสถานะ "โพสต์แล้ว" เท่านั้น</p>
+        </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">โพสต์เดือนไหนเยอะที่สุด</h2>
-        {busiestMonth && <p className="text-sm text-stone-700">เดือนที่โพสต์เยอะที่สุดคือ <strong>{busiestMonth.label}</strong> ({busiestMonth.count} คอนเทนต์)</p>}
-        <BarChart data={months.map((m) => ({ key: m.monthKey, label: m.label, count: m.count }))} />
-      </div>
+        <div className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-600">ส่วนใหญ่เราโพสต์อะไร (แยกตามแนวการตัดต่อ)</h2>
+          <PieChart data={styles} />
+        </div>
 
-      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">โพสต์ช่องทางไหนเยอะที่สุด</h2>
-        <BarChart data={platforms.map((p) => ({ key: p.platform, label: p.label, icon: p.icon, count: p.count }))} />
+        <div className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-600">โพสต์เดือนไหนเยอะที่สุด</h2>
+          {busiestMonth && <p className="text-sm text-stone-700">เดือนที่โพสต์เยอะที่สุดคือ <strong>{busiestMonth.label}</strong> ({busiestMonth.count} คอนเทนต์)</p>}
+          <BarChart data={months.map((m) => ({ key: m.monthKey, label: m.label, count: m.count }))} />
+        </div>
+
+        <div className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-600">โพสต์ช่องทางไหนเยอะที่สุด</h2>
+          <BarChart data={platforms.map((p) => ({ key: p.platform, label: p.label, icon: p.icon, count: p.count }))} />
+        </div>
       </div>
     </div>
   )

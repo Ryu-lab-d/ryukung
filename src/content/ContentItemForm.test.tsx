@@ -189,7 +189,7 @@ describe('ContentItemForm — แก้ไขของเดิม', () => {
     }
     renderEdit()
     await screen.findByDisplayValue('#ryukungbakery #ขนมปังโฮมเมด')
-    await userEvent.click(screen.getByRole('button', { name: 'คัดลอก' }))
+    await userEvent.click(screen.getByRole('button', { name: '📋 คัดลอก' }))
     expect(writeText).toHaveBeenCalledWith('#ryukungbakery #ขนมปังโฮมเมด')
     expect(await screen.findByText('คัดลอกแล้ว ✓')).toBeInTheDocument()
   })

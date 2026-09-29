@@ -66,19 +66,19 @@ describe('ContentPlannerPage', () => {
   it('ยังไม่มีคอนเทนต์เลย แสดงข้อความชวนเพิ่มไอเดียใหม่', () => {
     renderPage()
     expect(screen.getByText(/ยังไม่มีคอนเทนต์ที่ตรงเงื่อนไข/)).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '+ เพิ่มไอเดีย' })).toBeInTheDocument()
   })
 
   it('กดปุ่ม "+ เพิ่มไอเดียใหม่" เปิดป็อปอัพเพิ่มไอเดียแบบเร็ว', async () => {
     renderPage()
     expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดีย' }))
     expect(screen.getByText('Quick Add Modal')).toBeInTheDocument()
   })
 
   it('บันทึกจากป็อปอัพเพิ่มไอเดียแบบเร็วสำเร็จ ปิดป็อปอัพและโหลดรายการใหม่', async () => {
     renderPage()
-    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดีย' }))
     await userEvent.click(screen.getByRole('button', { name: 'บันทึกแล้ว (mock)' }))
     expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
     expect(reload).toHaveBeenCalled()
@@ -86,7 +86,7 @@ describe('ContentPlannerPage', () => {
 
   it('กด "ปิด" ป็อปอัพเพิ่มไอเดียแบบเร็ว โดยไม่โหลดรายการใหม่', async () => {
     renderPage()
-    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดียใหม่' }))
+    await userEvent.click(screen.getByRole('button', { name: '+ เพิ่มไอเดีย' }))
     await userEvent.click(screen.getByRole('button', { name: 'ปิด (mock)' }))
     expect(screen.queryByText('Quick Add Modal')).not.toBeInTheDocument()
     expect(reload).not.toHaveBeenCalled()
@@ -103,7 +103,7 @@ describe('ContentPlannerPage', () => {
   it('ค้นหาจากชื่อคอนเทนต์ กรองรายการที่ไม่ตรงออกไป', async () => {
     itemsOverride = [makeItem({ id: 'c1', title: 'ขนมปังใหม่' }), makeItem({ id: 'c2', title: 'คุกกี้ลดราคา' })]
     renderPage()
-    await userEvent.type(screen.getByPlaceholderText('ค้นหาชื่อคอนเทนต์หรือไอเดีย'), 'คุกกี้')
+    await userEvent.type(screen.getByPlaceholderText('🔍 ค้นหาชื่อคอนเทนต์หรือไอเดีย'), 'คุกกี้')
     expect(screen.queryByText('ขนมปังใหม่')).not.toBeInTheDocument()
     expect(screen.getByText('คุกกี้ลดราคา')).toBeInTheDocument()
   })
