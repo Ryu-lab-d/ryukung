@@ -32,9 +32,24 @@ function DraggableCard({ order }: { order: BoardOrder }) {
 function Column({ status, label, orders }: { status: string; label: string; orders: BoardOrder[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: status })
   return (
-    <div ref={setNodeRef} className={'flex-1 min-w-64 rounded-xl p-2 space-y-2 ' + (isOver ? 'bg-stone-100' : 'bg-stone-50')}>
-      <h2 className="text-sm font-semibold px-1">{label} ({orders.length})</h2>
-      {orders.map((o) => <DraggableCard key={o.id} order={o} />)}
+    <div
+      ref={setNodeRef}
+      className={
+        'flex-1 min-w-64 rounded-2xl p-2.5 space-y-2 border transition-colors ' +
+        (isOver ? 'bg-stone-100 border-stone-300 border-dashed' : 'bg-stone-100/60 border-transparent')
+      }
+    >
+      <div className="flex items-center gap-2 px-1.5 pb-0.5">
+        <h2 className="text-sm font-semibold text-stone-700">{label}</h2>
+        <span className="text-xs font-semibold text-stone-500 bg-white rounded-full min-w-5 h-5 px-1.5 grid place-items-center tabular-nums">
+          {orders.length}
+        </span>
+      </div>
+      {orders.length === 0 ? (
+        <p className="text-xs text-stone-400 px-1.5 py-4 text-center">ไม่มีออเดอร์</p>
+      ) : (
+        orders.map((o) => <DraggableCard key={o.id} order={o} />)
+      )}
     </div>
   )
 }
@@ -62,9 +77,17 @@ export function BoardDesktop({
     <DndContext sensors={sensors} onDragEnd={(e) => void handleDragEnd(e)}>
       {pendingCustomerOrders.length > 0 && (
         <div className="hidden lg:block px-4 pt-4">
-          <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 p-3 space-y-2">
-            <h2 className="text-sm font-semibold text-indigo-800">🛒 ออเดอร์รอยืนยัน จากลูกค้าสั่งเอง ({pendingCustomerOrders.length})</h2>
-            <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 space-y-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">🛒</span>
+              <h2 className="text-sm font-semibold text-indigo-800">
+                ออเดอร์รอยืนยัน จากลูกค้าสั่งเอง
+                <span className="ml-1.5 text-xs font-bold bg-indigo-200 text-indigo-800 rounded-full px-2 py-0.5">
+                  {pendingCustomerOrders.length}
+                </span>
+              </h2>
+            </div>
+            <div className="flex gap-2.5 overflow-x-auto pb-1">
               {pendingCustomerOrders.map((o) => (
                 <div key={o.id} className="w-64 shrink-0">
                   <OrderCard order={o} />

@@ -14,7 +14,7 @@ export function OrderCard({ order }: { order: BoardOrder }) {
     <Link
       to={`/orders/${order.id}`}
       className={
-        'block rounded-lg bg-white border p-2.5 space-y-1 shadow-sm ' +
+        'block rounded-xl bg-white border p-3 space-y-1.5 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_6px_-2px_rgb(0_0_0_/_0.08)] hover:shadow-[0_2px_4px_rgb(0_0_0_/_0.06),0_4px_12px_-2px_rgb(0_0_0_/_0.12)] transition-shadow ' +
         (order.address_edited_at
           ? 'border-blue-300 ring-2 ring-blue-100'
           : order.payment_claimed_at
@@ -39,7 +39,7 @@ export function OrderCard({ order }: { order: BoardOrder }) {
       <div className="flex items-center justify-between">
         <span className="text-xs text-stone-500">{order.needed_date ?? '-'}</span>
         {!order.is_draft && (
-          <span className={'text-xs rounded-full px-2 py-0.5 ' + PAYMENT_COLOR[order.payment_status]}>
+          <span className={'text-xs font-medium rounded-full px-2 py-0.5 ' + PAYMENT_COLOR[order.payment_status]}>
             {PAYMENT_LABEL[order.payment_status]}
           </span>
         )}

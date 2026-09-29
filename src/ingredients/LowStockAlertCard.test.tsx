@@ -64,7 +64,7 @@ describe('LowStockAlertCard', () => {
       makeIngredient({ id: 'i2', stock_qty: 200, low_stock_threshold: 1000 }),
     ]
     renderCard()
-    expect(screen.getByText('⚠️ วัตถุดิบใกล้หมด')).toBeInTheDocument()
+    expect(screen.getByText('วัตถุดิบใกล้หมด')).toBeInTheDocument()
     expect(screen.getByText('2 รายการ')).toBeInTheDocument()
   })
 
@@ -81,7 +81,7 @@ describe('LowStockAlertCard', () => {
   it('กดแบนเนอร์ พาไปหน้าวัตถุดิบ', async () => {
     ingredientsOverride = [makeIngredient({ stock_qty: 100, low_stock_threshold: 1000 })]
     renderCard()
-    await userEvent.click(screen.getByText('⚠️ วัตถุดิบใกล้หมด'))
+    await userEvent.click(screen.getByRole('button'))
     expect(navigate).toHaveBeenCalledWith('/ingredients')
   })
 })

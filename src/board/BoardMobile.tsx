@@ -40,32 +40,40 @@ export function BoardMobile({
             key={status}
             type="button"
             onClick={() => setActiveFilter(status)}
-            className={'shrink-0 rounded-full px-3 py-1.5 text-sm ' + (activeFilter === status ? 'bg-stone-900 text-white' : 'bg-stone-100 text-stone-700')}
+            className={
+              'shrink-0 rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ' +
+              (activeFilter === status ? 'bg-stone-900 text-white shadow-sm' : 'bg-white border border-stone-200 text-stone-600')
+            }
           >
             {label}
           </button>
         ))}
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-2.5">
         {visible.map((o) => {
           const next = !o.is_draft ? nextStatus(o.fulfillment_type, o.work_status) : null
           return (
-            <div key={o.id} className="space-y-1">
+            <div key={o.id} className="space-y-1.5">
               <OrderCard order={o} />
               {next && (
                 <button
                   type="button"
                   onClick={() => void handleAdvance(o.id, next)}
-                  className="w-full rounded-lg bg-stone-900 text-white text-sm py-2"
+                  className="w-full rounded-xl bg-stone-900 text-white text-sm font-medium py-2.5 shadow-sm"
                 >
-                  ย้ายไปขั้น "{stageLabel(o.fulfillment_type, next)}"
+                  ย้ายไปขั้น "{stageLabel(o.fulfillment_type, next)}" →
                 </button>
               )}
             </div>
           )
         })}
-        {visible.length === 0 && <p className="text-sm text-stone-400">ไม่มีออเดอร์ในช่องนี้</p>}
+        {visible.length === 0 && (
+          <div className="rounded-2xl bg-white border border-stone-200 p-8 text-center">
+            <p className="text-3xl mb-1.5">📭</p>
+            <p className="text-sm text-stone-400">ไม่มีออเดอร์ในช่องนี้</p>
+          </div>
+        )}
       </div>
 
       {error && <Toast variant="error" message={error} onDone={() => setError(null)} />}
