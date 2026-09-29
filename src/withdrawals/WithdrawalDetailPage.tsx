@@ -109,180 +109,194 @@ export function WithdrawalDetailPage() {
     await reload()
   }
 
-  if (loading || !withdrawal) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (loading || !withdrawal) {
+    return (
+      <div className="p-8 flex items-center justify-center gap-2.5 text-stone-400">
+        <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+        กำลังโหลด...
+      </div>
+    )
+  }
 
   const totals = computeWithdrawalTotals(items)
   const isSettled = withdrawal.status === 'settled'
   const wageItem = items.find((it) => it.is_wage) ?? null
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-24">
-      <Link to="/withdrawals" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
-        ← กลับหน้าเบิกของ
-      </Link>
+    <div className="bg-stone-50 min-h-screen">
+      <div className="p-4 space-y-4 max-w-2xl mx-auto pb-24">
+        <Link
+          to="/withdrawals"
+          className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        >
+          ← กลับหน้าเบิกของ
+        </Link>
 
-      <div>
-        <h1 className="text-lg font-semibold">
-          {new Date(withdrawal.withdrawn_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
-          {withdrawal.location && ` · ${withdrawal.location}`}
-        </h1>
-        <p className="text-xs text-stone-400 mt-0.5">
-          🕐 บันทึกเมื่อ {new Date(withdrawal.created_at).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
-        </p>
-        <p className="text-sm text-stone-500 mt-0.5">
-          👤 ผู้เบิก: {withdrawal.staff_members?.display_name ?? withdrawal.staff_members?.email ?? 'ไม่ระบุ'}
-        </p>
-        <p className="text-sm text-stone-500 mt-0.5">
-          ✏️ สร้างรายการโดย: {withdrawal.creator?.display_name ?? withdrawal.creator?.email ?? 'ไม่ระบุ'}
-        </p>
-        {withdrawal.note && <p className="text-sm text-stone-500 mt-0.5">{withdrawal.note}</p>}
-      </div>
+        <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+          <h1 className="text-lg font-bold text-stone-900">
+            {new Date(withdrawal.withdrawn_at).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {withdrawal.location && ` · ${withdrawal.location}`}
+          </h1>
+          <p className="text-xs text-stone-400 mt-0.5">
+            🕐 บันทึกเมื่อ {new Date(withdrawal.created_at).toLocaleString('th-TH', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} น.
+          </p>
+          <p className="text-sm text-stone-500 mt-0.5">
+            👤 ผู้เบิก: {withdrawal.staff_members?.display_name ?? withdrawal.staff_members?.email ?? 'ไม่ระบุ'}
+          </p>
+          <p className="text-sm text-stone-500 mt-0.5">
+            ✏️ สร้างรายการโดย: {withdrawal.creator?.display_name ?? withdrawal.creator?.email ?? 'ไม่ระบุ'}
+          </p>
+          {withdrawal.note && <p className="text-sm text-stone-500 mt-0.5">{withdrawal.note}</p>}
+        </div>
 
-      {withdrawal.wage_type && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 flex items-center justify-between gap-2">
-          <div>
-            <p className="text-xs text-amber-700">ค่าจ้างผู้เบิก</p>
-            <p className="text-sm font-medium text-amber-900">
-              {withdrawal.wage_type === 'cash'
-                ? `💵 ${formatBaht(withdrawal.wage_cash_amount ?? 0)} บาท`
-                : `🍪 ${wageItem?.product_name ?? ''} × ${wageItem?.qty_out ?? 0}`}
-            </p>
+        {withdrawal.wage_type && (
+          <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3.5 flex items-center justify-between gap-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-full bg-amber-100 grid place-items-center text-sm shrink-0">💰</div>
+              <div>
+                <p className="text-xs text-amber-700">ค่าจ้างผู้เบิก</p>
+                <p className="text-sm font-medium text-amber-900">
+                  {withdrawal.wage_type === 'cash'
+                    ? `💵 ${formatBaht(withdrawal.wage_cash_amount ?? 0)} บาท`
+                    : `🍪 ${wageItem?.product_name ?? ''} × ${wageItem?.qty_out ?? 0}`}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleToggleWagePaid()}
+              className={
+                'rounded-full px-3 py-1.5 text-xs font-medium shrink-0 ' +
+                (withdrawal.wage_paid ? 'bg-green-100 text-green-700' : 'bg-white border border-amber-300 text-amber-700')
+              }
+            >
+              {withdrawal.wage_paid ? 'จ่ายค่าจ้างแล้ว ✓' : 'ยังไม่จ่าย'}
+            </button>
           </div>
+        )}
+
+        {!isSettled && items.some((it) => !it.is_wage) && (
           <button
             type="button"
-            onClick={() => void handleToggleWagePaid()}
+            onClick={markAllSoldOut}
+            className="w-full rounded-xl border border-stone-300 bg-white text-stone-700 text-sm font-medium py-2.5 shadow-sm"
+          >
+            🙌 ขายหมดทุกชิ้น
+          </button>
+        )}
+
+        <div className="space-y-2">
+          {wageItem && (
+            <p className="text-xs text-stone-400 px-1">
+              🍪 จ่ายเป็นค่าจ้าง: {wageItem.product_name} × {wageItem.qty_out} (ไม่นับเป็นของที่ขาย)
+            </p>
+          )}
+          {items.filter((it) => !it.is_wage).map((it) => {
+            const i = items.indexOf(it)
+            return (
+            <div key={it.id} className="rounded-2xl border border-stone-200 bg-white p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+              <div className="flex justify-between text-sm">
+                <span className="font-medium text-stone-900">{it.product_name}</span>
+                <span className="text-stone-500">เบิกไป {it.qty_out} ชิ้น</span>
+              </div>
+              {isSettled ? (
+                <div className="flex justify-between text-sm text-stone-600">
+                  <span>ขายได้ {it.qty_sold ?? 0} ชิ้น · เหลือ {it.qty_out - (it.qty_sold ?? 0)} ชิ้น</span>
+                  <span className="font-medium text-stone-900">{formatBaht(it.amount_collected ?? 0)} บาท</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-0.5">
+                    <label htmlFor={`qty-sold-${it.id}`} className="text-xs text-stone-500">ขายได้กี่ชิ้น</label>
+                    <input
+                      id={`qty-sold-${it.id}`}
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max={it.qty_out}
+                      value={rows[i]?.qty_sold ?? ''}
+                      onChange={(e) => updateQtySold(i, e.target.value)}
+                      className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
+                    />
+                  </div>
+                  <div className="space-y-0.5">
+                    <label htmlFor={`amount-collected-${it.id}`} className="text-xs text-stone-500">ได้เงินเท่าไหร่ (บาท)</label>
+                    <input
+                      id={`amount-collected-${it.id}`}
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      value={rows[i]?.amount_collected ?? ''}
+                      onChange={(e) => updateAmount(i, e.target.value)}
+                      className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+            )
+          })}
+        </div>
+
+        {isSettled && totals.revenue > 0 && (
+          <button
+            type="button"
+            onClick={() => void handleToggleProceedsReceived()}
             className={
-              'rounded-lg px-3 py-1.5 text-xs font-medium shrink-0 ' +
-              (withdrawal.wage_paid ? 'bg-green-100 text-green-700' : 'bg-white border border-amber-300 text-amber-700')
+              'w-full rounded-xl px-3 py-2.5 text-sm font-medium shadow-sm ' +
+              (withdrawal.proceeds_received
+                ? 'bg-green-100 text-green-700'
+                : 'bg-red-50 border border-red-300 text-red-700')
             }
           >
-            {withdrawal.wage_paid ? 'จ่ายค่าจ้างแล้ว ✓' : 'ยังไม่จ่าย'}
+            {withdrawal.proceeds_received ? '✅ ได้รับเงินจากผู้เบิกแล้ว (กดยกเลิกถ้ากดผิด)' : '⚠️ ยังไม่ได้รับเงิน — กดยืนยันเมื่อได้รับแล้ว'}
           </button>
-        </div>
-      )}
-
-      {!isSettled && items.some((it) => !it.is_wage) && (
-        <button
-          type="button"
-          onClick={markAllSoldOut}
-          className="w-full rounded-lg border border-stone-300 text-stone-700 text-sm font-medium py-2"
-        >
-          🙌 ขายหมดทุกชิ้น
-        </button>
-      )}
-
-      <div className="space-y-2">
-        {wageItem && (
-          <p className="text-xs text-stone-400 px-1">
-            🍪 จ่ายเป็นค่าจ้าง: {wageItem.product_name} × {wageItem.qty_out} (ไม่นับเป็นของที่ขาย)
-          </p>
         )}
-        {items.filter((it) => !it.is_wage).map((it) => {
-          const i = items.indexOf(it)
-          return (
-          <div key={it.id} className="rounded-lg border border-stone-200 p-3 space-y-2">
-            <div className="flex justify-between text-sm">
-              <span className="font-medium">{it.product_name}</span>
-              <span className="text-stone-500">เบิกไป {it.qty_out} ชิ้น</span>
+
+        {isSettled && (
+          <div className="rounded-2xl bg-stone-900 text-white p-5 space-y-2 shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
+            <div className="flex justify-between text-sm text-stone-300">
+              <span>ขายได้ {totals.qtySold}/{totals.qtyOut} ชิ้น</span>
+              <span>{totals.sellThroughPercent.toFixed(0)}%</span>
             </div>
-            {isSettled ? (
-              <div className="flex justify-between text-sm text-stone-600">
-                <span>ขายได้ {it.qty_sold ?? 0} ชิ้น · เหลือ {it.qty_out - (it.qty_sold ?? 0)} ชิ้น</span>
-                <span className="font-medium text-stone-900">{formatBaht(it.amount_collected ?? 0)} บาท</span>
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-0.5">
-                  <label htmlFor={`qty-sold-${it.id}`} className="text-xs text-stone-500">ขายได้กี่ชิ้น</label>
-                  <input
-                    id={`qty-sold-${it.id}`}
-                    type="number"
-                    inputMode="numeric"
-                    min="0"
-                    max={it.qty_out}
-                    value={rows[i]?.qty_sold ?? ''}
-                    onChange={(e) => updateQtySold(i, e.target.value)}
-                    className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
-                  />
-                </div>
-                <div className="space-y-0.5">
-                  <label htmlFor={`amount-collected-${it.id}`} className="text-xs text-stone-500">ได้เงินเท่าไหร่ (บาท)</label>
-                  <input
-                    id={`amount-collected-${it.id}`}
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    value={rows[i]?.amount_collected ?? ''}
-                    onChange={(e) => updateAmount(i, e.target.value)}
-                    className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
-                  />
-                </div>
-              </div>
-            )}
+            <div className="flex justify-between text-sm text-stone-300"><span>รายรับ</span><span>{formatBaht(totals.revenue)}</span></div>
+            <div className="flex justify-between text-sm text-stone-300"><span>ต้นทุน</span><span>{formatBaht(totals.cost)}</span></div>
+            <div className="flex justify-between text-xl font-bold border-t border-stone-700 pt-2">
+              <span>กำไร</span>
+              <span className={totals.profit >= 0 ? 'text-green-400' : 'text-red-400'}>{formatBaht(totals.profit)}</span>
+            </div>
           </div>
-          )
-        })}
-      </div>
-
-      {isSettled && totals.revenue > 0 && (
-        <button
-          type="button"
-          onClick={() => void handleToggleProceedsReceived()}
-          className={
-            'w-full rounded-lg px-3 py-2.5 text-sm font-medium ' +
-            (withdrawal.proceeds_received
-              ? 'bg-green-100 text-green-700'
-              : 'bg-red-50 border border-red-300 text-red-700')
-          }
-        >
-          {withdrawal.proceeds_received ? '✅ ได้รับเงินจากผู้เบิกแล้ว (กดยกเลิกถ้ากดผิด)' : '⚠️ ยังไม่ได้รับเงิน — กดยืนยันเมื่อได้รับแล้ว'}
-        </button>
-      )}
-
-      {isSettled && (
-        <div className="rounded-2xl bg-stone-900 text-white p-5 space-y-2">
-          <div className="flex justify-between text-sm text-stone-300">
-            <span>ขายได้ {totals.qtySold}/{totals.qtyOut} ชิ้น</span>
-            <span>{totals.sellThroughPercent.toFixed(0)}%</span>
-          </div>
-          <div className="flex justify-between text-sm text-stone-300"><span>รายรับ</span><span>{formatBaht(totals.revenue)}</span></div>
-          <div className="flex justify-between text-sm text-stone-300"><span>ต้นทุน</span><span>{formatBaht(totals.cost)}</span></div>
-          <div className="flex justify-between text-xl font-bold border-t border-stone-700 pt-2">
-            <span>กำไร</span>
-            <span className={totals.profit >= 0 ? 'text-green-400' : 'text-red-400'}>{formatBaht(totals.profit)}</span>
-          </div>
-        </div>
-      )}
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <div className="flex gap-2">
-        {isSettled ? (
-          <button
-            type="button"
-            onClick={() => void handleReopen()}
-            className="flex-1 rounded-xl border-2 border-stone-300 text-stone-700 font-medium py-3"
-          >
-            แก้ไขผลขาย
-          </button>
-        ) : (
-          <button
-            type="button"
-            onClick={() => void handleSettle()}
-            disabled={saving}
-            className="flex-1 rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-50"
-          >
-            {saving ? 'กำลังบันทึก...' : 'ปิดรอบ / บันทึกผลขาย'}
-          </button>
         )}
-        <button
-          type="button"
-          onClick={() => setShowDeleteConfirm(true)}
-          className="rounded-xl border-2 border-red-300 text-red-700 font-medium px-4"
-        >
-          ลบ
-        </button>
-      </div>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <div className="flex gap-2">
+          {isSettled ? (
+            <button
+              type="button"
+              onClick={() => void handleReopen()}
+              className="flex-1 rounded-xl border border-stone-300 bg-white text-stone-700 font-medium py-3 shadow-sm"
+            >
+              แก้ไขผลขาย
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void handleSettle()}
+              disabled={saving}
+              className="flex-1 rounded-xl bg-stone-900 text-white font-semibold py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-50 disabled:shadow-none"
+            >
+              {saving ? 'กำลังบันทึก...' : 'ปิดรอบ / บันทึกผลขาย'}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() => setShowDeleteConfirm(true)}
+            className="rounded-xl border border-red-300 bg-red-50 text-red-700 font-medium px-4 shadow-sm"
+          >
+            ลบ
+          </button>
+        </div>
 
       {showDeleteConfirm && (
         <ConfirmDialog
@@ -294,6 +308,7 @@ export function WithdrawalDetailPage() {
           onCancel={() => setShowDeleteConfirm(false)}
         />
       )}
+      </div>
     </div>
   )
 }

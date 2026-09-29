@@ -160,256 +160,282 @@ export function NewWithdrawalPage() {
     navigate(`/withdrawals/${id}`)
   }
 
+  const inputClass = 'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400'
+  const cardClass = 'rounded-2xl border border-stone-200/70 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] p-4 space-y-3.5'
+
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-24">
-      <Link to="/withdrawals" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
-        ← กลับหน้าเบิกของ
-      </Link>
-      <h1 className="text-lg font-semibold">เบิกของใหม่</h1>
+    <div className="bg-stone-50 min-h-screen">
+      <div className="p-4 space-y-4 max-w-2xl mx-auto pb-24">
+        <Link
+          to="/withdrawals"
+          className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        >
+          ← กลับหน้าเบิกของ
+        </Link>
+        <h1 className="text-xl font-bold text-stone-900">เบิกของใหม่</h1>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1">
-          <label htmlFor="withdrawn-at" className="text-sm text-stone-600">วันที่เบิก</label>
-          <input
-            id="withdrawn-at"
-            type="date"
-            value={withdrawnAt}
-            onChange={(e) => setWithdrawnAt(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          />
-        </div>
-        <div className="space-y-1">
-          <label htmlFor="location" className="text-sm text-stone-600">สถานที่ (ไม่บังคับ)</label>
-          <input
-            id="location"
-            value={location}
-            onChange={(e) => setLocation(e.target.value)}
-            placeholder="เช่น โรงเรียน"
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          />
-        </div>
-        <div className={'space-y-1 col-span-2' + (withdrawnByShake ? ' animate-shake' : '')}>
-          <label htmlFor="withdrawn-by" className="text-sm text-stone-600">ผู้เบิกไปขาย *</label>
-          <select
-            id="withdrawn-by"
-            value={withdrawnBy}
-            onChange={(e) => {
-              setWithdrawnBy(e.target.value)
-              if (e.target.value) setWithdrawnByError(false)
-            }}
-            className={
-              'w-full rounded-lg border px-3 py-2 ' + (withdrawnByError ? 'border-red-400' : 'border-stone-300')
-            }
-          >
-            <option value="">เลือกผู้เบิก</option>
-            {activeStaff.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.display_name ?? m.email}{m.role === 'owner' ? ' (เจ้าของร้าน)' : ''}
-              </option>
-            ))}
-          </select>
-        </div>
-        {withdrawnBy && (
-          <div className="space-y-2 col-span-2">
-            <label className="text-sm text-stone-600">ค่าจ้างผู้เบิก (ไม่บังคับ)</label>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={() => setWageType(wageType === 'cash' ? '' : 'cash')}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (wageType === 'cash' ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-              >
-                💵 เงินสด
-              </button>
-              <button
-                type="button"
-                onClick={() => setWageType(wageType === 'product' ? '' : 'product')}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (wageType === 'product' ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-              >
-                🍪 สินค้า
-              </button>
+        <section className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-stone-100 grid place-items-center text-sm shrink-0">📋</span>
+            ข้อมูลการเบิก
+          </h2>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <label htmlFor="withdrawn-at" className="text-xs font-medium text-stone-500">วันที่เบิก</label>
+              <input
+                id="withdrawn-at"
+                type="date"
+                value={withdrawnAt}
+                onChange={(e) => setWithdrawnAt(e.target.value)}
+                className={inputClass}
+              />
             </div>
-            {wageType === 'cash' && (
-              <div className="space-y-0.5">
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="1"
-                  max="30"
-                  step="1"
-                  placeholder="30"
-                  value={wageCashAmount}
-                  onChange={(e) => setWageCashAmount(e.target.value)}
-                  aria-label="จำนวนเงินค่าจ้าง (บาท)"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-                <p className="text-xs text-stone-400">ตั้งได้ 1-30 บาท</p>
+            <div className="space-y-1">
+              <label htmlFor="location" className="text-xs font-medium text-stone-500">สถานที่ (ไม่บังคับ)</label>
+              <input
+                id="location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="เช่น โรงเรียน"
+                className={inputClass}
+              />
+            </div>
+            <div className={'space-y-1 col-span-2' + (withdrawnByShake ? ' animate-shake' : '')}>
+              <label htmlFor="withdrawn-by" className="text-xs font-medium text-stone-500">ผู้เบิกไปขาย *</label>
+              <select
+                id="withdrawn-by"
+                value={withdrawnBy}
+                onChange={(e) => {
+                  setWithdrawnBy(e.target.value)
+                  if (e.target.value) setWithdrawnByError(false)
+                }}
+                className={inputClass + (withdrawnByError ? ' border-red-400' : '')}
+              >
+                <option value="">เลือกผู้เบิก</option>
+                {activeStaff.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.display_name ?? m.email}{m.role === 'owner' ? ' (เจ้าของร้าน)' : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {withdrawnBy && (
+              <div className="space-y-2 col-span-2">
+                <label className="text-xs font-medium text-stone-500">ค่าจ้างผู้เบิก (ไม่บังคับ)</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setWageType(wageType === 'cash' ? '' : 'cash')}
+                    className={'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' + (wageType === 'cash' ? 'bg-stone-900 text-white shadow-sm' : 'bg-stone-100 text-stone-700')}
+                  >
+                    💵 เงินสด
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setWageType(wageType === 'product' ? '' : 'product')}
+                    className={'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' + (wageType === 'product' ? 'bg-stone-900 text-white shadow-sm' : 'bg-stone-100 text-stone-700')}
+                  >
+                    🍪 สินค้า
+                  </button>
+                </div>
+                {wageType === 'cash' && (
+                  <div className="space-y-0.5">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="1"
+                      max="30"
+                      step="1"
+                      placeholder="30"
+                      value={wageCashAmount}
+                      onChange={(e) => setWageCashAmount(e.target.value)}
+                      aria-label="จำนวนเงินค่าจ้าง (บาท)"
+                      className={inputClass}
+                    />
+                    <p className="text-xs text-stone-400">ตั้งได้ 1-30 บาท</p>
+                  </div>
+                )}
+                {wageType === 'product' && (
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={wageProductId}
+                      onChange={(e) => setWageProductId(e.target.value)}
+                      aria-label="สินค้าที่จ่ายเป็นค่าจ้าง"
+                      className={inputClass}
+                    >
+                      <option value="">เลือกสินค้า</option>
+                      {products.filter((p) => p.is_active).map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      min="1"
+                      step="1"
+                      placeholder="จำนวน"
+                      value={wageProductQty}
+                      onChange={(e) => setWageProductQty(e.target.value)}
+                      aria-label="จำนวนสินค้าที่จ่ายเป็นค่าจ้าง"
+                      className={inputClass}
+                    />
+                  </div>
+                )}
               </div>
             )}
-            {wageType === 'product' && (
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={wageProductId}
-                  onChange={(e) => setWageProductId(e.target.value)}
-                  aria-label="สินค้าที่จ่ายเป็นค่าจ้าง"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                >
-                  <option value="">เลือกสินค้า</option>
-                  {products.filter((p) => p.is_active).map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  inputMode="numeric"
-                  min="1"
-                  step="1"
-                  placeholder="จำนวน"
-                  value={wageProductQty}
-                  onChange={(e) => setWageProductQty(e.target.value)}
-                  aria-label="จำนวนสินค้าที่จ่ายเป็นค่าจ้าง"
-                  className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-                />
-              </div>
-            )}
+            <div className="space-y-1 col-span-2">
+              <label htmlFor="note" className="text-xs font-medium text-stone-500">หมายเหตุ (ไม่บังคับ)</label>
+              <input
+                id="note"
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
-        )}
-        <div className="space-y-1 col-span-2">
-          <label htmlFor="note" className="text-sm text-stone-600">หมายเหตุ (ไม่บังคับ)</label>
-          <input
-            id="note"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
-          />
-        </div>
-      </div>
+        </section>
 
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold">เลือกสินค้าที่จะเบิก</h2>
-        <input
-          placeholder="ค้นหาสินค้า"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setCategoryId(null)}
-            className={'rounded-full px-3 py-1.5 text-sm ' + (!categoryId ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-          >
-            ทั้งหมด
-          </button>
-          {categories.map((c) => (
+        <section className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-green-50 grid place-items-center text-sm shrink-0">🛒</span>
+            เลือกสินค้าที่จะเบิก
+          </h2>
+          <input
+            placeholder="🔍 ค้นหาสินค้า"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className={inputClass}
+          />
+          <div className="flex flex-wrap gap-2">
             <button
-              key={c.id}
               type="button"
-              onClick={() => setCategoryId(c.id)}
-              className={'rounded-full px-3 py-1.5 text-sm ' + (categoryId === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+              onClick={() => setCategoryId(null)}
+              className={'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' + (!categoryId ? 'bg-stone-900 text-white shadow-sm' : 'bg-stone-100 text-stone-700')}
             >
-              {c.name}
+              ทั้งหมด
             </button>
-          ))}
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-          {filtered.map((p) => (
-            <button key={p.id} type="button" onClick={() => addProduct(p)}>
-              <ProductCard product={p} mode="picker" />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-2">
-        <div className="flex items-end gap-2">
-          <div className="flex-1 space-y-0.5">
-            <label htmlFor="discount-per-unit" className="text-sm text-stone-600">
-              ลดราคาต่อชิ้น (บาท) — เช่นไม่มีค่าสติกเกอร์/ถุงตอนเอาไปขายนอกร้าน
-            </label>
-            <input
-              id="discount-per-unit"
-              type="number"
-              inputMode="decimal"
-              min="0"
-              placeholder="เช่น 10"
-              value={discountPerUnit}
-              onChange={(e) => setDiscountPerUnit(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-          </div>
-          <button
-            type="button"
-            onClick={applyDiscountToAll}
-            disabled={items.length === 0}
-            className="rounded-lg border border-stone-300 text-stone-700 text-sm font-medium px-3 py-2 disabled:opacity-40"
-          >
-            ใช้กับทุกชิ้นที่เลือกแล้ว
-          </button>
-        </div>
-        <p className="text-xs text-stone-400">
-          ตั้งไว้ก่อนแล้วค่อยเลือกสินค้า ราคาจะลดให้อัตโนมัติทุกชิ้น หรือกด "ใช้กับทุกชิ้น" เพื่ออัปเดตของที่เลือกไว้แล้ว — แก้ราคาแต่ละชิ้นเองด้านล่างได้เสมอ
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <h2 className="text-sm font-semibold">รายการที่จะเบิก</h2>
-        {items.length === 0 && <p className="text-sm text-stone-400">ยังไม่ได้เลือกสินค้า</p>}
-        {items.map((it, i) => (
-          <div key={i} className="rounded-lg border border-stone-200 px-3 py-2 space-y-2">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium">{it.product_name}</p>
-              <button type="button" onClick={() => removeItem(i)} className="text-red-600 text-sm shrink-0">
-                ลบ
+            {categories.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => setCategoryId(c.id)}
+                className={'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' + (categoryId === c.id ? 'bg-stone-900 text-white shadow-sm' : 'bg-stone-100 text-stone-700')}
+              >
+                {c.name}
               </button>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-0.5">
-                <label htmlFor={`item-price-${i}`} className="text-xs text-stone-500">ราคาขาย/ชิ้น (บาท)</label>
-                <input
-                  id={`item-price-${i}`}
-                  type="number"
-                  min="0"
-                  inputMode="decimal"
-                  value={it.unit_price}
-                  onChange={(e) => updatePrice(i, Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
-                />
-              </div>
-              <div className="space-y-0.5">
-                <label htmlFor={`item-qty-${i}`} className="text-xs text-stone-500">จำนวนที่เบิก</label>
-                <input
-                  id={`item-qty-${i}`}
-                  type="number"
-                  min="1"
-                  step="1"
-                  inputMode="numeric"
-                  value={it.qty_out}
-                  onChange={(e) => updateQty(i, Number(e.target.value))}
-                  className="w-full rounded-lg border border-stone-300 px-2.5 py-2 text-sm"
-                />
-              </div>
-            </div>
-            {it.unit_price !== it.original_price && (
-              <p className="text-xs text-stone-400">
-                ราคาปกติ {formatBaht(it.original_price)} → ลดเหลือ {formatBaht(it.unit_price)} ต่อชิ้น
-              </p>
-            )}
+            ))}
           </div>
-        ))}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {filtered.map((p) => (
+              <button key={p.id} type="button" onClick={() => addProduct(p)} className="text-left rounded-xl">
+                <ProductCard product={p} mode="picker" />
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-amber-50 grid place-items-center text-sm shrink-0">🏷️</span>
+            ส่วนลด
+          </h2>
+          <div className="flex items-end gap-2">
+            <div className="flex-1 space-y-0.5">
+              <label htmlFor="discount-per-unit" className="text-xs font-medium text-stone-500">
+                ลดราคาต่อชิ้น (บาท) — เช่นไม่มีค่าสติกเกอร์/ถุงตอนเอาไปขายนอกร้าน
+              </label>
+              <input
+                id="discount-per-unit"
+                type="number"
+                inputMode="decimal"
+                min="0"
+                placeholder="เช่น 10"
+                value={discountPerUnit}
+                onChange={(e) => setDiscountPerUnit(e.target.value)}
+                className={inputClass}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={applyDiscountToAll}
+              disabled={items.length === 0}
+              className="rounded-xl border border-stone-300 bg-white text-stone-700 text-sm font-medium px-3 py-2.5 disabled:opacity-40 shrink-0"
+            >
+              ใช้กับทุกชิ้นที่เลือกแล้ว
+            </button>
+          </div>
+          <p className="text-xs text-stone-400">
+            ตั้งไว้ก่อนแล้วค่อยเลือกสินค้า ราคาจะลดให้อัตโนมัติทุกชิ้น หรือกด "ใช้กับทุกชิ้น" เพื่ออัปเดตของที่เลือกไว้แล้ว — แก้ราคาแต่ละชิ้นเองด้านล่างได้เสมอ
+          </p>
+        </section>
+
+        <section className={cardClass}>
+          <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-blue-50 grid place-items-center text-sm shrink-0">📦</span>
+            รายการที่จะเบิก
+          </h2>
+          {items.length === 0 && <p className="text-sm text-stone-400">ยังไม่ได้เลือกสินค้า</p>}
+          {items.map((it, i) => (
+            <div key={i} className="rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 space-y-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-sm font-medium text-stone-900">{it.product_name}</p>
+                <button
+                  type="button"
+                  onClick={() => removeItem(i)}
+                  className="text-red-600 text-xs font-medium rounded-full bg-red-50 px-2.5 py-1 shrink-0"
+                >
+                  ลบ
+                </button>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-0.5">
+                  <label htmlFor={`item-price-${i}`} className="text-xs text-stone-500">ราคาขาย/ชิ้น (บาท)</label>
+                  <input
+                    id={`item-price-${i}`}
+                    type="number"
+                    min="0"
+                    inputMode="decimal"
+                    value={it.unit_price}
+                    onChange={(e) => updatePrice(i, Number(e.target.value))}
+                    className="w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm"
+                  />
+                </div>
+                <div className="space-y-0.5">
+                  <label htmlFor={`item-qty-${i}`} className="text-xs text-stone-500">จำนวนที่เบิก</label>
+                  <input
+                    id={`item-qty-${i}`}
+                    type="number"
+                    min="1"
+                    step="1"
+                    inputMode="numeric"
+                    value={it.qty_out}
+                    onChange={(e) => updateQty(i, Number(e.target.value))}
+                    className="w-full rounded-lg border border-stone-300 bg-white px-2.5 py-2 text-sm"
+                  />
+                </div>
+              </div>
+              {it.unit_price !== it.original_price && (
+                <p className="text-xs text-stone-400">
+                  ราคาปกติ {formatBaht(it.original_price)} → ลดเหลือ {formatBaht(it.unit_price)} ต่อชิ้น
+                </p>
+              )}
+            </div>
+          ))}
+        </section>
+
+        {error && <p className="text-sm text-red-600">{error}</p>}
+
+        <button
+          type="button"
+          onClick={() => void handleSubmit()}
+          disabled={saving}
+          className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-50 disabled:shadow-none"
+        >
+          {saving ? 'กำลังบันทึก...' : 'เริ่มเบิกของ'}
+        </button>
+
+        {withdrawnByError && <Toast variant="error" message="กรุณาเลือกผู้เบิก" onDone={() => setWithdrawnByError(false)} />}
       </div>
-
-      {error && <p className="text-sm text-red-600">{error}</p>}
-
-      <button
-        type="button"
-        onClick={() => void handleSubmit()}
-        disabled={saving}
-        className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-50"
-      >
-        {saving ? 'กำลังบันทึก...' : 'เริ่มเบิกของ'}
-      </button>
-
-      {withdrawnByError && <Toast variant="error" message="กรุณาเลือกผู้เบิก" onDone={() => setWithdrawnByError(false)} />}
     </div>
   )
 }
