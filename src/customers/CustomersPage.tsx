@@ -13,7 +13,14 @@ export function CustomersPage() {
     return customers.filter((c) => c.name.toLowerCase().includes(q) || (c.phone ?? '').includes(q))
   }, [customers, search])
 
-  if (loading) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (loading) {
+    return (
+      <div className="p-8 flex items-center justify-center gap-2.5 text-stone-400">
+        <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+        กำลังโหลด...
+      </div>
+    )
+  }
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">

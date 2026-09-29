@@ -62,7 +62,10 @@ export function AddressForm() {
 
   return (
     <div className="p-4 max-w-lg mx-auto space-y-4">
-      <Link to={`/customers/${customerId}`} className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+      <Link
+        to={`/customers/${customerId}`}
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับ
       </Link>
 

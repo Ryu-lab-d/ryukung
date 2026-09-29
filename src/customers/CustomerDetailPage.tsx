@@ -31,7 +31,14 @@ export function CustomerDetailPage() {
   const [reorderingId, setReorderingId] = useState<string | null>(null)
   const [reorderError, setReorderError] = useState<string | null>(null)
 
-  if (!customer) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (!customer) {
+    return (
+      <div className="p-8 flex items-center justify-center gap-2.5 text-stone-400">
+        <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+        กำลังโหลด...
+      </div>
+    )
+  }
 
   async function handleReorder(orderId: string) {
     setReorderingId(orderId)
@@ -52,11 +59,14 @@ export function CustomerDetailPage() {
 
   return (
     <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <Link to="/customers" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+      <Link
+        to="/customers"
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับหน้าลูกค้า
       </Link>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
         <div
           className={'flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold ' + avatarStyle(customer.name)}
         >
@@ -71,18 +81,18 @@ export function CustomerDetailPage() {
         </div>
         <Link
           to={`/customers/${customer.id}/edit`}
-          className="shrink-0 rounded-lg border border-stone-300 text-stone-600 text-sm px-3 py-1.5 hover:bg-stone-50 transition-colors"
+          className="shrink-0 rounded-full border border-stone-300 bg-white text-stone-600 text-sm font-medium px-3 py-1.5 hover:bg-stone-50 transition-colors"
         >
           แก้ไข
         </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
+        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
           <p className="text-xs text-stone-500">📦 จำนวนออเดอร์</p>
           <p className="text-xl font-semibold text-stone-900">{customer.order_count}</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3">
+        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
           <p className="text-xs text-stone-500">💰 ยอดซื้อรวม</p>
           <p className="text-xl font-semibold text-stone-900">{formatBaht(customer.total_spend)}</p>
         </div>
@@ -94,7 +104,7 @@ export function CustomerDetailPage() {
         </div>
       )}
 
-      <section className="rounded-xl border border-stone-200 bg-white p-3 space-y-2">
+      <section className="rounded-2xl border border-stone-200 bg-white p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-900">📍 ที่อยู่จัดส่ง</h2>
           <Link
@@ -105,7 +115,7 @@ export function CustomerDetailPage() {
           </Link>
         </div>
         {addresses.map((a) => (
-          <div key={a.id} className="rounded-lg border border-stone-200 px-3 py-2.5 text-sm flex items-start justify-between gap-2">
+          <div key={a.id} className="rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 text-sm flex items-start justify-between gap-2">
             <div className="min-w-0">
               <p className="font-medium text-stone-900 flex items-center gap-1.5">
                 {a.label}
@@ -122,7 +132,7 @@ export function CustomerDetailPage() {
             </div>
             <Link
               to={`/customers/${customer.id}/addresses/${a.id}/edit`}
-              className="text-xs text-stone-500 underline shrink-0"
+              className="text-xs font-medium text-stone-600 bg-white border border-stone-200 rounded-full px-2.5 py-1 shrink-0"
             >
               แก้ไข
             </Link>
@@ -131,7 +141,7 @@ export function CustomerDetailPage() {
         {addresses.length === 0 && <p className="text-sm text-stone-400 py-2">ยังไม่มีที่อยู่</p>}
       </section>
 
-      <section className="rounded-xl border border-stone-200 bg-white p-3 space-y-1">
+      <section className="rounded-2xl border border-stone-200 bg-white p-3.5 space-y-1 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
         <h2 className="text-sm font-semibold text-stone-900 mb-1">🧾 ประวัติการซื้อ</h2>
         {reorderError && <p className="text-xs text-red-600 pb-1">{reorderError}</p>}
         {orders.map((o) => (
@@ -159,13 +169,13 @@ export function CustomerDetailPage() {
         {orders.length === 0 && <p className="text-sm text-stone-400">ยังไม่เคยสั่งซื้อ</p>}
       </section>
 
-      <div className="border-t border-stone-100 pt-3">
+      <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4">
         {deleteError && <p className="text-sm text-red-600 mb-2">{deleteError}</p>}
         <button
           type="button"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
-          className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+          className="w-full rounded-xl bg-red-600 text-white font-medium py-2.5 hover:bg-red-700 transition-colors disabled:opacity-50"
         >
           {deleting ? 'กำลังลบ...' : '🗑️ ลบลูกค้าถาวร'}
         </button>
