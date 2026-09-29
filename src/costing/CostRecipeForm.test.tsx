@@ -18,6 +18,13 @@ vi.mock('./useCostRecipe', () => ({
   }),
 }))
 
+// คลังวัตถุดิบจริง (คนละชุดกับ ingredientsOverride ด้านบนที่เป็นวัตถุดิบที่บันทึกไว้ในสูตรนี้แล้ว) — ว่างเปล่า
+// เป็นค่าเริ่มต้นในทุกเทสต์เดิม (แถวใหม่เลยเป็นโหมด 'manual' อัตโนมัติ ตรงกับพฤติกรรมเดิมก่อนมีตัวเลือกนี้)
+let stockIngredientsOverride: any[] = []
+vi.mock('../ingredients/useIngredients', () => ({
+  useIngredients: () => ({ ingredients: stockIngredientsOverride, loading: false }),
+}))
+
 const saveCostRecipe = vi.fn()
 const deleteCostRecipe = vi.fn()
 vi.mock('./api', () => ({
@@ -58,6 +65,7 @@ beforeEach(() => {
   ingredientsOverride = []
   laborOverride = []
   loadingOverride = false
+  stockIngredientsOverride = []
   saveCostRecipe.mockReset()
   deleteCostRecipe.mockReset()
   navigate.mockReset()
@@ -74,6 +82,25 @@ describe('CostRecipeForm — สร้างใหม่', () => {
 
     // เนย 5000g ราคา 1125 ใช้ 200g = 45 บาท — ปรากฏทั้งที่แถววัตถุดิบและในสรุปด้านล่าง (ต้นทุนรวม/ต้นทุนต่อชิ้นเท่ากันพอดีเพราะมีชิ้นเดียว 1 หน่วย)
     expect(screen.getAllByText('45.00').length).toBeGreaterThan(0)
+  })
+
+  it('มีวัตถุดิบในคลัง แถวใหม่เริ่มที่โหมด "เลือกจากคลัง" อัตโนมัติ เลือกแล้วหน่วย+ราคาต่อหน่วยดึงมาให้เอง ไม่ต้องพิมพ์เอง (กันบั๊กแปลงหน่วยผิด)', async () => {
+    stockIngredientsOverride = [
+      { id: 'ing1', name: 'แป้งสาลี', unit: 'กรัม', cost_per_unit: 0.05, stock_qty: 10000, low_stock_threshold: 1000, cost_per_unit_raw: 0 },
+    ]
+    renderNew()
+
+    // แถวแรกที่มีอยู่ก่อนแล้วยังเป็นโหมดกรอกเอง (ของเดิมก่อนมีตัวเลือกนี้) — กดปุ่ม "เลือกจากคลัง" เพื่อสลับโหมด
+    await userEvent.click(screen.getByRole('button', { name: '🗂️ เลือกจากคลัง' }))
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'ing1')
+
+    // หน่วย "กรัม" และต้นทุนต่อหน่วยต้องโผล่มาเองจากคลัง ไม่ใช่จากการพิมพ์
+    expect(screen.getByText(/ต้นทุน 0\.05 บาท\/กรัม/)).toBeInTheDocument()
+    expect(screen.getByLabelText('สูตรนี้ใช้กี่ กรัม')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('สูตรนี้ใช้กี่ กรัม'), '200')
+    // แป้ง 0.05 บาท/กรัม ใช้ 200 กรัม = 10 บาท — คำนวณถูกต้องโดยไม่มีช่องให้พิมพ์หน่วย/ราคาที่ซื้อเองเลย
+    expect(screen.getAllByText('10.00').length).toBeGreaterThan(0)
   })
 
   it('กดบันทึก ส่งวัตถุดิบและค่าแรงที่กรอกไปยัง saveCostRecipe ครบถ้วน แล้วพาไปหน้าแก้ไข', async () => {
