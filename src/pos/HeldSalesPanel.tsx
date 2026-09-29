@@ -22,14 +22,15 @@ export function HeldSalesPanel({
   if (heldSales.length === 0) return null
 
   return (
-    <div className="rounded-xl border border-amber-300 bg-amber-50 overflow-hidden">
+    <div className="rounded-2xl border border-amber-200 bg-amber-50/70 overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
       >
-        <p className="text-sm font-semibold text-amber-800">⏸ บิลที่พักไว้ ({heldSales.length})</p>
-        <span className="text-amber-600 text-sm">{expanded ? '▲ ซ่อน' : '▼ ดูรายการ'}</span>
+        <div className="w-10 h-10 rounded-full bg-amber-100 grid place-items-center text-lg shrink-0">⏸️</div>
+        <p className="text-sm font-semibold text-amber-800 flex-1">บิลที่พักไว้ ({heldSales.length})</p>
+        <span className="text-amber-600 text-xs font-medium shrink-0">{expanded ? '▲ ซ่อน' : '▼ ดูรายการ'}</span>
       </button>
 
       {expanded && (
@@ -55,7 +56,11 @@ export function HeldSalesPanel({
                   >
                     เรียกคืน
                   </button>
-                  <button type="button" onClick={() => setConfirmDiscardId(h.id)} className="text-red-600 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setConfirmDiscardId(h.id)}
+                    className="text-red-600 text-xs font-medium rounded-full bg-red-50 px-2.5 py-1.5"
+                  >
                     ลบ
                   </button>
                 </div>

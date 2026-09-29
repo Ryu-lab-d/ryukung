@@ -110,110 +110,125 @@ export function POSPage() {
 
   if (step === 'payment') {
     return (
-      <div className="p-4 max-w-md mx-auto">
-        <PaymentStep items={items} settings={settings} onBack={() => setStep('cart')} onComplete={handleComplete} />
+      <div className="bg-stone-50 min-h-screen p-4">
+        <div className="max-w-md mx-auto">
+          <PaymentStep items={items} settings={settings} onBack={() => setStep('cart')} onComplete={handleComplete} />
+        </div>
       </div>
     )
   }
 
   if (step === 'complete' && saleResult) {
     return (
-      <div className="p-4 max-w-md mx-auto">
-        <SaleComplete result={saleResult} grandTotal={completedTotal} onNextSale={handleNextSale} />
-        {milestoneCount !== null && (
-          <MilestoneToast count={milestoneCount} onDone={() => setMilestoneCount(null)} />
-        )}
+      <div className="bg-stone-50 min-h-screen p-4">
+        <div className="max-w-md mx-auto">
+          <SaleComplete result={saleResult} grandTotal={completedTotal} onNextSale={handleNextSale} />
+          {milestoneCount !== null && (
+            <MilestoneToast count={milestoneCount} onDone={() => setMilestoneCount(null)} />
+          )}
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-5xl mx-auto pb-8">
-      <h1 className="text-lg font-semibold">ขายหน้าร้าน</h1>
-      <p className="text-sm text-stone-500">ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย</p>
-
-      <TodaySalesPanel sales={todaySales} loading={todaySalesLoading} />
-      <HeldSalesPanel
-        heldSales={heldSales}
-        canResume={items.length === 0}
-        onResume={resumeSale}
-        onDiscard={discardHeldSale}
-      />
-
-      <div className="lg:grid lg:grid-cols-[1fr,380px] lg:gap-4 lg:items-start">
-        <div className="space-y-2">
-          <input
-            placeholder="ค้นหาสินค้า"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          />
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setCategoryId(null)}
-              className={'rounded-full px-3 py-1.5 text-sm ' + (!categoryId ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-            >
-              ทั้งหมด
-            </button>
-            {categories.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                onClick={() => setCategoryId(c.id)}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (categoryId === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100')}
-              >
-                {c.name}
-              </button>
-            ))}
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-32 lg:pb-0">
-            {filtered.map((p) => (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => addProduct(p)}
-                className={p.id === justAddedId ? 'animate-cart-bump' : ''}
-              >
-                <ProductCard product={p} mode="picker" />
-              </button>
-            ))}
-          </div>
+    <div className="bg-stone-50 min-h-screen">
+      <div className="p-4 space-y-4 max-w-5xl mx-auto pb-8">
+        <div>
+          <h1 className="text-xl font-bold text-stone-900">ขายหน้าร้าน</h1>
+          <p className="text-sm text-stone-500 mt-0.5">ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย</p>
         </div>
 
-        {/* จอกว้าง: ตะกร้าลอยอยู่ขวามือระหว่างเลือกสินค้า / มือถือ: เรียงไว้ใต้ตัวเลือกสินค้า */}
-        <div className="mt-4 lg:mt-0">
-          <CartPanel
-            items={items}
-            onUpdateQty={updateQty}
-            onUpdatePrice={updatePrice}
-            onRemove={removeItem}
-            onCheckout={() => setStep('payment')}
-            onHold={holdSale}
-          />
-        </div>
-      </div>
+        <TodaySalesPanel sales={todaySales} loading={todaySalesLoading} />
+        <HeldSalesPanel
+          heldSales={heldSales}
+          canResume={items.length === 0}
+          onResume={resumeSale}
+          onDiscard={discardHeldSale}
+        />
 
-      {/* แถบสรุปยอดลอยด้านล่าง เฉพาะจอแคบ — กันต้องเลื่อนหาปุ่มชำระเงินตอนตะกร้าอยู่ใต้รายการสินค้ายาวๆ */}
-      {items.length > 0 && (
-        <div className="lg:hidden fixed bottom-16 inset-x-0 bg-white border-t border-stone-200 p-3">
-          <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
-            <div>
-              <p className="text-xs text-stone-500">ยอดรวม ({items.length} รายการ)</p>
-              <p className="text-xl font-bold text-stone-900">
-                {formatBaht(items.reduce((sum, it) => sum + it.unit_price * it.qty, 0))} บาท
-              </p>
+        <div className="lg:grid lg:grid-cols-[1fr,380px] lg:gap-4 lg:items-start">
+          <div className="space-y-3">
+            <input
+              placeholder="🔍 ค้นหาสินค้า"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm shadow-[0_1px_2px_rgb(0_0_0_/_0.04)] focus:outline-none focus:ring-2 focus:ring-stone-900/10 focus:border-stone-400"
+            />
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => setCategoryId(null)}
+                className={'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ' + (!categoryId ? 'bg-stone-900 text-white shadow-sm' : 'bg-white border border-stone-200 text-stone-600')}
+              >
+                ทั้งหมด
+              </button>
+              {categories.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setCategoryId(c.id)}
+                  className={'rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ' + (categoryId === c.id ? 'bg-stone-900 text-white shadow-sm' : 'bg-white border border-stone-200 text-stone-600')}
+                >
+                  {c.name}
+                </button>
+              ))}
             </div>
-            <button
-              type="button"
-              onClick={() => setStep('payment')}
-              className="rounded-xl bg-stone-900 text-white font-semibold px-6 py-3"
-            >
-              ชำระเงิน
-            </button>
+            {filtered.length === 0 ? (
+              <div className="rounded-2xl bg-white border border-stone-200 p-10 text-center">
+                <p className="text-3xl mb-1.5">🔍</p>
+                <p className="text-sm text-stone-400">ไม่พบสินค้าที่ค้นหา</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 pb-32 lg:pb-0">
+                {filtered.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => addProduct(p)}
+                    className={'text-left rounded-xl ' + (p.id === justAddedId ? 'animate-cart-bump' : '')}
+                  >
+                    <ProductCard product={p} mode="picker" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* จอกว้าง: ตะกร้าลอยอยู่ขวามือระหว่างเลือกสินค้า / มือถือ: เรียงไว้ใต้ตัวเลือกสินค้า */}
+          <div className="mt-4 lg:mt-0">
+            <CartPanel
+              items={items}
+              onUpdateQty={updateQty}
+              onUpdatePrice={updatePrice}
+              onRemove={removeItem}
+              onCheckout={() => setStep('payment')}
+              onHold={holdSale}
+            />
           </div>
         </div>
-      )}
+
+        {/* แถบสรุปยอดลอยด้านล่าง เฉพาะจอแคบ — กันต้องเลื่อนหาปุ่มชำระเงินตอนตะกร้าอยู่ใต้รายการสินค้ายาวๆ */}
+        {items.length > 0 && (
+          <div className="lg:hidden fixed bottom-16 inset-x-0 bg-white border-t border-stone-200 p-3 shadow-[0_-4px_16px_-4px_rgb(0_0_0_/_0.08)]">
+            <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
+              <div>
+                <p className="text-xs text-stone-500">ยอดรวม ({items.length} รายการ)</p>
+                <p className="text-xl font-bold text-stone-900 tabular-nums">
+                  {formatBaht(items.reduce((sum, it) => sum + it.unit_price * it.qty, 0))} บาท
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep('payment')}
+                className="rounded-xl bg-stone-900 text-white font-semibold px-6 py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
+              >
+                ชำระเงิน
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   )
 }

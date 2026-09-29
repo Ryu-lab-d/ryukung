@@ -98,37 +98,41 @@ export function PaymentStep({
 
   return (
     <div className="space-y-4">
-      <button type="button" onClick={onBack} className="text-sm text-stone-600 underline">
+      <button
+        type="button"
+        onClick={onBack}
+        className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับไปแก้ตะกร้า
       </button>
 
-      <div className="rounded-2xl bg-stone-900 text-white p-5 text-center">
+      <div className="rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
         <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
         <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
         <p className="text-sm text-stone-300">บาท</p>
       </div>
 
       {!method && (
-        <div className="flex gap-2">
+        <div className="flex gap-3">
           <button
             type="button"
             onClick={() => setMethod('cash')}
-            className="flex-1 rounded-xl border-2 border-stone-300 py-6 text-center font-medium"
+            className="flex-1 rounded-2xl border border-stone-200 bg-white py-6 text-center font-medium shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] hover:border-stone-300 transition-colors"
           >
-            <span className="block text-3xl mb-1">💵</span>{' '}
+            <span className="block text-3xl mb-1.5">💵</span>{' '}
             เงินสด
           </button>
           {settings?.promptpay ? (
             <button
               type="button"
               onClick={() => setMethod('promptpay')}
-              className="flex-1 rounded-xl border-2 border-stone-300 py-6 text-center font-medium"
+              className="flex-1 rounded-2xl border border-stone-200 bg-white py-6 text-center font-medium shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] hover:border-stone-300 transition-colors"
             >
-              <span className="block text-3xl mb-1">💳</span>{' '}
+              <span className="block text-3xl mb-1.5">💳</span>{' '}
               พร้อมเพย์
             </button>
           ) : (
-            <div className="flex-1 rounded-xl border-2 border-dashed border-stone-200 py-6 text-center text-stone-400 text-sm px-2">
+            <div className="flex-1 rounded-2xl border-2 border-dashed border-stone-200 py-6 text-center text-stone-400 text-sm px-2">
               ยังไม่ได้ตั้งเลขพร้อมเพย์ในหน้าตั้งค่า
             </div>
           )}
@@ -137,15 +141,19 @@ export function PaymentStep({
 
       {method === 'cash' && (
         <div className="space-y-3">
-          <button type="button" onClick={() => setMethod('')} className="text-sm text-stone-600 underline">
+          <button
+            type="button"
+            onClick={() => setMethod('')}
+            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+          >
             ← เปลี่ยนวิธีจ่าย
           </button>
           <button
             type="button"
             onClick={() => setTendered(String(grandTotal))}
             className={
-              'w-full rounded-lg font-semibold py-3 text-sm ' +
-              (tendered === String(grandTotal) ? 'bg-green-600 text-white' : 'border-2 border-green-600 text-green-700 bg-green-50')
+              'w-full rounded-xl font-semibold py-3 text-sm transition-colors ' +
+              (tendered === String(grandTotal) ? 'bg-green-600 text-white shadow-sm' : 'border-2 border-green-600 text-green-700 bg-green-50')
             }
           >
             ✅ รับพอดี {formatBaht(grandTotal)} บาท
@@ -159,7 +167,7 @@ export function PaymentStep({
             type="button"
             onClick={() => void finalizeSale('cash', change)}
             disabled={!enoughCash || saving}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-40 disabled:shadow-none"
           >
             {saving ? 'กำลังบันทึก...' : 'ยืนยันรับเงิน'}
           </button>
@@ -168,17 +176,21 @@ export function PaymentStep({
 
       {method === 'promptpay' && settings?.promptpay && (
         <div className="space-y-3">
-          <button type="button" onClick={() => setMethod('')} className="text-sm text-stone-600 underline">
+          <button
+            type="button"
+            onClick={() => setMethod('')}
+            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+          >
             ← เปลี่ยนวิธีจ่าย
           </button>
-          <div className="rounded-xl border border-stone-200 p-4">
+          <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
             <PromptPayQR promptpayId={settings.promptpay} amount={grandTotal} />
           </div>
           <button
             type="button"
             onClick={() => void finalizeSale('promptpay', null)}
             disabled={saving}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-40 disabled:shadow-none"
           >
             {saving ? 'กำลังบันทึก...' : '✅ ยืนยันว่าลูกค้าจ่ายแล้ว'}
           </button>

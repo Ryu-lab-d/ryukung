@@ -137,7 +137,7 @@ describe('POSPage — พักบิล', () => {
     await userEvent.click(screen.getAllByText('คุกกี้')[0])
     await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
     expect(screen.getByText('ยังไม่ได้เลือกสินค้า')).toBeInTheDocument()
-    expect(screen.getByText('⏸ บิลที่พักไว้ (1)')).toBeInTheDocument()
+    expect(screen.getByText('บิลที่พักไว้ (1)')).toBeInTheDocument()
     expect(screen.getByText('1 รายการ · 40.00 บาท')).toBeInTheDocument()
   })
 
@@ -156,7 +156,7 @@ describe('POSPage — พักบิล', () => {
     await userEvent.click(screen.getByRole('button', { name: '⏸ พักบิล' }))
     await userEvent.click(screen.getByRole('button', { name: 'เรียกคืน' }))
     expect(screen.getAllByText('40.00 บาท').length).toBeGreaterThan(0)
-    expect(screen.queryByText('⏸ บิลที่พักไว้')).not.toBeInTheDocument()
+    expect(screen.queryByText('บิลที่พักไว้')).not.toBeInTheDocument()
   })
 
   it('พักบิลไว้แล้ว unmount+remount หน้า (จำลองสลับแท็บ) บิลที่พักไว้ยังอยู่', async () => {
@@ -166,7 +166,7 @@ describe('POSPage — พักบิล', () => {
     unmount()
 
     renderPOSPage()
-    expect(screen.getByText('⏸ บิลที่พักไว้ (1)')).toBeInTheDocument()
+    expect(screen.getByText('บิลที่พักไว้ (1)')).toBeInTheDocument()
   })
 })
 

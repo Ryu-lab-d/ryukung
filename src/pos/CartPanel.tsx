@@ -26,17 +26,17 @@ export function CartPanel({
   const grandTotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white p-3 space-y-3 lg:sticky lg:top-4 lg:self-start">
-      <h2 className="text-sm font-semibold">ตะกร้า</h2>
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] lg:sticky lg:top-4 lg:self-start">
+      <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-1.5">🧺 ตะกร้า</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-stone-400">ยังไม่ได้เลือกสินค้า</p>
+        <p className="text-sm text-stone-400 text-center py-6">ยังไม่ได้เลือกสินค้า</p>
       ) : (
         <div className="space-y-2">
           {items.map((it, i) => (
-            <div key={i} className="rounded-lg border border-stone-200 px-3 py-2 space-y-2">
+            <div key={i} className="rounded-xl border border-stone-200 bg-stone-50/60 px-3 py-2.5 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <p className="text-sm font-medium">{it.product_name}</p>
-                <button type="button" onClick={() => onRemove(i)} className="text-red-600 text-sm shrink-0">
+                <p className="text-sm font-medium text-stone-900">{it.product_name}</p>
+                <button type="button" onClick={() => onRemove(i)} className="text-red-600 text-xs font-medium rounded-full bg-red-50 px-2 py-1 shrink-0">
                   ลบ
                 </button>
               </div>
@@ -46,7 +46,7 @@ export function CartPanel({
                     type="button"
                     onClick={() => onUpdateQty(i, Math.max(1, it.qty - 1))}
                     aria-label={`ลดจำนวน ${it.product_name}`}
-                    className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-semibold grid place-items-center shrink-0"
+                    className="w-8 h-8 rounded-full bg-white border border-stone-200 text-stone-700 font-semibold grid place-items-center shrink-0"
                   >
                     −
                   </button>
@@ -55,7 +55,7 @@ export function CartPanel({
                     type="button"
                     onClick={() => onUpdateQty(i, it.qty + 1)}
                     aria-label={`เพิ่มจำนวน ${it.product_name}`}
-                    className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-semibold grid place-items-center shrink-0"
+                    className="w-8 h-8 rounded-full bg-white border border-stone-200 text-stone-700 font-semibold grid place-items-center shrink-0"
                   >
                     +
                   </button>
@@ -69,7 +69,7 @@ export function CartPanel({
                     inputMode="decimal"
                     value={it.unit_price}
                     onChange={(e) => onUpdatePrice(i, Number(e.target.value))}
-                    className="w-20 rounded-lg border border-stone-300 px-2 py-1.5 text-sm text-right"
+                    className="w-20 rounded-lg border border-stone-300 bg-white px-2 py-1.5 text-sm text-right"
                   />
                   <span className="text-xs text-stone-400">บาท</span>
                 </div>
@@ -97,7 +97,7 @@ export function CartPanel({
             type="button"
             onClick={onCheckout}
             disabled={items.length === 0}
-            className="flex-[2] rounded-xl bg-stone-900 text-white font-semibold py-3 disabled:opacity-40"
+            className="flex-[2] rounded-xl bg-stone-900 text-white font-semibold py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-40 disabled:shadow-none"
           >
             ไปหน้าชำระเงิน →
           </button>

@@ -21,7 +21,7 @@ describe('HeldSalesPanel', () => {
 
   it('มีบิลพักไว้ แสดงจำนวนรายการและยอดรวมถูกต้อง', () => {
     render(<HeldSalesPanel heldSales={heldSales} canResume={true} onResume={vi.fn()} onDiscard={vi.fn()} />)
-    expect(screen.getByText('⏸ บิลที่พักไว้ (1)')).toBeInTheDocument()
+    expect(screen.getByText('บิลที่พักไว้ (1)')).toBeInTheDocument()
     expect(screen.getByText('1 รายการ · 80.00 บาท')).toBeInTheDocument()
   })
 

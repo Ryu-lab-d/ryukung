@@ -10,17 +10,20 @@ export function TodaySalesPanel({ sales, loading }: { sales: TodaySale[]; loadin
   if (loading) return null
 
   return (
-    <div className="rounded-xl border border-stone-200 bg-white overflow-hidden">
+    <div className="rounded-2xl border border-stone-200 bg-white overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left"
+        className="w-full flex items-center justify-between px-4 py-3.5 text-left"
       >
-        <div>
-          <p className="text-xs text-stone-500">ยอดขายวันนี้ ({sales.length} บิล)</p>
-          <p className="text-lg font-bold text-stone-900">{formatBaht(total)} บาท</p>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-green-50 grid place-items-center text-lg shrink-0">💰</div>
+          <div>
+            <p className="text-xs text-stone-500">ยอดขายวันนี้ ({sales.length} บิล)</p>
+            <p className="text-lg font-bold text-stone-900 tabular-nums">{formatBaht(total)} บาท</p>
+          </div>
         </div>
-        <span className="text-stone-400 text-sm">{expanded ? '▲ ซ่อน' : '▼ ดูรายการ'}</span>
+        <span className="text-stone-400 text-xs font-medium shrink-0">{expanded ? '▲ ซ่อน' : '▼ ดูรายการ'}</span>
       </button>
 
       {expanded && (
