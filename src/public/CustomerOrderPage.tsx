@@ -24,7 +24,7 @@ import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 import { FloodAlertBanner } from './FloodAlertBanner'
 import { DatePicker } from './DatePicker'
-import { CheckoutBar, CheckoutHero, FormSection, IconInput, OrderTicket } from './CheckoutParts'
+import { CheckoutBar, CheckoutHero, FormSection, IconInput, OrderTicket, StepHero } from './CheckoutParts'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -521,11 +521,7 @@ export function CustomerOrderPage() {
           <BackButton onClick={() => setStep('menu')}>← แก้ไขตะกร้า</BackButton>
           <CheckoutProgress current="review" />
 
-          <div className="text-center py-2 animate-page-in">
-            <p className="text-4xl">🧺</p>
-            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">ทวนรายการที่สั่ง</h1>
-            <p className="text-sm text-stone-500 mt-1">เช็คสินค้า+จำนวนให้ครบก่อนไปขั้นตอนถัดไป</p>
-          </div>
+          <StepHero icon="🧺" title="ทวนรายการที่สั่ง" subtitle="เช็คสินค้า+จำนวนให้ครบก่อนไปขั้นตอนถัดไป" />
 
           {items.length === 0 ? (
             <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 text-center text-sm text-stone-500">
@@ -536,7 +532,8 @@ export function CustomerOrderPage() {
               {items.map((it, i) => (
                 <div
                   key={it.product_id}
-                  className="flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
+                  className="animate-product-in flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
+                  style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}
                 >
                   <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px]">
                     {it.imagePath ? (
@@ -581,7 +578,10 @@ export function CustomerOrderPage() {
               type="button"
               onClick={() => setStep('checkout')}
               disabled={items.length === 0}
-              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+              className={
+                'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                (items.length > 0 ? ' btn-shimmer' : '')
+              }
             >
               ยืนยันรายการ ไปกรอกที่อยู่ →
             </button>
@@ -744,11 +744,7 @@ export function CustomerOrderPage() {
           <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
           <CheckoutProgress current="terms" />
 
-          <div className="text-center py-2 animate-page-in">
-            <p className="text-4xl">📋</p>
-            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">เงื่อนไขการสั่งซื้อ</h1>
-            <p className="text-sm text-stone-500 mt-1">อ่านให้ครบก่อนไปหน้าชำระเงินนะ</p>
-          </div>
+          <StepHero icon="📋" title="เงื่อนไขการสั่งซื้อ" subtitle="อ่านให้ครบก่อนไปหน้าชำระเงินนะ" />
 
           <TermsSection icon="💳" title="การชำระเงิน">
             <p>ต้องชำระเงินก่อนเสมอผ่าน QR พร้อมเพย์ในหน้าถัดไป จากนั้นร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุด</p>
@@ -800,16 +796,15 @@ export function CustomerOrderPage() {
           <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
           <CheckoutProgress current="payment" />
 
-          <div className="text-center py-2 animate-page-in">
-            <p className="text-4xl">💳</p>
-            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">ชำระเงิน</h1>
-            <p className="text-sm text-stone-500 mt-1">สแกนจ่ายเงินก่อน แล้วกดยืนยันด้านล่างเพื่อส่งคำสั่งซื้อ</p>
-          </div>
+          <StepHero icon="💳" title="ชำระเงิน" subtitle="สแกนจ่ายเงินก่อน แล้วกดยืนยันด้านล่างเพื่อส่งคำสั่งซื้อ" />
 
-          <Reveal className="rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.5)]">
-            <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
-            <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
-            <p className="text-sm text-stone-300">บาท</p>
+          <Reveal className="relative overflow-hidden rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.5)]">
+            <AmbientGlow />
+            <div className="relative z-10">
+              <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
+              <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
+              <p className="text-sm text-stone-300">บาท</p>
+            </div>
           </Reveal>
 
           <Reveal delay={0.06} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
@@ -832,7 +827,10 @@ export function CustomerOrderPage() {
               type="button"
               onClick={() => void handleConfirmPayment()}
               disabled={submitting || paymentSuccessVisible || showLineReminder}
-              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+              className={
+                'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                (submitting ? '' : ' btn-shimmer')
+              }
             >
               {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
             </button>

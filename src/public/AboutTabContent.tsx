@@ -1,4 +1,4 @@
-import { Reveal } from './PublicSiteChrome'
+import { AmbientGlow, Reveal } from './PublicSiteChrome'
 
 type TimelineStep = { icon: string; title: string; text: string }
 
@@ -38,84 +38,105 @@ const HIGHLIGHTS = [
   { icon: '📦', title: 'Pre-order ทุกออเดอร์', text: 'ผลิตสดใหม่พอดีกับจำนวนที่สั่งจริง' },
 ]
 
+const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
+
 export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
   return (
     <div className="max-w-3xl mx-auto px-4 space-y-6">
       {/* เจ้าของร้าน + quick facts — สแกนอ่านได้ในไม่กี่วินาที ไม่ต้องอ่านย่อหน้ายาวๆ ก่อนถึงจะรู้ว่าร้านนี้คือใคร */}
-      <Reveal
-        as="section"
-        className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 space-y-4"
-      >
-        <div className="flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-full grid place-items-center text-3xl shrink-0 border-2 border-white shadow-sm"
-            style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
-          >
-            🧑‍🍳
+      <Reveal as="section" className={CARD + ' relative overflow-hidden p-6 space-y-4'}>
+        <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
+        <div className="flex items-center gap-4 pl-1">
+          <div className="relative shrink-0">
+            <span className="absolute inset-0 rounded-full bg-amber-400/50 animate-fab-ring" aria-hidden="true" />
+            <div
+              className="relative w-16 h-16 rounded-full grid place-items-center text-3xl border-2 border-white shadow-md"
+              style={{ background: 'linear-gradient(160deg, #3d2b1f, #6b4a35)' }}
+            >
+              🧑‍🍳
+            </div>
           </div>
           <div>
             <p className="font-display font-semibold text-stone-900 text-lg">ริว</p>
             <p className="text-sm text-stone-500">เจ้าของร้าน · ลงมือทำขนมทุกชิ้นเอง</p>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {QUICK_FACTS.map((f) => (
-            <span key={f} className="rounded-full bg-stone-50 border border-stone-200 px-3 py-1 text-xs font-medium text-stone-600">
+        <div className="flex flex-wrap gap-2 pl-1">
+          {QUICK_FACTS.map((f, i) => (
+            <span
+              key={f}
+              className="animate-product-in rounded-full bg-stone-50 border border-stone-200 px-3 py-1 text-xs font-medium text-stone-600 transition-all duration-200 hover:-translate-y-0.5 hover:bg-amber-50 hover:border-amber-200"
+              style={{ animationDelay: `${0.25 + i * 0.1}s` }}
+            >
               {f}
             </span>
           ))}
         </div>
       </Reveal>
 
-      {/* เส้นทางการเติบโต */}
-      <Reveal
-        as="section"
-        delay={0.08}
-        className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6"
-      >
+      {/* เส้นทางการเติบโต — แต่ละขั้นโผล่ตามจังหวะตอนเลื่อนมาเห็น เส้นเชื่อมไหลลง ขั้นสุดท้าย (วันนี้) มีวงแสงเรือง */}
+      <Reveal as="section" delay={0.08} className={CARD + ' p-6'}>
         <h2 className="text-lg font-display font-semibold text-stone-900 mb-4">เส้นทางการเติบโต</h2>
         <div className="space-y-5">
-          {TIMELINE.map((step, i) => (
-            <div key={i} className="flex gap-3">
-              <div className="flex flex-col items-center shrink-0">
-                <div className="w-9 h-9 rounded-full bg-stone-100 border border-stone-200 grid place-items-center text-lg">{step.icon}</div>
-                {i < TIMELINE.length - 1 && <div className="w-px flex-1 bg-stone-200 mt-1" />}
-              </div>
-              <div className="pb-1">
-                <p className="font-semibold text-stone-900 text-sm">{step.title}</p>
-                <p className="text-sm text-stone-600 leading-relaxed mt-0.5">{step.text}</p>
-              </div>
-            </div>
-          ))}
+          {TIMELINE.map((step, i) => {
+            const isLast = i === TIMELINE.length - 1
+            return (
+              <Reveal key={i} delay={i * 0.09} className="flex gap-3">
+                <div className="flex flex-col items-center shrink-0">
+                  <div
+                    className={
+                      'w-9 h-9 rounded-full grid place-items-center text-lg ' +
+                      (isLast
+                        ? 'bg-brand-shader ring-4 ring-amber-200 animate-node-ping'
+                        : 'bg-stone-100 border border-stone-200')
+                    }
+                  >
+                    {step.icon}
+                  </div>
+                  {!isLast && (
+                    <div
+                      className="w-0.5 flex-1 bg-gradient-to-b from-amber-300 to-stone-200 mt-1 animate-line-grow"
+                      style={{ animationDelay: `${i * 0.09 + 0.2}s` }}
+                    />
+                  )}
+                </div>
+                <div className="pb-1">
+                  <p className="font-semibold text-stone-900 text-sm">{step.title}</p>
+                  <p className="text-sm text-stone-600 leading-relaxed mt-0.5">{step.text}</p>
+                </div>
+              </Reveal>
+            )
+          })}
         </div>
       </Reveal>
 
       {/* สิ่งที่ทำให้ร้านเราต่าง */}
-      <Reveal
-        as="section"
-        delay={0.08}
-        className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 space-y-4"
-      >
+      <Reveal as="section" delay={0.08} className={CARD + ' p-6 space-y-4'}>
         <h2 className="text-lg font-display font-semibold text-stone-900">สิ่งที่ทำให้ร้านเราต่าง</h2>
         <div className="grid sm:grid-cols-3 gap-3">
           {HIGHLIGHTS.map((h, i) => (
-            <div key={i} className="rounded-xl bg-stone-50 border border-stone-200/60 p-4 text-center space-y-1.5">
-              <p className="text-2xl">{h.icon}</p>
+            <Reveal
+              key={i}
+              delay={i * 0.1}
+              className="group rounded-xl bg-gradient-to-br from-amber-50/60 to-stone-50 border border-stone-200/60 p-4 text-center space-y-1.5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_14px_28px_-12px_rgb(51_32_14_/_0.35)] hover:border-amber-200"
+            >
+              <p className="text-3xl transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6">{h.icon}</p>
               <p className="text-sm font-semibold text-stone-900">{h.title}</p>
               <p className="text-xs text-stone-500 leading-relaxed">{h.text}</p>
-            </div>
+            </Reveal>
           ))}
         </div>
       </Reveal>
 
       {/* CTA — สลับกลับไปแท็บเมนูในหน้าเดียวกันเลย ไม่ใช่ลิงก์เปลี่ยนหน้า */}
-      <Reveal
-        as="section"
-        delay={0.08}
-        className="rounded-2xl p-6 text-center space-y-3 bg-brand-shader"
-      >
-        <p className="text-white font-display font-semibold">อยากลองชิมฝีมือริวไหม?</p>
-        <button type="button" onClick={onGoToMenu} className="rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-sm">
+      <Reveal as="section" delay={0.08} className="relative overflow-hidden rounded-2xl p-6 text-center space-y-3 bg-brand-shader">
+        <AmbientGlow />
+        <p className="relative z-10 text-white font-display font-semibold">อยากลองชิมฝีมือริวไหม?</p>
+        <button
+          type="button"
+          onClick={onGoToMenu}
+          className="btn-shimmer relative z-10 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-md transition-transform duration-200 hover:-translate-y-0.5 active:scale-95"
+        >
           ดูเมนู สั่งเลย
         </button>
       </Reveal>

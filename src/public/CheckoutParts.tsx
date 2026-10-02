@@ -35,6 +35,25 @@ export function CheckoutHero({ count, total }: { count: number; total: number })
   )
 }
 
+/** หัวหน้าทั่วไปของขั้นตอนสั่งซื้อ (ทวนรายการ/เงื่อนไข/ชำระเงิน) หน้าตาเดียวกับ CheckoutHero — การ์ดสีแบรนด์ขยับได้
+ * ไอคอนเด้งเข้า ใช้ร่วมกันให้ทุกขั้นตอนดูเป็นชุดเดียวกัน */
+export function StepHero({ icon, title, subtitle }: { icon: string; title: string; subtitle: string }) {
+  return (
+    <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)] animate-form-in">
+      <AmbientGlow />
+      <div className="relative z-10 flex items-center gap-4">
+        <div className="w-14 h-14 rounded-2xl bg-white/15 backdrop-blur grid place-items-center text-3xl shrink-0 animate-icon-pop">
+          {icon}
+        </div>
+        <div className="min-w-0">
+          <h1 className="text-xl font-display font-bold leading-tight">{title}</h1>
+          <p className="text-sm text-white/80 mt-0.5">{subtitle}</p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** สรุปรายการสั่งแบบ "ตั๋ว/ใบเสร็จ" — รูปสินค้ามีป้ายจำนวน เส้นประแบ่งตรงกลางพร้อมรอยปรุสองข้าง ยอดรวมตัวใหญ่ท้ายใบ */
 export function OrderTicket({ items, grandTotal, delay = 0 }: { items: TicketItem[]; grandTotal: number; delay?: number }) {
   return (
