@@ -615,7 +615,7 @@ function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClo
               <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3 text-sm text-amber-800 space-y-1">
                 <p className="font-medium">🕐 ร้านยังไม่ได้บันทึกการชำระเงินของออเดอร์นี้</p>
                 <p>
-                  ถ้าคุณโอนเงินมาแล้ว กรุณาแอดไลน์ร้านพร้อมแนบสลิปและชื่อผู้สั่งซื้อ ร้านจะตรวจสอบและโอนคืนให้นะคะ
+                  ถ้าคุณโอนเงินมาแล้ว กรุณาแอดไลน์ร้านพร้อมแนบสลิปและชื่อผู้สั่งซื้อ เพื่อให้ร้านตรวจสอบรายการเข้าบัญชีให้นะคะ
                 </p>
               </div>
             )}
@@ -626,8 +626,7 @@ function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClo
               <div className="rounded-xl bg-sky-50 border border-sky-200 px-3.5 py-3 text-sm text-sky-900 space-y-1">
                 <p className="font-medium">ℹ️ ออเดอร์นี้ยังไม่มีการชำระเงิน จึงไม่มีเงินที่ต้องคืน</p>
                 <p>
-                  กรุณา <strong>ไม่ต้องโอนเงิน</strong> สำหรับออเดอร์นี้อีกนะคะ แต่ถ้าคุณเพิ่งโอนไปแล้ว
-                  แอดไลน์ร้านพร้อมแนบสลิปได้เลย ร้านจะตรวจสอบและโอนคืนให้
+                  กรุณา <strong>ไม่ต้องโอนเงิน</strong> สำหรับออเดอร์นี้นะคะ หากมีข้อสงสัยสอบถามร้านทางไลน์ได้เลย
                 </p>
               </div>
             )}
