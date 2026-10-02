@@ -48,6 +48,23 @@ function matchFaq(question: string, faqs: Faq[]): string | null {
   return best && best.score >= FUZZY_THRESHOLD ? best.answer : null
 }
 
+/** ถามน้องริว AI ผ่าน Edge Function — คืน null เมื่อใช้ไม่ได้ทุกกรณี (ให้ผู้เรียกถอยไปใช้ระบบจับคำเดิม)
+ * faqsOverride ส่งเฉพาะโหมดทดสอบของร้าน (เซิร์ฟเวอร์รับเฉพาะพนักงานที่ล็อกอินอยู่) */
+async function askAi(
+  history: { role: string; content: string }[],
+  faqsOverride?: Faq[]
+): Promise<{ answer: string; canAnswer: boolean } | null> {
+  try {
+    const { data, error } = await supabase.functions.invoke('chat-assistant', {
+      body: { messages: history, ...(faqsOverride ? { faqs_override: faqsOverride } : {}) },
+    })
+    if (error || !data || typeof data.answer !== 'string' || !data.answer.trim()) return null
+    return { answer: data.answer, canAnswer: data.can_answer !== false }
+  } catch {
+    return null
+  }
+}
+
 function TypingDots() {
   return (
     <div className="flex gap-1 px-3 py-3">
@@ -116,13 +133,19 @@ export function ChatBot({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [embedded])
 
-  function pushBotMessage(text: string) {
-    setBotTyping(true)
-    setTimeout(() => {
+  /** instant = true ตอนคำตอบมาจาก AI (รอเครือข่ายมาแล้ว ไม่ต้องหน่วงเทียมซ้ำ) */
+  function pushBotMessage(text: string, instant = false) {
+    const add = () => {
       setBotTyping(false)
       nextId.current += 1
       setMessages((m) => [...m, { id: nextId.current, from: 'bot', text }])
-    }, 700 + Math.random() * 500)
+    }
+    if (instant) {
+      add()
+      return
+    }
+    setBotTyping(true)
+    setTimeout(add, 700 + Math.random() * 500)
   }
 
   function handleOpen() {
@@ -134,13 +157,27 @@ export function ChatBot({
     }
   }
 
-  function handleSend(e: FormEvent) {
+  async function handleSend(e: FormEvent) {
     e.preventDefault()
     const question = input.trim()
-    if (!question) return
+    if (!question || botTyping) return
+    const history = [
+      ...messages.map((m) => ({ role: m.from === 'user' ? 'user' : 'assistant', content: m.text })),
+      { role: 'user', content: question },
+    ]
     nextId.current += 1
     setMessages((m) => [...m, { id: nextId.current, from: 'user', text: question }])
     setInput('')
+    setBotTyping(true)
+
+    // ถามน้องริว AI ก่อน (Edge Function chat-assistant อ่านเมนู/FAQ จริงของร้านมาตอบ) — ถ้า AI ใช้ไม่ได้ (ยังไม่ตั้งคีย์,
+    // โควตาเต็ม, เน็ตหลุด) ถอยกลับไปใช้ระบบจับคำ FAQ แบบเดิมด้านล่างแทน แชทไม่ตายและไม่โชว์ error ดิบให้ลูกค้าเห็น
+    const ai = await askAi(history, embedded ? faqs : undefined)
+    if (ai) {
+      const needsLine = !ai.canAnswer && lineUrl && !ai.answer.includes(lineUrl)
+      pushBotMessage(needsLine ? `${ai.answer}\n\nแอดไลน์ร้าน: ${lineUrl}` : ai.answer, true)
+      return
+    }
 
     const answer = matchFaq(question, faqs)
     if (answer) {
@@ -201,7 +238,10 @@ export function ChatBot({
     >
       <div className="flex items-center justify-between px-4 py-3 bg-stone-900 text-white rounded-t-2xl shrink-0">
         <div>
-          <p className="font-semibold text-sm">🥐 น้องริว</p>
+          <p className="font-semibold text-sm">
+            🥐 น้องริว
+            <span className="ml-1.5 align-middle text-[10px] rounded-full bg-white/15 px-1.5 py-0.5 font-medium">✨ AI</span>
+          </p>
           <p className="text-xs text-stone-300">{embedded ? 'ทดสอบคุยกับบอท (มุมมองลูกค้า)' : shopName}</p>
         </div>
         {!embedded && (
@@ -244,7 +284,7 @@ export function ChatBot({
         />
         <button
           type="submit"
-          disabled={!input.trim()}
+          disabled={!input.trim() || botTyping}
           aria-label="ส่งข้อความ"
           className="rounded-full bg-stone-900 text-white w-10 h-10 grid place-items-center disabled:opacity-40 shrink-0"
         >
