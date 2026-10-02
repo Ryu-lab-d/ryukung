@@ -214,9 +214,13 @@ export function PublicNav({
       }
     >
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
-        <button type="button" onClick={() => onTabChange('menu')} className="flex items-center gap-2.5 min-w-0 text-stone-900">
+        <button type="button" onClick={() => onTabChange('menu')} className="group flex items-center gap-2.5 min-w-0 text-stone-900">
           {logoPath ? (
-            <img src={productImageUrl(logoPath)} alt="" className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-sm" />
+            <img
+              src={productImageUrl(logoPath)}
+              alt=""
+              className="w-9 h-9 rounded-full object-cover shrink-0 border-2 border-white shadow-sm transition-transform duration-700 group-hover:rotate-[360deg]"
+            />
           ) : (
             <span className="text-xl shrink-0">🥐</span>
           )}
@@ -226,7 +230,7 @@ export function PublicNav({
         <div className="flex items-center gap-2 shrink-0">
           <div className="relative flex items-center bg-stone-200/60 rounded-full p-1 w-[190px] sm:w-[220px]">
             <div
-              className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-stone-900 transition-transform duration-300 ease-out"
+              className="absolute top-1 bottom-1 left-1 w-[calc(50%-4px)] rounded-full bg-brand-shader shadow-md transition-transform duration-300 ease-out"
               style={{ transform: activeTab === 'about' ? 'translateX(100%)' : 'translateX(0)' }}
               aria-hidden="true"
             />

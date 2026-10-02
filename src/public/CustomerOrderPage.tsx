@@ -282,6 +282,71 @@ function PaymentPendingPopup({ total, onDone, durationMs = 6000 }: { total: numb
   )
 }
 
+/** ไลต์บ็อกซ์ดูรูปสินค้าภาพใหญ่ — ลูกค้าแตะรูปในการ์ดสินค้าแล้วขยายขึ้นมาพร้อมชื่อ/ราคา/ปุ่มเพิ่มลงตะกร้า
+ * ปิดได้ด้วยปุ่ม ✕ แตะพื้นหลัง หรือกด Esc (ใช้ useClosingTransition ให้เฟดออกนุ่มๆ เหมือนป็อปอัพอื่น) */
+function ProductLightbox({
+  product,
+  onAdd,
+  onClose,
+}: {
+  product: PublicMenu['products'][number]
+  onAdd: (sourceEl: HTMLElement) => void
+  onClose: () => void
+}) {
+  const { closing, requestClose } = useClosingTransition(onClose)
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') requestClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return (
+    <div
+      className={'fixed inset-0 bg-black/70 backdrop-blur-sm grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}
+      onClick={requestClose}
+    >
+      <div
+        role="dialog"
+        aria-label={product.name}
+        className={'relative bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <button
+          type="button"
+          onClick={requestClose}
+          aria-label="ปิด"
+          className="absolute top-3 right-3 z-10 w-9 h-9 rounded-full bg-white/90 text-stone-600 grid place-items-center text-lg font-bold shadow-md transition-transform active:scale-90"
+        >
+          ✕
+        </button>
+        <div className="relative aspect-square bg-stone-100 overflow-hidden">
+          {product.image_path && (
+            <FadeImage src={productImageUrl(product.image_path)} alt={product.name} className="w-full h-full object-cover" />
+          )}
+        </div>
+        <div className="p-5 space-y-3 text-center">
+          <h2 className="text-xl font-display font-bold text-stone-900">{product.name}</h2>
+          <p className="text-lg font-semibold text-stone-900">
+            {formatBaht(product.price)} บาท <span className="text-sm font-normal text-stone-400">/{product.unit}</span>
+          </p>
+          <button
+            type="button"
+            onClick={(e) => {
+              onAdd(e.currentTarget)
+              requestClose()
+            }}
+            className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
+          >
+            🛒 เพิ่มลงตะกร้า
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /** ปุ่มติดต่อไลน์ร้าน — โชว์ทุกขั้นตอนของการสั่งซื้อ เผื่อลูกค้าติดปัญหาระหว่างทาง */
 function LineContactButton({ lineUrl }: { lineUrl: string | null }) {
   if (!lineUrl) return null
@@ -397,6 +462,7 @@ export function CustomerOrderPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [splashActive, setSplashActive] = useState(true)
   const [dateError, setDateError] = useState<string | null>(null)
+  const [zoomProduct, setZoomProduct] = useState<PublicMenu['products'][number] | null>(null)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
   function setTab(next: SiteTab) {
@@ -561,6 +627,9 @@ export function CustomerOrderPage() {
         <div>
           <div className="w-20 h-20 rounded-full bg-white/15 grid place-items-center mx-auto text-4xl animate-icon-pop">🧁</div>
           <p className="text-white/90 font-medium mt-4">กำลังโหลดเมนู...</p>
+          <div className="mx-auto mt-3 h-1 w-40 overflow-hidden rounded-full bg-white/20" aria-hidden="true">
+            <div className="h-full w-1/3 rounded-full bg-amber-200 animate-indeterminate" />
+          </div>
           <div className="flex items-center justify-center gap-1.5 mt-2.5" aria-hidden="true">
             <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-loading-dot" style={{ animationDelay: '0s' }} />
             <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-loading-dot" style={{ animationDelay: '0.15s' }} />
@@ -1145,7 +1214,10 @@ export function CustomerOrderPage() {
                         (p.id === justAddedId ? ' animate-cart-bump' : '')
                       }
                     >
-                      <div className="relative aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs overflow-hidden">
+                      <div
+                        className={'relative aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs overflow-hidden' + (p.image_path ? ' cursor-zoom-in' : '')}
+                        onClick={() => p.image_path && setZoomProduct(p)}
+                      >
                         {p.image_path ? (
                           <FadeImage
                             src={productImageUrl(p.image_path)}
@@ -1216,6 +1288,13 @@ export function CustomerOrderPage() {
       <CartFab ref={cartFabRef} count={items.length} total={grandTotal} bumping={cartBumping} onClick={() => setStep('review')} />
 
       {manualHowTo && <HowToUsePopup onClose={() => setManualHowTo(false)} />}
+      {zoomProduct && (
+        <ProductLightbox
+          product={zoomProduct}
+          onAdd={(el) => addProduct(zoomProduct, el)}
+          onClose={() => setZoomProduct(null)}
+        />
+      )}
     </div>
   )
 }
