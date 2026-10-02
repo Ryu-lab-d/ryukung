@@ -1,7 +1,7 @@
 import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { PageTexture, Reveal } from './PublicSiteChrome'
+import { AmbientGlow, PageTexture, Reveal } from './PublicSiteChrome'
 import { MAJOR_ROAD_TYPES, VERDICT_LABEL_TH, roadDisplayName, severityScore, type RoadFeature, type VehicleVerdict } from './floodData'
 
 // โหลด Leaflet (ไลบรารีแผนที่ ~150KB) แบบ lazy — แยกเป็นชิ้นของตัวเอง ไม่ให้ปนไปกับ bundle หลักของเว็บ
@@ -53,13 +53,23 @@ function StatSection({ icon, title, accent, children }: { icon: string; title: s
   )
 }
 
-function StatTile({ value, unit, label }: { value: string; unit: string; label: string }) {
+const TILE_TONE = {
+  neutral: 'from-stone-50 to-white border-stone-200/70 text-stone-900',
+  red: 'from-red-50 to-white border-red-200 text-red-700',
+  orange: 'from-orange-50 to-white border-orange-200 text-orange-700',
+  amber: 'from-amber-50 to-white border-amber-200 text-amber-700',
+  green: 'from-green-50 to-white border-green-200 text-green-700',
+  sky: 'from-sky-50 to-white border-sky-200 text-sky-700',
+  violet: 'from-violet-50 to-white border-violet-200 text-violet-700',
+} as const
+
+function StatTile({ value, unit, label, tone = 'neutral' }: { value: string; unit: string; label: string; tone?: keyof typeof TILE_TONE }) {
   return (
-    <div className="bg-stone-50 rounded-xl border border-stone-200/70 p-3 text-center">
-      <p className="text-lg font-bold tabular-nums text-stone-900">
+    <div className={`bg-gradient-to-br ${TILE_TONE[tone]} rounded-2xl border p-3.5 text-center shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md last:odd:col-span-2 sm:last:odd:col-span-1`}>
+      <p className="text-2xl font-display font-bold tabular-nums leading-none">
         {value} <span className="text-[11px] font-normal text-stone-400">{unit}</span>
       </p>
-      <p className="text-[11px] text-stone-500 leading-tight mt-0.5">{label}</p>
+      <p className="text-[11px] text-stone-500 leading-tight mt-1.5">{label}</p>
     </div>
   )
 }
@@ -135,9 +145,9 @@ export function FloodPage() {
 
   const level = !stats ? 'low' : stats.index >= 50 ? 'high' : stats.index >= 20 ? 'medium' : 'low'
   const accent = {
-    high: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', label: 'รุนแรง' },
-    medium: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500', label: 'ปานกลาง' },
-    low: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500', label: 'เบาบาง' },
+    high: { hero: 'from-red-800 via-red-600 to-orange-600', bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700', dot: 'bg-red-500', label: 'รุนแรง' },
+    medium: { hero: 'from-amber-700 via-amber-600 to-yellow-500', bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700', dot: 'bg-amber-500', label: 'ปานกลาง' },
+    low: { hero: 'from-green-800 via-green-600 to-emerald-500', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700', dot: 'bg-green-500', label: 'เบาบาง' },
   }[level]
 
   // เอาถนนสายหลักที่สาหัสที่สุดมาโชว์ ตัดชื่อซ้ำ (ถนนเส้นเดียวมักถูกตัดเป็นหลายท่อนในข้อมูลดิบ) เอาแค่ท่อน
@@ -163,16 +173,16 @@ export function FloodPage() {
     <div className="min-h-screen pb-16 font-warm bg-stone-50">
       <PageTexture />
       <div className="max-w-3xl mx-auto px-4 pt-6 space-y-5">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 rounded-3xl bg-white/80 backdrop-blur border border-stone-200/70 shadow-[0_8px_24px_-12px_rgb(51_32_14_/_0.35)] p-3 animate-form-in">
           <Link
             to="/menu"
-            className="shrink-0 rounded-full border border-stone-300 bg-white w-10 h-10 grid place-items-center text-stone-700 shadow-sm"
+            className="shrink-0 rounded-full bg-gradient-to-br from-stone-800 to-stone-900 text-white w-10 h-10 grid place-items-center shadow-md"
             aria-label="กลับไปหน้าเมนู"
           >
             ←
           </Link>
           <div>
-            <h1 className="text-xl font-display font-bold text-stone-900">สถานการณ์น้ำท่วมกรุงเทพฯ</h1>
+            <h1 className="text-xl font-display font-bold text-stone-900">🌊 สถานการณ์น้ำท่วมกรุงเทพฯ</h1>
             <p className="text-xs text-stone-500">
               {updatedAt
                 ? `อัปเดตล่าสุด ${updatedAt.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })} น.`
@@ -207,13 +217,28 @@ export function FloodPage() {
         )}
 
         {disasterMode === true && stats && (
-          <Reveal as="section" className={`rounded-2xl border ${accent.border} ${accent.bg} p-5`}>
-            <div className="flex items-center gap-2.5">
-              <span className={`w-2.5 h-2.5 rounded-full ${accent.dot} shrink-0 animate-pulse`} aria-hidden="true" />
-              <h2 className="font-display font-semibold text-stone-900">ภาพรวมตอนนี้</h2>
-              <span className={`ml-auto text-xs font-semibold px-2.5 py-1 rounded-full bg-white ${accent.text}`}>
-                ระดับ{accent.label} (ดัชนี {stats.index})
-              </span>
+          <Reveal
+            as="section"
+            className={`relative overflow-hidden rounded-3xl text-white p-5 shadow-[0_18px_36px_-16px_rgb(0_0_0_/_0.55)] bg-gradient-to-br ${accent.hero}`}
+          >
+            <AmbientGlow />
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="relative w-20 h-20 shrink-0">
+                <span className="absolute inset-0 rounded-full bg-white/30 animate-fab-ring" aria-hidden="true" />
+                <div className="relative w-20 h-20 rounded-full bg-white/95 grid place-items-center shadow-lg">
+                  <p className={`text-3xl font-display font-extrabold tabular-nums ${accent.text}`}>{stats.index}</p>
+                </div>
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs text-white/80 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" aria-hidden="true" /> ภาพรวมตอนนี้
+                </p>
+                <p className="text-xl font-display font-bold leading-tight">ระดับ{accent.label}</p>
+                <p className="text-xs text-white/80">ดัชนีน้ำท่วม จาก 100</p>
+              </div>
+            </div>
+            <div className="relative z-10 mt-4 h-2.5 rounded-full bg-black/20 overflow-hidden" aria-hidden="true">
+              <div className="h-full rounded-full bg-white/90 transition-all duration-1000" style={{ width: `${Math.min(100, Math.max(4, stats.index))}%` }} />
             </div>
           </Reveal>
         )}
@@ -221,24 +246,24 @@ export function FloodPage() {
         {disasterMode === true && stats && (
           <div className="space-y-3.5">
             <StatSection icon="🛣️" title="สถานะถนน" accent="bg-orange-50">
-              <StatTile value={stats.floodedKm.toFixed(1)} unit="กม." label="ถนนน้ำท่วมรวม" />
-              <StatTile value={stats.blockedKm.toFixed(1)} unit="กม." label="ตัดขาดสมบูรณ์" />
-              <StatTile value={stats.riskyKm.toFixed(1)} unit="กม." label="เสี่ยง ผ่านลำบาก" />
-              <StatTile value={stats.cautionKm.toFixed(1)} unit="กม." label="ต้องระวัง" />
-              <StatTile value={stats.clearedKm.toFixed(1)} unit="กม." label="กลับมาใช้ได้แล้ว" />
+              <StatTile tone="sky" value={stats.floodedKm.toFixed(1)} unit="กม." label="ถนนน้ำท่วมรวม" />
+              <StatTile tone="red" value={stats.blockedKm.toFixed(1)} unit="กม." label="ตัดขาดสมบูรณ์" />
+              <StatTile tone="orange" value={stats.riskyKm.toFixed(1)} unit="กม." label="เสี่ยง ผ่านลำบาก" />
+              <StatTile tone="amber" value={stats.cautionKm.toFixed(1)} unit="กม." label="ต้องระวัง" />
+              <StatTile tone="green" value={stats.clearedKm.toFixed(1)} unit="กม." label="กลับมาใช้ได้แล้ว" />
             </StatSection>
 
             <StatSection icon="🌧️" title="ฝนและระดับน้ำ" accent="bg-sky-50">
-              <StatTile value={stats.rainMax1h.toFixed(1)} unit="มม." label="ฝนสูงสุด (1 ชม.)" />
-              <StatTile value={stats.rainMax24h.toFixed(1)} unit="มม." label="ฝนสูงสุด (24 ชม.)" />
-              <StatTile value={stats.forecastMax3h.toFixed(1)} unit="มม." label="คาดการณ์ฝน 3 ชม.หน้า" />
-              <StatTile value={stats.wlHigh.toString()} unit="จุด" label="ระดับน้ำสูง" />
-              <StatTile value={stats.wlOver.toString()} unit="จุด" label="น้ำล้นตลิ่ง" />
+              <StatTile tone="sky" value={stats.rainMax1h.toFixed(1)} unit="มม." label="ฝนสูงสุด (1 ชม.)" />
+              <StatTile tone="sky" value={stats.rainMax24h.toFixed(1)} unit="มม." label="ฝนสูงสุด (24 ชม.)" />
+              <StatTile tone="sky" value={stats.forecastMax3h.toFixed(1)} unit="มม." label="คาดการณ์ฝน 3 ชม.หน้า" />
+              <StatTile tone="sky" value={stats.wlHigh.toString()} unit="จุด" label="ระดับน้ำสูง" />
+              <StatTile tone="red" value={stats.wlOver.toString()} unit="จุด" label="น้ำล้นตลิ่ง" />
             </StatSection>
 
             <StatSection icon="📢" title="รายงานจากประชาชน" accent="bg-violet-50">
-              <StatTile value={stats.reports.toString()} unit="รายงาน" label="รายงานทั้งหมด" />
-              <StatTile value={stats.reports1h.toString()} unit="รายงาน" label="ใน 1 ชม. ล่าสุด" />
+              <StatTile tone="violet" value={stats.reports.toString()} unit="รายงาน" label="รายงานทั้งหมด" />
+              <StatTile tone="violet" value={stats.reports1h.toString()} unit="รายงาน" label="ใน 1 ชม. ล่าสุด" />
             </StatSection>
           </div>
         )}
@@ -278,9 +303,13 @@ export function FloodPage() {
           ) : (
             <div className="grid sm:grid-cols-2 gap-2.5">
               {worstRoads.map((f, i) => (
-                <div key={i} className="bg-stone-50 rounded-xl border border-stone-200/70 p-3">
+                <div
+                  key={i}
+                  className="relative overflow-hidden bg-gradient-to-br from-stone-50 to-white rounded-2xl border border-stone-200/70 p-3 pl-4 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <span className={`absolute left-0 top-0 bottom-0 w-1.5 ${severityScore(f.properties.verdict) >= 9 ? 'bg-red-500' : severityScore(f.properties.verdict) >= 5 ? 'bg-orange-400' : 'bg-amber-400'}`} aria-hidden="true" />
                   <div className="flex items-center justify-between gap-2 mb-1.5">
-                    <p className="text-sm font-medium text-stone-900 truncate">{roadDisplayName(f)}</p>
+                    <p className="text-sm font-semibold text-stone-900 truncate"><span className="text-stone-300 mr-1.5">#{i + 1}</span>{roadDisplayName(f)}</p>
                     {f.properties.depthCm != null && (
                       <p className="text-xs text-stone-400 shrink-0">ลึก {f.properties.depthCm} ซม.</p>
                     )}
@@ -306,7 +335,7 @@ export function FloodPage() {
           href="https://floodboard.org"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-center gap-1.5 w-full rounded-xl bg-stone-900 text-white font-medium py-3 text-sm"
+          className="btn-shimmer flex items-center justify-center gap-1.5 w-full rounded-full bg-gradient-to-r from-stone-800 to-stone-900 text-white font-semibold py-3.5 text-sm shadow-[0_12px_24px_-12px_rgb(51_32_14_/_0.8)] transition-transform active:scale-95"
         >
           🗺️ ดูแผนที่เต็ม + เส้นทางแนะนำที่ Floodboard.org →
         </a>
