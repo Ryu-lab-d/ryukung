@@ -31,8 +31,12 @@ vi.mock('./useSettings', () => ({
   useSettings: () => ({ settings: settingsOverride, loading: false, save: vi.fn(), uploadLogo: vi.fn() }),
 }))
 
-const toPng = vi.fn().mockResolvedValue('data:image/png;base64,mock')
-vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }))
+const toBlob = vi.fn().mockResolvedValue(new Blob(['x'], { type: 'image/png' }))
+vi.mock('html-to-image', () => ({ toBlob: (...args: unknown[]) => toBlob(...args) }))
+
+// การบันทึกรูปไปผ่าน saveImage (Web Share / blob download) แล้ว — jsdom ไม่มี URL.createObjectURL จึง mock ทั้งตัว
+const saveImage = vi.fn().mockResolvedValue('downloaded')
+vi.mock('../lib/saveImage', () => ({ saveImage: (...args: unknown[]) => saveImage(...args) }))
 
 function renderPage() {
   render(
@@ -58,14 +62,12 @@ describe('PromoCardPage', () => {
     expect(screen.queryByAltText('QR แอดไลน์')).not.toBeInTheDocument()
   })
 
-  it('กดดาวน์โหลด เรียก htmlToImage.toPng กับการ์ดที่แสดงอยู่', async () => {
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  it('กดดาวน์โหลด สร้างรูปจากการ์ดที่แสดงอยู่ (toBlob) แล้วบันทึกลงเครื่องผ่าน saveImage', async () => {
     settingsOverride = baseSettings
     renderPage()
     await screen.findByAltText('QR แอดไลน์')
     await userEvent.click(screen.getByRole('button', { name: /ดาวน์โหลดเป็นรูปภาพ/ }))
-    expect(toPng).toHaveBeenCalled()
-    expect(clickSpy).toHaveBeenCalled()
-    clickSpy.mockRestore()
+    expect(toBlob).toHaveBeenCalled()
+    expect(saveImage).toHaveBeenCalledWith(expect.any(Blob), `${baseSettings.shop_name}-promo.png`, expect.any(String))
   })
 })

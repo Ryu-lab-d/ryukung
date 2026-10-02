@@ -1118,7 +1118,7 @@ export function CustomerOrderPage() {
               {filtered.map((p, idx) => {
                 const inCart = items.find((it) => it.product_id === p.id)
                 return (
-                  <div key={p.id} className="animate-product-in" style={{ animationDelay: `${Math.min(idx, 11) * 0.05}s` }}>
+                  <Reveal key={p.id} delay={(idx % 3) * 0.08} className="h-full">
                     <div
                       className={
                         'group h-full rounded-2xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_18px_32px_-12px_rgb(51_32_14_/_0.4)] ' +
@@ -1174,7 +1174,7 @@ export function CustomerOrderPage() {
                         )}
                       </div>
                     </div>
-                  </div>
+                  </Reveal>
                 )
               })}
               {filtered.length === 0 && <p className="col-span-full text-center text-sm text-stone-400 py-8">ไม่พบสินค้า</p>}

@@ -18,8 +18,12 @@ vi.mock('../lib/supabase', () => ({
   },
 }))
 
-const toPng = vi.fn().mockResolvedValue('data:image/png;base64,mock')
-vi.mock('html-to-image', () => ({ toPng: (...args: unknown[]) => toPng(...args) }))
+const toBlob = vi.fn().mockResolvedValue(new Blob(['x'], { type: 'image/png' }))
+vi.mock('html-to-image', () => ({ toBlob: (...args: unknown[]) => toBlob(...args) }))
+
+// การบันทึกรูปไปผ่าน saveImage (Web Share / blob download) แล้ว — jsdom ไม่มี URL.createObjectURL จึง mock ทั้งตัว
+const saveImage = vi.fn().mockResolvedValue('shared')
+vi.mock('../lib/saveImage', () => ({ saveImage: (...args: unknown[]) => saveImage(...args) }))
 
 const baseOrder = {
   shop_name: 'RYUKUNG BAKERY',
@@ -367,13 +371,13 @@ async function openOrderKeepPopup(order: typeof baseOrder) {
 }
 
 describe('ปุ่มบันทึกสรุปออเดอร์เป็นรูปภาพ', () => {
-  it('กดแล้วสร้างรูปจากการ์ดรายการสินค้าและดาวน์โหลดเป็นไฟล์ชื่อเลขออเดอร์', async () => {
-    const clickSpy = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
+  it('กดแล้วสร้างรูปจากการ์ดรายการสินค้า (toBlob) และบันทึกผ่าน saveImage เป็นไฟล์ชื่อเลขออเดอร์', async () => {
     await openOrder(baseOrder)
     await userEvent.click(screen.getByRole('button', { name: /บันทึกสรุปออเดอร์เป็นรูปภาพ/ }))
-    expect(toPng).toHaveBeenCalled()
-    expect(clickSpy).toHaveBeenCalled()
-    clickSpy.mockRestore()
+    expect(toBlob).toHaveBeenCalled()
+    await waitFor(() =>
+      expect(saveImage).toHaveBeenCalledWith(expect.any(Blob), `${baseOrder.order_no}.png`, expect.any(String))
+    )
   })
 })
 

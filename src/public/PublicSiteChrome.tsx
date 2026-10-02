@@ -281,39 +281,47 @@ export function PublicFooter({
   onTabChange: (tab: SiteTab) => void
 }) {
   return (
-    <footer className="mt-10 border-t-2 border-dashed border-stone-300 bg-stone-50 px-4 pt-9 pb-[calc(2.5rem+env(safe-area-inset-bottom))] text-center text-sm text-stone-500 space-y-4">
-      <div className="space-y-1">
-        <p className="font-display font-semibold text-stone-800 text-lg">{shopName}</p>
-        <p className="text-xs text-stone-400">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
-      </div>
+    <footer className="relative mt-12 overflow-hidden bg-brand-shader text-center text-sm text-white/80">
+      <WaveDivider className="rotate-180 absolute inset-x-0 top-0" />
+      <AmbientGlow />
+      <div className="relative z-10 px-4 pt-16 pb-[calc(2.5rem+env(safe-area-inset-bottom))] space-y-4">
+        <div className="space-y-1">
+          <p className="font-display font-bold text-white text-xl">{shopName}</p>
+          <SquiggleUnderline className="w-16 h-2 mx-auto text-white/40" />
+          <p className="text-xs text-white/70 pt-1">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
+        </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {lineUrl && (
-          <a
-            href={lineUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 rounded-full bg-[#06C755] text-white font-medium px-4 py-2 text-xs"
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {lineUrl && (
+            <a
+              href={lineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 rounded-full bg-[#06C755] text-white font-medium px-4 py-2 text-xs shadow-md transition-transform duration-200 hover:-translate-y-0.5 active:scale-95"
+            >
+              💬 แอดไลน์ร้าน
+            </a>
+          )}
+          {phone && (
+            <a
+              href={`tel:${phone}`}
+              className="flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur border border-white/30 text-white font-medium px-4 py-2 text-xs transition-all duration-200 hover:bg-white/25 hover:-translate-y-0.5 active:scale-95"
+            >
+              📞 {phone}
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={() => onTabChange(activeTab === 'menu' ? 'about' : 'menu')}
+            className="flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur border border-white/30 text-white font-medium px-4 py-2 text-xs transition-all duration-200 hover:bg-white/25 hover:-translate-y-0.5 active:scale-95"
           >
-            💬 แอดไลน์ร้าน
-          </a>
-        )}
-        {phone && (
-          <a href={`tel:${phone}`} className="flex items-center gap-1.5 rounded-full border border-stone-300 text-stone-700 font-medium px-4 py-2 text-xs">
-            📞 {phone}
-          </a>
-        )}
-        <button
-          type="button"
-          onClick={() => onTabChange(activeTab === 'menu' ? 'about' : 'menu')}
-          className="flex items-center gap-1.5 rounded-full border border-stone-300 text-stone-700 font-medium px-4 py-2 text-xs"
-        >
-          {activeTab === 'menu' ? '📖 เกี่ยวกับร้าน' : '🛒 ดูเมนู'}
-        </button>
-      </div>
+            {activeTab === 'menu' ? '📖 เกี่ยวกับร้าน' : '🛒 ดูเมนู'}
+          </button>
+        </div>
 
-      {address && <p className="text-xs text-stone-400">📍 {address}</p>}
-      <p className="text-xs text-stone-400">สั่งซื้อออนไลน์ผ่านหน้านี้ได้ตลอด 24 ชั่วโมง</p>
+        {address && <p className="text-xs text-white/70">📍 {address}</p>}
+        <p className="text-xs text-white/60">สั่งซื้อออนไลน์ผ่านหน้านี้ได้ตลอด 24 ชั่วโมง</p>
+      </div>
     </footer>
   )
 }
