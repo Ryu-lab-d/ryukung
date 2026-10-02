@@ -191,17 +191,30 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
   return (
     <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
       <div className={'bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 space-y-4 text-center ' + (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')}>
-        <p className="text-4xl">💡</p>
+        <div className="relative w-16 h-16 mx-auto">
+          <span className="absolute inset-0 rounded-full bg-amber-300/60 animate-fab-ring" aria-hidden="true" />
+          <div className="relative w-16 h-16 rounded-full bg-amber-100 grid place-items-center text-3xl animate-icon-pop">💡</div>
+        </div>
         <h2 className="text-lg font-display font-semibold text-stone-900">วิธีสั่งซื้อจากหน้านี้</h2>
-        <div className="space-y-2.5 text-left">
+        <div className="space-y-2 text-left">
           {items.map((it, i) => (
-            <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
-              <span className="text-lg shrink-0">{it.icon}</span>
-              <span>{it.text}</span>
+            <div
+              key={i}
+              className="animate-timeline-in flex items-start gap-3 text-sm text-stone-600 rounded-xl bg-stone-50 border border-stone-200/70 px-3 py-2.5"
+              style={{ animationDelay: `${0.12 + i * 0.09}s` }}
+            >
+              <span className="relative shrink-0 w-6 h-6 rounded-full bg-stone-900 text-white text-xs font-bold grid place-items-center">{i + 1}</span>
+              <span className="flex-1">
+                {it.icon} {it.text}
+              </span>
             </div>
           ))}
         </div>
-        <button type="button" onClick={requestClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
+        <button
+          type="button"
+          onClick={requestClose}
+          className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
+        >
           เข้าใจแล้ว เริ่มเลือกเมนู
         </button>
       </div>
@@ -299,7 +312,10 @@ function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; on
   return (
     <div className="fixed inset-0 bg-black/70 grid place-items-center p-4 z-50 animate-overlay-fade">
       <div className="relative bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-4 animate-toast-pop">
-        <div className="text-5xl animate-icon-pop">📣</div>
+        <div className="relative w-20 h-20 mx-auto">
+          <span className="absolute inset-0 rounded-full bg-green-300/60 animate-fab-ring" aria-hidden="true" />
+          <div className="relative w-20 h-20 rounded-full bg-green-50 border-2 border-green-200 grid place-items-center text-4xl animate-icon-pop">📣</div>
+        </div>
         <h2 className="text-lg font-bold text-stone-900">สำคัญมาก! กรุณาแอดไลน์ร้าน</h2>
         <p className="text-sm text-stone-600">
           ร้านจะแจ้งเลขที่ออเดอร์ อัปเดตสถานะงาน และ (ถ้าเลือกส่งขนส่ง) เลขพัสดุให้ทราบผ่านไลน์เป็นหลัก
@@ -310,7 +326,7 @@ function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; on
             href={lineUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm"
+            className="btn-shimmer flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-[0_10px_24px_-10px_rgb(6_199_85_/_0.6)] transition-transform active:scale-95"
           >
             💬 แอดไลน์ร้านตอนนี้เลย
           </a>
