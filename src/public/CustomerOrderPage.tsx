@@ -1159,9 +1159,13 @@ export function CustomerOrderPage() {
         <div key="menu" className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-form-in">
           <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
             <div className="text-center">
-              <h2 className="text-2xl font-display font-bold text-stone-900">เมนูสินค้า</h2>
+              <div className="flex items-center justify-center gap-3">
+                <span className="h-px w-10 bg-gradient-to-r from-transparent to-amber-700/40" aria-hidden="true" />
+                <h2 className="text-2xl font-display font-bold text-stone-900">🍪 เมนูสินค้า</h2>
+                <span className="h-px w-10 bg-gradient-to-l from-transparent to-amber-700/40" aria-hidden="true" />
+              </div>
               <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1 text-amber-700/50" />
-              <p className="text-xs text-stone-400 mt-1.5">{filtered.length} เมนู</p>
+              <p className="mt-2 inline-block rounded-full bg-white/70 border border-stone-200 px-3 py-0.5 text-xs text-stone-500">{filtered.length} เมนู · อบสดใหม่ทุกออเดอร์</p>
             </div>
 
             <LineContactButton lineUrl={menu.line_url} />
@@ -1207,9 +1211,9 @@ export function CustomerOrderPage() {
                   <Reveal key={p.id} delay={(idx % 3) * 0.08} className="h-full">
                     <div
                       className={
-                        'group h-full rounded-2xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_18px_32px_-12px_rgb(51_32_14_/_0.4)] ' +
+                        'group h-full rounded-3xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_22px_36px_-14px_rgb(51_32_14_/_0.45)] ' +
                         (inCart
-                          ? 'border-stone-900/70 shadow-[0_6px_18px_-8px_rgb(51_32_14_/_0.45)]'
+                          ? 'border-amber-600 ring-2 ring-amber-400/40 shadow-[0_10px_24px_-10px_rgb(193_130_61_/_0.7)]'
                           : 'border-stone-200/70 shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]') +
                         (p.id === justAddedId ? ' animate-cart-bump' : '')
                       }
@@ -1225,18 +1229,24 @@ export function CustomerOrderPage() {
                             className="w-full h-full object-cover group-hover:scale-110"
                           />
                         ) : 'ไม่มีรูป'}
+                        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 to-transparent" aria-hidden="true" />
+                        <span className="absolute left-2 bottom-2 rounded-full bg-white/95 backdrop-blur px-2.5 py-1 text-sm font-bold text-stone-900 shadow-md">
+                          {formatBaht(p.price)} <span className="text-[10px] font-medium text-stone-500">฿/{p.unit}</span>
+                        </span>
+                        {p.image_path && (
+                          <span className="absolute right-2 bottom-2 w-7 h-7 rounded-full bg-black/35 text-white text-xs grid place-items-center opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity" aria-hidden="true">🔍</span>
+                        )}
                         {inCart && (
                           <span
                             key={inCart.qty}
-                            className="absolute top-2 right-2 rounded-full bg-stone-900 text-white text-xs font-bold min-w-6 h-6 px-1.5 grid place-items-center shadow-md animate-qty-pop"
+                            className="absolute top-2 right-2 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 ring-2 ring-white text-white text-white text-xs font-bold min-w-6 h-6 px-1.5 grid place-items-center shadow-md animate-qty-pop"
                           >
                             {inCart.qty}
                           </span>
                         )}
                       </div>
-                      <div className="p-2.5 space-y-1.5">
-                        <p className="text-sm font-medium truncate text-stone-900">{p.name}</p>
-                        <p className="text-sm font-semibold text-stone-900">{formatBaht(p.price)} บาท <span className="text-xs font-normal text-stone-400">/{p.unit}</span></p>
+                      <div className="p-3 space-y-2">
+                        <p className="text-[15px] font-display font-medium leading-snug text-stone-900 line-clamp-2 min-h-[2.6em]">{p.name}</p>
                         {inCart ? (
                           <div className="flex items-center justify-between rounded-full bg-stone-100 p-0.5">
                             <button
@@ -1248,7 +1258,7 @@ export function CustomerOrderPage() {
                             <span key={inCart.qty} className="text-sm font-semibold tabular-nums animate-qty-pop">{inCart.qty}</span>
                             <button
                               type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty + 1)}
-                              className="w-8 h-8 rounded-full bg-stone-900 text-white shadow-sm font-semibold transition-transform active:scale-90"
+                              className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-sm font-semibold transition-transform active:scale-90"
                             >
                               +
                             </button>
@@ -1256,9 +1266,9 @@ export function CustomerOrderPage() {
                         ) : (
                           <button
                             type="button" onClick={(e) => addProduct(p, e.currentTarget)}
-                            className="w-full rounded-xl bg-stone-900 text-white text-sm font-medium py-2 transition-all duration-200 hover:bg-stone-800 active:scale-95"
+                            className="w-full rounded-full bg-gradient-to-r from-stone-800 to-stone-900 text-white text-sm font-semibold py-2.5 shadow-[0_8px_16px_-8px_rgb(51_32_14_/_0.7)] transition-all duration-200 hover:from-amber-700 hover:to-amber-800 active:scale-95"
                           >
-                            เพิ่มลงตะกร้า
+                            🛒 เพิ่มลงตะกร้า
                           </button>
                         )}
                       </div>
