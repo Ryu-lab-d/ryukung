@@ -265,6 +265,7 @@ export const CartFab = forwardRef<HTMLButtonElement, { count: number; total: num
         }
         style={{ bottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}
       >
+        <span className="pointer-events-none absolute inset-0 rounded-full border-2 border-stone-900 animate-fab-ring" aria-hidden="true" />
         <span className="relative text-xl leading-none">
           🧺
           <span className="absolute -top-2.5 -right-2.5 bg-white text-stone-900 text-[11px] font-bold rounded-full min-w-5 h-5 px-1 grid place-items-center">

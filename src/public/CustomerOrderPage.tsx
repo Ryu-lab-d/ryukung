@@ -483,14 +483,14 @@ export function CustomerOrderPage() {
                   <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button" onClick={() => updateQty(i, it.qty - 1)}
-                      className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                      className="w-8 h-8 rounded-full bg-stone-100 font-semibold transition-transform active:scale-90"
                     >
                       −
                     </button>
-                    <span className="text-sm font-medium tabular-nums w-4 text-center">{it.qty}</span>
+                    <span key={it.qty} className="text-sm font-medium tabular-nums w-4 text-center animate-qty-pop">{it.qty}</span>
                     <button
                       type="button" onClick={() => updateQty(i, it.qty + 1)}
-                      className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                      className="w-8 h-8 rounded-full bg-stone-900 text-white font-semibold transition-transform active:scale-90"
                     >
                       +
                     </button>
@@ -809,32 +809,45 @@ export function CustomerOrderPage() {
                 style={{ borderColor: 'rgba(255,255,255,0.4)' }}
               />
             )}
-            <h1 className="text-3xl md:text-5xl font-display font-bold text-white mt-4 leading-tight">{menu.shop_name}</h1>
-            <SquiggleUnderline className="w-20 h-2.5 mx-auto md:mx-0 mt-1.5 text-white/40" />
-            <p className="text-sm md:text-base mt-2.5 max-w-md mx-auto md:mx-0" style={{ color: 'rgba(255,255,255,0.85)' }}>
+            <h1
+              className="text-3xl md:text-5xl font-display font-bold text-white mt-4 leading-tight animate-hero-text"
+              style={{ animationDelay: '0.15s' }}
+            >
+              {menu.shop_name}
+            </h1>
+            <div className="animate-hero-text" style={{ animationDelay: '0.28s' }}>
+              <SquiggleUnderline className="w-20 h-2.5 mx-auto md:mx-0 mt-1.5 text-white/40" />
+            </div>
+            <p
+              className="text-sm md:text-base mt-2.5 max-w-md mx-auto md:mx-0 animate-hero-text"
+              style={{ color: 'rgba(255,255,255,0.85)', animationDelay: '0.4s' }}
+            >
               หวานน้อย อร่อยแน่ ไม่เหมือนใคร — ทำมือทุกชิ้นโดยเด็กอายุ 13 ปี
             </p>
 
-            <div className="mt-6">
+            <div className="mt-6 animate-hero-text" style={{ animationDelay: '0.55s' }}>
               {tab === 'about' ? (
                 <button
                   type="button"
                   onClick={goToMenuAndScroll}
-                  className="inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)]"
+                  className="btn-shimmer inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)] transition-transform duration-200 hover:-translate-y-0.5 active:scale-95"
                 >
                   🛒 ดูเมนู สั่งเลย
                 </button>
               ) : (
                 <a
                   href="#menu-section"
-                  className="inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)]"
+                  className="btn-shimmer inline-block rounded-2xl bg-stone-900 text-white font-semibold px-8 py-3.5 text-base shadow-[0_10px_28px_-8px_rgb(0_0_0_/_0.5)] transition-transform duration-200 hover:-translate-y-0.5 active:scale-95"
                 >
                   🛒 ดูเมนู สั่งเลย
                 </a>
               )}
             </div>
 
-            <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4">
+            <div
+              className="flex flex-wrap items-center justify-center md:justify-start gap-4 mt-4 animate-hero-text"
+              style={{ animationDelay: '0.7s' }}
+            >
               {menu.line_url && (
                 <a
                   href={menu.line_url}
@@ -859,9 +872,11 @@ export function CustomerOrderPage() {
           </div>
 
           {heroProductImage && (
-            <div className="hidden md:block md:flex-1">
-              <div className="max-w-xs ml-auto rounded-3xl overflow-hidden border-4 border-white/20 shadow-[0_24px_60px_-16px_rgb(0_0_0_/_0.55)] rotate-3 transition-transform hover:rotate-0 duration-500">
-                <img src={heroProductImage} alt="" className="w-full aspect-square object-cover" />
+            <div className="hidden md:block md:flex-1 animate-hero-text" style={{ animationDelay: '0.35s' }}>
+              <div className="animate-hero-float">
+                <div className="max-w-xs ml-auto rounded-3xl overflow-hidden border-4 border-white/20 shadow-[0_24px_60px_-16px_rgb(0_0_0_/_0.55)] rotate-3 transition-transform hover:rotate-0 duration-500">
+                  <img src={heroProductImage} alt="" className="w-full aspect-square object-cover" />
+                </div>
               </div>
             </div>
           )}
@@ -878,67 +893,99 @@ export function CustomerOrderPage() {
 
             <LineContactButton lineUrl={menu.line_url} />
 
-            <input
-              placeholder="ค้นหาสินค้า" value={search} onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-            />
-            <div className="flex flex-wrap gap-2">
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-sm opacity-60" aria-hidden="true">🔍</span>
+              <input
+                placeholder="ค้นหาสินค้า" value={search} onChange={(e) => setSearch(e.target.value)}
+                className="w-full rounded-xl border border-stone-300 bg-white/90 pl-10 pr-3.5 py-2.5 text-sm shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)] transition-shadow focus:outline-none focus:ring-2 focus:ring-stone-900/15 focus:border-stone-400"
+              />
+            </div>
+            <div className="flex gap-2 overflow-x-auto sm:flex-wrap pb-1 -mx-4 px-4 sm:mx-0 sm:px-0 [scrollbar-width:none]">
               <button
                 type="button" onClick={() => setCategoryId(null)}
-                className={'rounded-full px-3 py-1.5 text-sm ' + (!categoryId ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+                className={
+                  'shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ' +
+                  (!categoryId
+                    ? 'bg-stone-900 text-white shadow-[0_6px_14px_-6px_rgb(0_0_0_/_0.5)]'
+                    : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-400')
+                }
               >
                 ทั้งหมด
               </button>
               {menu.categories.map((c) => (
                 <button
                   key={c.id} type="button" onClick={() => setCategoryId(c.id)}
-                  className={'rounded-full px-3 py-1.5 text-sm ' + (categoryId === c.id ? 'bg-stone-900 text-white' : 'bg-stone-100')}
+                  className={
+                    'shrink-0 rounded-full px-4 py-1.5 text-sm font-medium transition-all duration-200 active:scale-95 ' +
+                    (categoryId === c.id
+                      ? 'bg-stone-900 text-white shadow-[0_6px_14px_-6px_rgb(0_0_0_/_0.5)]'
+                      : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-400')
+                  }
                 >
                   {c.name}
                 </button>
               ))}
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              {filtered.map((p) => {
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+              {filtered.map((p, idx) => {
                 const inCart = items.find((it) => it.product_id === p.id)
                 return (
-                  <div
-                    key={p.id}
-                    className={'rounded-xl border border-stone-200/70 bg-white overflow-hidden shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)] transition-all duration-300 md:hover:-translate-y-1 md:hover:shadow-[0_16px_28px_-10px_rgb(51_32_14_/_0.35)]' + (p.id === justAddedId ? ' animate-cart-bump' : '')}
-                  >
-                    <div className="aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs">
-                      {p.image_path ? (
-                        <img src={productImageUrl(p.image_path)} alt={p.name} className="w-full h-full object-cover" />
-                      ) : 'ไม่มีรูป'}
-                    </div>
-                    <div className="p-2 space-y-1.5">
-                      <p className="text-sm font-medium truncate">{p.name}</p>
-                      <p className="text-sm text-stone-900">{formatBaht(p.price)} บาท <span className="text-xs text-stone-400">/{p.unit}</span></p>
-                      {inCart ? (
-                        <div className="flex items-center justify-between">
-                          <button
-                            type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty - 1)}
-                            className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                  <div key={p.id} className="animate-product-in" style={{ animationDelay: `${Math.min(idx, 11) * 0.05}s` }}>
+                    <div
+                      className={
+                        'group h-full rounded-2xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_18px_32px_-12px_rgb(51_32_14_/_0.4)] ' +
+                        (inCart
+                          ? 'border-stone-900/70 shadow-[0_6px_18px_-8px_rgb(51_32_14_/_0.45)]'
+                          : 'border-stone-200/70 shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]') +
+                        (p.id === justAddedId ? ' animate-cart-bump' : '')
+                      }
+                    >
+                      <div className="relative aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs overflow-hidden">
+                        {p.image_path ? (
+                          <img
+                            src={productImageUrl(p.image_path)}
+                            alt={p.name}
+                            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                          />
+                        ) : 'ไม่มีรูป'}
+                        {inCart && (
+                          <span
+                            key={inCart.qty}
+                            className="absolute top-2 right-2 rounded-full bg-stone-900 text-white text-xs font-bold min-w-6 h-6 px-1.5 grid place-items-center shadow-md animate-qty-pop"
                           >
-                            −
-                          </button>
-                          <span className="text-sm font-medium tabular-nums">{inCart.qty}</span>
+                            {inCart.qty}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-2.5 space-y-1.5">
+                        <p className="text-sm font-medium truncate text-stone-900">{p.name}</p>
+                        <p className="text-sm font-semibold text-stone-900">{formatBaht(p.price)} บาท <span className="text-xs font-normal text-stone-400">/{p.unit}</span></p>
+                        {inCart ? (
+                          <div className="flex items-center justify-between rounded-full bg-stone-100 p-0.5">
+                            <button
+                              type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty - 1)}
+                              className="w-8 h-8 rounded-full bg-white shadow-sm font-semibold transition-transform active:scale-90"
+                            >
+                              −
+                            </button>
+                            <span key={inCart.qty} className="text-sm font-semibold tabular-nums animate-qty-pop">{inCart.qty}</span>
+                            <button
+                              type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty + 1)}
+                              className="w-8 h-8 rounded-full bg-stone-900 text-white shadow-sm font-semibold transition-transform active:scale-90"
+                            >
+                              +
+                            </button>
+                          </div>
+                        ) : (
                           <button
-                            type="button" onClick={() => updateQty(items.indexOf(inCart), inCart.qty + 1)}
-                            className="w-7 h-7 rounded-full bg-stone-100 font-semibold"
+                            type="button" onClick={(e) => addProduct(p, e.currentTarget)}
+                            className="w-full rounded-xl bg-stone-900 text-white text-sm font-medium py-2 transition-all duration-200 hover:bg-stone-800 active:scale-95"
                           >
-                            +
+                            เพิ่มลงตะกร้า
                           </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button" onClick={(e) => addProduct(p, e.currentTarget)}
-                          className="w-full rounded-lg bg-stone-900 text-white text-sm py-1.5"
-                        >
-                          เพิ่มลงตะกร้า
-                        </button>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 )

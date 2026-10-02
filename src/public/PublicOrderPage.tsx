@@ -136,18 +136,18 @@ function StatusTimeline({
 
   return (
     <div>
-      <div className="flex gap-3">
+      <div className="flex gap-3 animate-timeline-in">
         <div className="flex flex-col items-center">
           <div
             className={
               'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 text-white ' +
               payment.color +
-              (payment.pulsing ? ' animate-pulse ring-4 ring-amber-200' : '')
+              (payment.pulsing ? ' animate-node-ping ring-4 ring-amber-200' : '')
             }
           >
             {payment.icon}
           </div>
-          <div className={'w-0.5 flex-1 min-h-8 ' + (payment.done ? 'bg-stone-900' : 'bg-stone-200')} />
+          <div className={'w-0.5 flex-1 min-h-8 animate-line-grow ' + (payment.done ? 'bg-stone-900' : 'bg-stone-200')} />
         </div>
         <div className="pb-8 -mt-0.5">
           <p className="font-semibold text-stone-900">{payment.label}</p>
@@ -159,22 +159,26 @@ function StatusTimeline({
         const isDone = i < currentIndex
         const isCurrent = i === currentIndex
         return (
-          <div key={stage.key} className="flex gap-3">
+          <div key={stage.key} className="flex gap-3 animate-timeline-in" style={{ animationDelay: `${(i + 1) * 0.09}s` }}>
             <div className="flex flex-col items-center">
               <div
                 className={
                   'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
                   (isDone
-                    ? 'bg-stone-900 text-white'
+                    ? 'bg-stone-900 text-white animate-qty-pop'
                     : isCurrent
-                      ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-pulse'
+                      ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
                       : 'bg-white text-stone-400 border-2 border-stone-200')
                 }
+                style={isDone ? { animationDelay: `${(i + 1) * 0.09 + 0.25}s`, animationFillMode: 'backwards' } : undefined}
               >
                 {isDone ? '✓' : i + 1}
               </div>
               {i < WORK_STAGES.length - 1 && (
-                <div className={'w-0.5 flex-1 min-h-8 transition-colors duration-500 ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')} />
+                <div
+                  className={'w-0.5 flex-1 min-h-8 transition-colors duration-500 animate-line-grow ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')}
+                  style={{ animationDelay: `${(i + 1) * 0.09 + 0.15}s` }}
+                />
               )}
             </div>
             <div className={'pb-8 -mt-0.5 ' + (isCurrent ? 'text-stone-900' : isDone ? 'text-stone-600' : 'text-stone-400')}>

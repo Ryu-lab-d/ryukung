@@ -176,8 +176,11 @@ export function PaymentsSection({
   }
 
   return (
-    <div className="rounded-lg border border-stone-200 p-3 space-y-3">
-      <h2 className="text-sm font-semibold">การชำระเงิน</h2>
+    <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+      <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+        <span className="w-7 h-7 rounded-full bg-green-50 grid place-items-center text-sm shrink-0">💳</span>
+        การชำระเงิน
+      </h2>
 
       {payments.map((p) => (
         <div key={p.id} className="flex justify-between text-sm border-b border-stone-100 py-1">
