@@ -15,6 +15,19 @@ Deno.serve(async (req: Request) => {
 
   try {
     const body = await req.json()
+
+    // ต้องสั่งล่วงหน้าอย่างน้อย 1 วันเสมอ — ตรวจที่เซิร์ฟเวอร์ตามเวลากรุงเทพฯ (UTC+7) ไม่เชื่อแค่ปฏิทินฝั่งหน้าเว็บ
+    // (ใครยิง request ตรงก็ข้ามได้) ตรวจก่อนยืนยัน Turnstile เพื่อไม่ให้ token ที่ใช้ได้ครั้งเดียวถูกเผาทิ้งเปล่าๆ
+    const bangkokToday = new Date(Date.now() + 7 * 3600 * 1000)
+    const earliest = new Date(bangkokToday.getTime() + 86400000).toISOString().slice(0, 10)
+    const neededDate = body.needed_date
+    if (typeof neededDate !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(neededDate) || neededDate < earliest) {
+      return new Response(JSON.stringify({ error: 'กรุณาเลือกวันรับของล่วงหน้าอย่างน้อย 1 วัน (วันนี้สั่งไม่ได้)' }), {
+        status: 400,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
+
     const turnstileToken = body.turnstile_token
     if (!turnstileToken || typeof turnstileToken !== 'string') {
       return new Response(JSON.stringify({ error: 'กรุณายืนยันตัวตนก่อนสั่งซื้อ (ไม่พบผลการยืนยัน)' }), {

@@ -23,6 +23,7 @@ import {
 import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 import { FloodAlertBanner } from './FloodAlertBanner'
+import { DatePicker } from './DatePicker'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -317,6 +318,7 @@ export function CustomerOrderPage() {
   const [manualHowTo, setManualHowTo] = useState(false)
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [splashActive, setSplashActive] = useState(true)
+  const [dateError, setDateError] = useState<string | null>(null)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
   function setTab(next: SiteTab) {
@@ -355,9 +357,18 @@ export function CustomerOrderPage() {
   // นัดรับเองไม่ควรบังคับรอนานเท่าส่งขนส่ง (shipping_lead_days คือเวลาเตรียมของ+เผื่อขนส่งเฉพาะเคสส่งพัสดุ) —
   // ระบบเดิม (ก่อนแก้) ใช้ shipping_lead_days บังคับกับ "นัดรับเอง" ด้วย ทำให้ลูกค้ามารับหน้าร้านต้องรอนานเกินจำเป็น
   // ต่างจากฝั่งพนักงาน (Step3Fulfillment.tsx) ที่ใช้ lead time เฉพาะตอนส่งขนส่งเท่านั้น จึงปรับให้ตรงกัน
-  const minNeededDate = menu
-    ? addDays(todayStr(), form.fulfillmentType === 'shipping' ? menu.shipping_lead_days : 1)
-    : todayStr()
+  // ต้องสั่งล่วงหน้าอย่างน้อย 1 วันเสมอ (วันนี้เลือกไม่ได้ทั้งนัดรับและส่งขนส่ง) — ส่งขนส่งใช้ shipping_lead_days
+  // ถ้ามากกว่า 1 วัน ฝั่งเซิร์ฟเวอร์ (Edge Function submit-customer-order) ตรวจขั้นต่ำ "พรุ่งนี้" ซ้ำอีกชั้นเสมอ
+  const leadDays = form.fulfillmentType === 'shipping' ? Math.max(1, menu?.shipping_lead_days ?? 1) : 1
+  const minNeededDate = addDays(todayStr(), leadDays)
+
+  // ร่างที่ค้างไว้จากวันก่อนๆ อาจมีวันที่ที่เลือกไม่ได้แล้ว (เช่นเป็นวันนี้/ผ่านมาแล้ว หรือสลับเป็นส่งขนส่งที่ต้อง
+  // ล่วงหน้านานกว่า) — เคลียร์ทิ้งให้ลูกค้าเลือกใหม่ ไม่ปล่อยให้ส่งวันที่ผิดไปโดยไม่รู้ตัว
+  useEffect(() => {
+    if (form.neededDate && form.neededDate < minNeededDate) {
+      setForm((f) => ({ ...f, neededDate: '' }))
+    }
+  }, [form.neededDate, minNeededDate])
 
   function addProduct(p: PublicMenu['products'][number], sourceEl: HTMLElement | null) {
     // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
@@ -393,6 +404,11 @@ export function CustomerOrderPage() {
 
   function handleCheckoutSubmit(e: FormEvent) {
     e.preventDefault()
+    if (!form.neededDate || form.neededDate < minNeededDate) {
+      setDateError(`กรุณาเลือกวันรับของ — ต้องสั่งล่วงหน้าอย่างน้อย ${leadDays} วัน (วันนี้เลือกไม่ได้)`)
+      document.getElementById('neededDate')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     // ยังไม่ไปหน้าชำระเงินทันที — ต้องผ่านหน้าเงื่อนไขการสั่งซื้อ (step 'terms') ก่อนเสมอ
     setStep('terms')
   }
@@ -657,13 +673,21 @@ export function CustomerOrderPage() {
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="neededDate" className="text-xs font-medium text-stone-500">วันที่สะดวกนัดรับ</label>
-                  <input
-                    id="neededDate" required type="date" min={minNeededDate} value={form.neededDate}
-                    onChange={(e) => setForm((f) => ({ ...f, neededDate: e.target.value }))}
-                    className={inputClass}
+                  <label htmlFor="neededDate" className="text-xs font-medium text-stone-500">
+                    {form.fulfillmentType === 'pickup' ? 'วันที่สะดวกนัดรับ' : 'วันที่ต้องการให้จัดส่ง'}
+                  </label>
+                  <DatePicker
+                    id="neededDate"
+                    value={form.neededDate}
+                    min={minNeededDate}
+                    today={todayStr()}
+                    error={dateError}
+                    onChange={(d) => {
+                      setDateError(null)
+                      setForm((f) => ({ ...f, neededDate: d }))
+                    }}
                   />
-                  <p className="text-xs text-stone-400">สั่งล่วงหน้าอย่างน้อย {menu.shipping_lead_days} วัน</p>
+                  <p className="text-xs text-stone-400">สั่งล่วงหน้าอย่างน้อย {leadDays} วัน — วันนี้เลือกไม่ได้</p>
                 </div>
 
                 {form.fulfillmentType === 'pickup' ? (

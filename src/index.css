@@ -520,3 +520,18 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .qr-scan { display: none; }
 }
+
+/* เดือนในปฏิทินเลือกวันที่ (DatePicker) สไลด์เข้าตามทิศที่กด ถัดไป/ก่อนหน้า */
+@keyframes month-in-next {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes month-in-prev {
+  from { opacity: 0; transform: translateX(-24px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-month-next { animation: month-in-next 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+.animate-month-prev { animation: month-in-prev 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .animate-month-next, .animate-month-prev { animation: none; }
+}
