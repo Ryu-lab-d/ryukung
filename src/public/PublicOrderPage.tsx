@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
+import { saveImage } from '../lib/saveImage'
 import { supabase } from '../lib/supabase'
 import { formatBaht } from '../lib/money'
 import { InlineError } from '../lib/InlineError'
@@ -659,16 +660,22 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
 function OrderSummaryCard({ order }: { order: PublicOrderView }) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [downloading, setDownloading] = useState(false)
+  const [saveHint, setSaveHint] = useState(false)
 
   async function handleDownload() {
     if (!cardRef.current) return
     setDownloading(true)
-    const dataUrl = await htmlToImage.toPng(cardRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' })
-    setDownloading(false)
-    const link = document.createElement('a')
-    link.download = `${order.order_no ?? 'order'}.png`
-    link.href = dataUrl
-    link.click()
+    setSaveHint(false)
+    try {
+      const blob = await htmlToImage.toBlob(cardRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' })
+      if (!blob) throw new Error('สร้างรูปไม่สำเร็จ')
+      const result = await saveImage(blob, `${order.order_no ?? 'order'}.png`, 'สรุปออเดอร์')
+      if (result === 'downloaded') setSaveHint(true)
+    } catch {
+      setSaveHint(true)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   return (
@@ -699,6 +706,11 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
       >
         {downloading ? 'กำลังสร้างรูป...' : '📸 บันทึกสรุปออเดอร์เป็นรูปภาพ'}
       </button>
+      {saveHint && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2 text-center animate-form-in">
+          💡 ถ้าเครื่องไม่ได้บันทึกให้ ลองแคปหน้าจอส่วนสรุปออเดอร์ด้านบนแทนได้เลย
+        </p>
+      )}
     </div>
   )
 }

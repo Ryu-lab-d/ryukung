@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
+import { saveImage } from '../lib/saveImage'
 import { useOrder } from '../orders/useOrder'
 import { useSettings } from '../settings/useSettings'
 import { useReceipts } from './useReceipts'
@@ -64,11 +65,9 @@ export function ReceiptPage() {
 
   async function handleDownloadPng() {
     if (!printRef.current) return
-    const dataUrl = await htmlToImage.toPng(printRef.current)
-    const link = document.createElement('a')
-    link.download = `${activeReceipt?.receipt_no ?? 'receipt'}.png`
-    link.href = dataUrl
-    link.click()
+    const blob = await htmlToImage.toBlob(printRef.current)
+    if (!blob) return
+    await saveImage(blob, `${activeReceipt?.receipt_no ?? 'receipt'}.png`, 'ใบเสร็จ')
   }
 
   if (orderLoading || receiptsLoading || !order) {

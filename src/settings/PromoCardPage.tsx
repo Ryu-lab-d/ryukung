@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
+import { saveImage } from '../lib/saveImage'
 import QRCode from 'qrcode'
 import { useSettings } from './useSettings'
 import { productImageUrl } from '../products/ProductCard'
@@ -28,12 +29,10 @@ export function PromoCardPage() {
   async function handleDownload() {
     if (!cardRef.current || !settings) return
     setDownloading(true)
-    const dataUrl = await htmlToImage.toPng(cardRef.current, { pixelRatio: 2 })
+    const blob = await htmlToImage.toBlob(cardRef.current, { pixelRatio: 2 })
     setDownloading(false)
-    const link = document.createElement('a')
-    link.download = `${settings.shop_name}-promo.png`
-    link.href = dataUrl
-    link.click()
+    if (!blob) return
+    await saveImage(blob, `${settings.shop_name}-promo.png`, 'การ์ดโปรโมทร้าน')
   }
 
   if (loading || !settings) {
