@@ -52,16 +52,19 @@ export function CleanupSection<T extends { id: string }>({
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-stone-500">{title} ({items.length})</h2>
+      <h2 className="text-sm font-semibold text-stone-700">{title} ({items.length})</h2>
       {description && <p className="text-xs text-stone-400">{description}</p>}
 
       {loading ? (
-        <p className="text-sm text-stone-400">กำลังโหลด...</p>
+        <div className="flex items-center justify-center gap-2.5 py-6 text-stone-400 text-sm">
+          <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+          กำลังโหลด...
+        </div>
       ) : items.length === 0 ? (
-        <p className="text-sm text-stone-400 rounded-lg border border-stone-200 p-3 text-center">{emptyMessage}</p>
+        <p className="text-sm text-stone-400 rounded-2xl bg-white border border-stone-200 p-5 text-center">{emptyMessage}</p>
       ) : (
         <>
-          <div className="flex items-center justify-between rounded-lg bg-stone-50 border border-stone-200 px-3 py-2">
+          <div className="flex items-center justify-between rounded-2xl bg-white border border-stone-200 px-3.5 py-2.5 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={selected.size === items.length} onChange={toggleAll} />
               เลือกทั้งหมด
@@ -70,7 +73,7 @@ export function CleanupSection<T extends { id: string }>({
               type="button"
               disabled={selected.size === 0 || deleting}
               onClick={() => setConfirmTarget('selected')}
-              className="rounded-lg bg-red-600 text-white text-xs px-3 py-1.5 font-medium disabled:opacity-40"
+              className="rounded-full bg-red-600 text-white text-xs px-3.5 py-1.5 font-medium disabled:opacity-40"
             >
               🗑️ ลบที่เลือก ({selected.size})
             </button>
@@ -78,7 +81,10 @@ export function CleanupSection<T extends { id: string }>({
 
           <div className="space-y-2">
             {items.map((item) => (
-              <label key={item.id} className="flex items-center gap-3 rounded-lg border border-stone-200 p-3 cursor-pointer">
+              <label
+                key={item.id}
+                className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3.5 cursor-pointer shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]"
+              >
                 <input type="checkbox" checked={selected.has(item.id)} onChange={() => toggle(item.id)} />
                 <div className="flex-1 min-w-0">{renderItem(item)}</div>
               </label>
@@ -89,7 +95,7 @@ export function CleanupSection<T extends { id: string }>({
             type="button"
             disabled={deleting}
             onClick={() => setConfirmTarget('all')}
-            className="w-full rounded-lg border-2 border-red-300 text-red-700 font-medium py-2 text-sm disabled:opacity-40"
+            className="w-full rounded-xl border-2 border-red-300 bg-white text-red-700 font-medium py-2 text-sm disabled:opacity-40"
           >
             🗑️ ลบทั้งหมด ({items.length} รายการ)
           </button>

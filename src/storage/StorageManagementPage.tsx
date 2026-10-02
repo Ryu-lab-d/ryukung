@@ -41,10 +41,16 @@ export function StorageManagementPage() {
   }
 
   return (
-    <div className="p-4 max-w-2xl mx-auto space-y-6">
-      <div>
-        <Link to="/" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">← กลับหน้าออเดอร์</Link>
-        <h1 className="text-lg font-semibold mt-1">จัดการพื้นที่จัดเก็บ</h1>
+    <div className="bg-stone-50 min-h-screen">
+    <div className="p-4 max-w-2xl mx-auto space-y-6 pb-8">
+      <div className="space-y-1">
+        <Link
+          to="/"
+          className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        >
+          ← กลับหน้าออเดอร์
+        </Link>
+        <h1 className="text-xl font-bold text-stone-900 pt-2">จัดการพื้นที่จัดเก็บ</h1>
         <p className="text-sm text-stone-500 mt-0.5">
           รวมทุกอย่างที่ลบได้เพื่อประหยัดพื้นที่ Supabase ไว้ในหน้าเดียว — ลบแล้วกู้คืนไม่ได้ทุกรายการ
         </p>
@@ -150,6 +156,7 @@ export function StorageManagementPage() {
           </>
         )}
       />
+    </div>
     </div>
   )
 }
