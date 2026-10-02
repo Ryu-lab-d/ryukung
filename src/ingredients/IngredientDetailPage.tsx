@@ -119,16 +119,40 @@ export function IngredientDetailPage() {
     navigate('/ingredients')
   }
 
-  if (loading) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
-  if (!ingredient) return <div className="p-4 text-stone-500">ไม่พบวัตถุดิบนี้</div>
+  if (loading) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        <div className="flex items-center justify-center gap-2.5 py-16 text-stone-400">
+          <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+          กำลังโหลด...
+        </div>
+      </div>
+    )
+  }
+  if (!ingredient) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        <div className="p-4 max-w-2xl mx-auto">
+          <div className="rounded-2xl bg-white border border-stone-200 p-10 text-center">
+            <p className="text-3xl mb-1.5">🧂</p>
+            <p className="text-sm text-stone-400">ไม่พบวัตถุดิบนี้</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
+    <div className="bg-stone-50 min-h-screen">
     <div className="p-4 space-y-4 max-w-2xl mx-auto pb-10">
-      <Link to="/ingredients" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+      <Link
+        to="/ingredients"
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับหน้าวัตถุดิบ
       </Link>
 
-      <div className="rounded-2xl bg-stone-900 text-white p-4 space-y-1">
+      <div className="rounded-2xl bg-stone-900 text-white p-4 space-y-1 shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
         <p className="text-xs uppercase tracking-wide text-stone-300">สต็อกคงเหลือ</p>
         <p className="text-4xl font-bold tabular-nums">
           {ingredient.stock_qty.toLocaleString('th-TH')} <span className="text-lg font-normal text-stone-300">{ingredient.unit}</span>
@@ -137,16 +161,19 @@ export function IngredientDetailPage() {
       </div>
 
       <div className="flex gap-2">
-        <button type="button" onClick={() => setShowRestock(true)} className="flex-1 rounded-lg border-2 border-green-300 text-green-700 font-medium py-2.5">
+        <button type="button" onClick={() => setShowRestock(true)} className="flex-1 rounded-xl border-2 border-green-300 bg-white text-green-700 font-medium py-2.5">
           ➕ เติมสต็อก
         </button>
-        <button type="button" onClick={() => setShowAdjust(true)} className="flex-1 rounded-lg border-2 border-stone-200 text-stone-700 font-medium py-2.5">
+        <button type="button" onClick={() => setShowAdjust(true)} className="flex-1 rounded-xl border-2 border-stone-200 bg-white text-stone-700 font-medium py-2.5">
           ⚖️ ปรับสต็อก
         </button>
       </div>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-3.5 space-y-3">
-        <h2 className="text-sm font-semibold">แก้ไขข้อมูล</h2>
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+        <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-stone-100 grid place-items-center text-sm shrink-0">✏️</span>
+          แก้ไขข้อมูล
+        </h2>
 
         <div className="space-y-1">
           <label htmlFor="ingredient-detail-name" className="text-sm text-stone-600">ชื่อวัตถุดิบ</label>
@@ -207,20 +234,28 @@ export function IngredientDetailPage() {
           type="button"
           onClick={() => void handleSave()}
           disabled={saving || checkingUnitUsage}
-          className="w-full rounded-lg bg-stone-900 text-white py-2.5 font-medium disabled:opacity-50"
+          className="w-full rounded-xl bg-stone-900 text-white py-2.5 font-medium disabled:opacity-50 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
         >
           {checkingUnitUsage ? 'กำลังตรวจสอบ...' : saving ? 'กำลังบันทึก...' : 'บันทึก'}
         </button>
       </div>
 
-      <div className="space-y-1">
-        <h2 className="text-sm font-semibold text-stone-500">ประวัติเข้า-ออกสต็อก</h2>
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-blue-50 grid place-items-center text-sm shrink-0">📜</span>
+          ประวัติเข้า-ออกสต็อก
+        </h2>
         {movementsLoading ? (
-          <p className="text-sm text-stone-500">กำลังโหลด...</p>
+          <div className="flex items-center justify-center gap-2.5 py-6 text-stone-400">
+            <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+            กำลังโหลด...
+          </div>
         ) : movements.length === 0 ? (
-          <p className="text-sm text-stone-400">ยังไม่มีประวัติ</p>
+          <div className="rounded-2xl bg-white border border-stone-200 p-6 text-center">
+            <p className="text-sm text-stone-400">ยังไม่มีประวัติ</p>
+          </div>
         ) : (
-          <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
+          <div className="rounded-2xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
             {movements.map((m) => (
               <div key={m.id} className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-sm">
                 <div className="min-w-0">
@@ -243,7 +278,7 @@ export function IngredientDetailPage() {
       <button
         type="button"
         onClick={() => setShowDeleteConfirm(true)}
-        className="w-full rounded-lg border-2 border-red-300 text-red-700 font-medium py-2.5"
+        className="w-full rounded-xl border-2 border-red-300 bg-white text-red-700 font-medium py-2.5"
       >
         🗑️ ลบวัตถุดิบนี้
       </button>
@@ -302,6 +337,7 @@ export function IngredientDetailPage() {
       )}
 
       {showSuccess && <SuccessOverlay message="บันทึกแล้ว" durationMs={1200} onDone={() => setShowSuccess(false)} />}
+    </div>
     </div>
   )
 }
