@@ -11,6 +11,8 @@ import { PromptPayQR } from './PromptPayQR'
 import {
   AmbientGlow,
   CartFab,
+  FadeImage,
+  Marquee,
   PageTexture,
   PublicNav,
   PublicFooter,
@@ -989,12 +991,22 @@ export function CustomerOrderPage() {
         <WaveDivider />
       </div>
 
+      {/* แถบจุดขายของร้านวิ่งต่อเนื่องใต้ hero — ข้อความทั้งหมดมาจากข้อมูลจริงที่เจ้าของร้านให้ไว้ในหน้า "เกี่ยวกับร้าน" */}
+      <Marquee
+        items={['🥐 ทำสดใหม่ทุกออเดอร์', '🍬 หวานน้อย อร่อยแน่ ไม่เหมือนใคร', '👐 ทำเองทุกขั้นตอน', '📦 Pre-order ผลิตพอดีกับที่สั่ง']}
+        className="border-y border-amber-200/70 bg-amber-50/70 py-2.5 text-sm font-medium text-amber-900"
+      />
+
       {/* สลับเนื้อหาด้วยแท็บล้วนๆ ไม่เปลี่ยนหน้าเว็บจริง (ไม่ remount ทั้งหน้า ไม่กระพริบ) key={tab} ทำให้เล่น
           อนิเมชัน crossfade ใหม่ทุกครั้งที่สลับแท็บ */}
       {tab === 'menu' ? (
         <div key="menu" className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-form-in">
           <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
-            <h2 className="text-lg font-display font-semibold text-stone-900 text-center">เมนูสินค้า</h2>
+            <div className="text-center">
+              <h2 className="text-2xl font-display font-bold text-stone-900">เมนูสินค้า</h2>
+              <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1 text-amber-700/50" />
+              <p className="text-xs text-stone-400 mt-1.5">{filtered.length} เมนู</p>
+            </div>
 
             <LineContactButton lineUrl={menu.line_url} />
 
@@ -1048,10 +1060,10 @@ export function CustomerOrderPage() {
                     >
                       <div className="relative aspect-square bg-stone-100 grid place-items-center text-stone-300 text-xs overflow-hidden">
                         {p.image_path ? (
-                          <img
+                          <FadeImage
                             src={productImageUrl(p.image_path)}
                             alt={p.name}
-                            className="w-full h-full object-cover transition-transform duration-500 ease-out group-hover:scale-110"
+                            className="w-full h-full object-cover group-hover:scale-110"
                           />
                         ) : 'ไม่มีรูป'}
                         {inCart && (

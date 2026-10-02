@@ -535,3 +535,18 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .animate-month-next, .animate-month-prev { animation: none; }
 }
+
+/* แถบข้อความวิ่งต่อเนื่องใต้ hero (Marquee ใน PublicSiteChrome) — เนื้อหาซ้ำ 2 ชุดแล้วเลื่อน -50% ให้วนเนียนไม่มีรอยต่อ
+   ชี้เมาส์ค้างแล้วหยุด (อ่านทัน) */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.animate-marquee {
+  width: max-content;
+  animation: marquee 32s linear infinite;
+}
+.animate-marquee:hover { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
+}

@@ -14,7 +14,15 @@ import { AddToCalendarButton } from './AddToCalendarButton'
 import { ShareOrderButton } from './ShareOrderButton'
 import { productImageUrl } from '../products/ProductCard'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
-import { PageTexture, Reveal } from './PublicSiteChrome'
+import { AmbientGlow, PageTexture, Reveal, SquiggleUnderline } from './PublicSiteChrome'
+
+/** จำนวนวันจากวันนี้ถึงวันที่ (YYYY-MM-DD) ตามเวลาเครื่องลูกค้า — ติดลบ = เลยกำหนดแล้ว */
+function daysUntil(dateStr: string): number {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((new Date(y, m - 1, d).getTime() - today.getTime()) / 86400000)
+}
 
 /** สไตล์การ์ดมาตรฐานของเว็บไซต์ลูกค้า (เข้าชุดกับ /menu) — เงาอุ่นมีมิติแทน shadow-sm เทาแบนๆ */
 const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
@@ -941,22 +949,41 @@ export function PublicOrderPage() {
     <div className="min-h-screen bg-stone-50 p-4 font-warm">
       <PageTexture />
       <div className="max-w-md mx-auto space-y-4">
-        <div className="text-center pt-2 animate-page-in">
-          <p className="text-sm text-stone-500">สวัสดีคุณ{customerName} 👋</p>
-          <h1 className="text-xl font-display font-bold mt-1">{order.shop_name}</h1>
-          <p className="text-sm text-stone-500">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>
-          {order.pending_confirmation && (
-            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-full inline-block px-3 py-1 mt-1">
-              🕐 รอร้านตรวจสอบและยืนยันออเดอร์
+        <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)] animate-form-in">
+          <AmbientGlow />
+          <div className="relative z-10">
+            <p className="text-sm text-white/80 animate-hero-text">สวัสดีคุณ{customerName} 👋</p>
+            <h1 className="text-2xl font-display font-bold mt-1 animate-hero-text" style={{ animationDelay: '0.1s' }}>
+              {order.shop_name}
+            </h1>
+            <SquiggleUnderline className="w-16 h-2 mx-auto mt-1 text-white/40" />
+            <p className="text-sm text-white/85 mt-2 animate-hero-text" style={{ animationDelay: '0.2s' }}>
+              ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}
             </p>
-          )}
-          <button
-            type="button"
-            onClick={() => setManualHowTo(true)}
-            className="text-xs text-stone-500 underline underline-offset-2 mt-1"
-          >
-            💡 วิธีใช้งานหน้านี้
-          </button>
+            <div className="flex flex-wrap items-center justify-center gap-2 mt-3 animate-hero-text" style={{ animationDelay: '0.3s' }}>
+              {order.pending_confirmation && (
+                <span className="text-xs font-medium rounded-full bg-white/15 backdrop-blur border border-white/25 px-3 py-1">
+                  🕐 รอร้านตรวจสอบและยืนยันออเดอร์
+                </span>
+              )}
+              {order.needed_date && order.work_status !== 'delivered' && order.work_status !== 'cancelled' && (() => {
+                const n = daysUntil(order.needed_date)
+                if (n < 0) return null
+                return (
+                  <span className="text-xs font-medium rounded-full bg-amber-300/90 text-stone-900 px-3 py-1 shadow-sm">
+                    {n === 0 ? '📅 วันนี้ถึงวันกำหนดแล้ว' : n === 1 ? '📅 พรุ่งนี้ถึงวันกำหนด' : `📅 อีก ${n} วันถึงวันกำหนด`}
+                  </span>
+                )
+              })()}
+            </div>
+            <button
+              type="button"
+              onClick={() => setManualHowTo(true)}
+              className="mt-3 rounded-full bg-white/15 backdrop-blur border border-white/30 text-white text-xs font-medium px-3.5 py-1.5 transition-all duration-200 hover:bg-white/25 active:scale-95"
+            >
+              💡 วิธีใช้งานหน้านี้
+            </button>
+          </div>
         </div>
 
         {order.line_url && (
@@ -972,7 +999,10 @@ export function PublicOrderPage() {
         )}
 
         <div className={CARD + ' p-5 animate-form-in'} style={{ animationDelay: '0.12s', animationFillMode: 'backwards' }}>
-          <h2 className="text-sm font-display font-semibold text-stone-500 mb-3">สถานะออเดอร์</h2>
+          <h2 className="text-sm font-display font-semibold text-stone-700 mb-3 flex items-center gap-2">
+            <span className="w-7 h-7 rounded-full bg-amber-50 border border-amber-100 grid place-items-center text-sm shrink-0">📍</span>
+            สถานะออเดอร์
+          </h2>
           <StatusTimeline
             workStatus={order.work_status}
             paymentStatus={order.payment_status}
@@ -1017,10 +1047,17 @@ export function PublicOrderPage() {
 
         <Reveal className={CARD + ' p-5 space-y-2'}>
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-display font-semibold text-stone-500">กำหนดการจัดส่ง</h2>
+            <h2 className="text-sm font-display font-semibold text-stone-700 flex items-center gap-2">
+              <span className="w-7 h-7 rounded-full bg-amber-50 border border-amber-100 grid place-items-center text-sm shrink-0">🚚</span>
+              กำหนดการจัดส่ง
+            </h2>
             {order.address_editable && (
-              <button type="button" onClick={() => setShowAddressEdit(true)} className="text-xs text-stone-600 underline">
-                แก้ไขที่อยู่
+              <button
+                type="button"
+                onClick={() => setShowAddressEdit(true)}
+                className="rounded-full bg-white border border-stone-300 text-stone-700 text-xs font-medium px-3 py-1.5 shadow-sm transition-transform active:scale-95"
+              >
+                ✏️ แก้ไขที่อยู่
               </button>
             )}
           </div>

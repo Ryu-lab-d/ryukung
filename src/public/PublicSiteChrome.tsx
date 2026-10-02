@@ -70,6 +70,52 @@ export function AmbientGlow() {
   )
 }
 
+/** แถบข้อความวิ่งต่อเนื่อง (ticker) — ใช้สรุปจุดขายของร้านเป็นแถบสั้นๆ ใต้ hero ข้อความซ้ำ 2 ชุดเพื่อให้วนเนียน */
+export function Marquee({ items, className = '' }: { items: string[]; className?: string }) {
+  const row = (suffix: string) =>
+    items.map((t, i) => (
+      <span key={`${suffix}${i}`} className="flex items-center gap-8 shrink-0">
+        <span>{t}</span>
+        <span className="text-amber-500/70" aria-hidden="true">✦</span>
+      </span>
+    ))
+  return (
+    <div className={'overflow-hidden whitespace-nowrap ' + className} aria-label={items.join(' · ')}>
+      <div className="flex gap-8 animate-marquee" aria-hidden="true">
+        {row('a')}
+        {row('b')}
+      </div>
+    </div>
+  )
+}
+
+/** รูปที่ค่อยๆ เฟดเข้าเมื่อโหลดเสร็จ มีพื้นโครงโหลด (skeleton) กะพริบนุ่มๆ ระหว่างรอ แทนช่องว่างเทาๆ แล้วรูปโผล่ทื่อๆ
+ * ต้องวางใน container ที่เป็น relative + overflow-hidden เสมอ (พื้นโครงวางทับเต็ม container) */
+export function FadeImage({ src, alt, className = '' }: { src: string; alt: string; className?: string }) {
+  const [loaded, setLoaded] = useState(false)
+  return (
+    <>
+      <span
+        className={
+          'absolute inset-0 bg-gradient-to-br from-stone-100 via-stone-200/70 to-stone-100 animate-pulse transition-opacity duration-500 ' +
+          (loaded ? 'opacity-0' : 'opacity-100')
+        }
+        aria-hidden="true"
+      />
+      <img
+        ref={(el) => {
+          if (el?.complete && el.naturalWidth > 0) setLoaded(true)
+        }}
+        src={src}
+        alt={alt}
+        loading="lazy"
+        onLoad={() => setLoaded(true)}
+        className={className + ' transition-[transform,opacity] duration-500 ease-out ' + (loaded ? 'opacity-100' : 'opacity-0')}
+      />
+    </>
+  )
+}
+
 /** ตรวจว่า element เข้ามาอยู่ในจอจริงๆ หรือยัง (IntersectionObserver) — เป็นฐานของระบบ "โผล่ตอน scroll เข้ามาเห็น"
  * ต่างจาก animate-form-in เดิมที่เล่นครั้งเดียวตอน mount โดยไม่สนว่าผู้ใช้เลื่อนมาเห็นหรือยัง ทำให้ section
  * ที่อยู่ใต้จอตอนโหลดเล่นอนิเมชันจบไปเงียบๆ ก่อนเห็นด้วยซ้ำ — เล่นครั้งเดียวแล้วเลิกสังเกต (ไม่เล่นซ้ำตอนเลื่อนกลับ) */
@@ -146,8 +192,27 @@ export function PublicNav({
   onTabChange: (tab: SiteTab) => void
   onHowToClick: () => void
 }) {
+  // เลื่อนหน้าลงแล้วแถบมีเงาแยกจากเนื้อหา + เส้นสีอำพันใต้แถบไล่ยาวตามระยะที่เลื่อนไปของหน้า (scroll progress)
+  const [scrolled, setScrolled] = useState(false)
+  const [progress, setProgress] = useState(0)
+  useEffect(() => {
+    function onScroll() {
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      setScrolled(window.scrollY > 8)
+      setProgress(max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   return (
-    <nav className="sticky top-0 z-40 bg-stone-50/90 backdrop-blur border-b border-stone-200 pt-[env(safe-area-inset-top)]">
+    <nav
+      className={
+        'sticky top-0 z-40 bg-stone-50/90 backdrop-blur border-b pt-[env(safe-area-inset-top)] transition-shadow duration-300 ' +
+        (scrolled ? 'border-stone-200 shadow-[0_8px_24px_-12px_rgb(51_32_14_/_0.3)]' : 'border-stone-200')
+      }
+    >
       <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between gap-2">
         <button type="button" onClick={() => onTabChange('menu')} className="flex items-center gap-2.5 min-w-0 text-stone-900">
           {logoPath ? (
@@ -190,6 +255,11 @@ export function PublicNav({
           </button>
         </div>
       </div>
+      <div
+        className="absolute left-0 bottom-0 h-0.5 w-full origin-left bg-gradient-to-r from-amber-400 to-amber-700 transition-transform duration-150"
+        style={{ transform: `scaleX(${progress})` }}
+        aria-hidden="true"
+      />
     </nav>
   )
 }
@@ -269,7 +339,7 @@ export const CartFab = forwardRef<HTMLButtonElement, { count: number; total: num
         <span className="relative text-xl leading-none">
           🧺
           <span className="absolute -top-2.5 -right-2.5 bg-white text-stone-900 text-[11px] font-bold rounded-full min-w-5 h-5 px-1 grid place-items-center">
-            {count}
+            <span key={count} className="animate-qty-pop">{count}</span>
           </span>
         </span>
         <span className="font-semibold text-sm tabular-nums">{formatBaht(total)} บาท</span>
