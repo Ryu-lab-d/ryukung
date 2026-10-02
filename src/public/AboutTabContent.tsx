@@ -1,4 +1,4 @@
-import { AmbientGlow, Reveal } from './PublicSiteChrome'
+import { AmbientGlow, Reveal, SquiggleUnderline } from './PublicSiteChrome'
 
 type TimelineStep = { icon: string; title: string; text: string }
 
@@ -38,6 +38,14 @@ const HIGHLIGHTS = [
   { icon: '📦', title: 'Pre-order ทุกออเดอร์', text: 'ผลิตสดใหม่พอดีกับจำนวนที่สั่งจริง' },
 ]
 
+const STATS = [
+  { value: '13', unit: 'ปี', label: 'อายุเจ้าของร้าน' },
+  { value: '100', unit: '%', label: 'ทำเองทุกชิ้น' },
+  { value: '24', unit: 'ชม.', label: 'สั่งได้ตลอด' },
+]
+
+const SECTION_TITLE = 'text-lg font-display font-semibold text-stone-900'
+
 const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
 
 export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
@@ -74,9 +82,29 @@ export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
         </div>
       </Reveal>
 
+      {/* ตัวเลขเด่น — สรุปจุดขายของร้านเป็นตัวเลขใหญ่ๆ อ่านจบในพริบตา */}
+      <Reveal as="section" delay={0.05} className="grid grid-cols-3 gap-3">
+        {STATS.map((st, i) => (
+          <Reveal
+            key={st.label}
+            delay={i * 0.1}
+            className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-stone-800 to-stone-900 text-white text-center py-4 px-2 shadow-[0_12px_24px_-12px_rgb(51_32_14_/_0.7)]"
+          >
+            <span className="absolute -top-6 -right-6 w-16 h-16 rounded-full bg-amber-400/20" aria-hidden="true" />
+            <p className="relative font-display font-bold text-3xl leading-none text-amber-300">
+              {st.value}<span className="text-base ml-0.5 text-amber-200">{st.unit}</span>
+            </p>
+            <p className="relative text-[11px] text-white/75 mt-1.5">{st.label}</p>
+          </Reveal>
+        ))}
+      </Reveal>
+
       {/* เส้นทางการเติบโต — แต่ละขั้นโผล่ตามจังหวะตอนเลื่อนมาเห็น เส้นเชื่อมไหลลง ขั้นสุดท้าย (วันนี้) มีวงแสงเรือง */}
       <Reveal as="section" delay={0.08} className={CARD + ' p-6'}>
-        <h2 className="text-lg font-display font-semibold text-stone-900 mb-4">เส้นทางการเติบโต</h2>
+        <div className="mb-5">
+          <h2 className={SECTION_TITLE}>🌱 เส้นทางการเติบโต</h2>
+          <SquiggleUnderline className="w-16 h-2 mt-0.5 text-amber-700/50" />
+        </div>
         <div className="space-y-5">
           {TIMELINE.map((step, i) => {
             const isLast = i === TIMELINE.length - 1
@@ -100,7 +128,8 @@ export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
                     />
                   )}
                 </div>
-                <div className="pb-1">
+                <div className={'flex-1 rounded-xl px-3.5 py-2.5 mb-1 border ' + (isLast ? 'bg-amber-50 border-amber-200' : 'bg-stone-50/70 border-stone-200/60')}>
+                  <p className="text-[10px] font-semibold tracking-wider text-amber-700/70">STEP {i + 1}</p>
                   <p className="font-semibold text-stone-900 text-sm">{step.title}</p>
                   <p className="text-sm text-stone-600 leading-relaxed mt-0.5">{step.text}</p>
                 </div>
@@ -112,17 +141,22 @@ export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
 
       {/* สิ่งที่ทำให้ร้านเราต่าง */}
       <Reveal as="section" delay={0.08} className={CARD + ' p-6 space-y-4'}>
-        <h2 className="text-lg font-display font-semibold text-stone-900">สิ่งที่ทำให้ร้านเราต่าง</h2>
+        <div>
+          <h2 className={SECTION_TITLE}>✨ สิ่งที่ทำให้ร้านเราต่าง</h2>
+          <SquiggleUnderline className="w-16 h-2 mt-0.5 text-amber-700/50" />
+        </div>
         <div className="grid sm:grid-cols-3 gap-3">
           {HIGHLIGHTS.map((h, i) => (
             <Reveal
               key={i}
               delay={i * 0.1}
-              className="group rounded-xl bg-gradient-to-br from-amber-50/60 to-stone-50 border border-stone-200/60 p-4 text-center space-y-1.5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_14px_28px_-12px_rgb(51_32_14_/_0.35)] hover:border-amber-200"
+              className="group flex sm:block items-center gap-3.5 text-left sm:text-center rounded-2xl bg-gradient-to-br from-amber-50/60 to-stone-50 border border-stone-200/60 p-4 sm:space-y-1.5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_14px_28px_-12px_rgb(51_32_14_/_0.35)] hover:border-amber-200"
             >
-              <p className="text-3xl transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6">{h.icon}</p>
-              <p className="text-sm font-semibold text-stone-900">{h.title}</p>
-              <p className="text-xs text-stone-500 leading-relaxed">{h.text}</p>
+              <p className="shrink-0 w-14 h-14 sm:w-auto sm:h-auto grid place-items-center rounded-2xl bg-white shadow-sm sm:bg-transparent sm:shadow-none text-3xl transition-transform duration-300 group-hover:scale-125 group-hover:-rotate-6">{h.icon}</p>
+              <div className="space-y-1">
+                <p className="text-sm font-semibold text-stone-900">{h.title}</p>
+                <p className="text-xs text-stone-500 leading-relaxed">{h.text}</p>
+              </div>
             </Reveal>
           ))}
         </div>
