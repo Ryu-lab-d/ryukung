@@ -10,6 +10,10 @@ type Draft = Omit<Settings, 'id'>
 
 const DRAFT_KEY = 'settings-form'
 
+const CARD =
+  'rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]'
+const INPUT = 'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5'
+
 export function SettingsPage() {
   const { staffStatus } = useAuth()
   const isOwner = staffStatus?.role === 'owner'
@@ -43,7 +47,14 @@ export function SettingsPage() {
   useFormDraft(draft ? DRAFT_KEY : null, draft)
 
   if (loading || !draft) {
-    return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        <div className="flex items-center justify-center gap-2.5 py-16 text-stone-400">
+          <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+          กำลังโหลด...
+        </div>
+      </div>
+    )
   }
 
   // ผูกไว้เป็นตัวแปรใหม่ที่ TypeScript รู้แน่ชัดว่าไม่ใช่ null เพื่อใช้ใน closure ข้างล่าง
@@ -85,14 +96,14 @@ export function SettingsPage() {
             value={values[key] ?? ''}
             onChange={(e) => set(key, e.target.value)}
             rows={key === 'payment_instructions' ? 5 : undefined}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            className={INPUT}
           />
         ) : (
           <input
             id={key}
             value={values[key] ?? ''}
             onChange={(e) => set(key, e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            className={INPUT}
           />
         )}
       </div>
@@ -123,43 +134,47 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="p-4 max-w-lg space-y-6">
-      <h1 className="text-lg font-semibold">ตั้งค่า</h1>
+    <div className="bg-stone-50 min-h-screen">
+    <div className="p-4 max-w-lg mx-auto space-y-4 pb-8">
+      <div>
+        <h1 className="text-xl font-bold text-stone-900">ตั้งค่า</h1>
+        <p className="text-sm text-stone-500 mt-0.5">ข้อมูลร้าน ใบเสร็จ และเครื่องมือจัดการระบบ</p>
+      </div>
 
       {isOwner && (
         <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-stone-500">จัดการร้าน</h2>
+          <h2 className="text-sm font-semibold text-stone-700">จัดการร้าน</h2>
           <Link
             to="/storage"
-            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
           >
             <span className="flex items-center gap-2 text-sm font-medium">🗑️ จัดการพื้นที่จัดเก็บ</span>
             <span className="text-stone-400">→</span>
           </Link>
           <Link
             to="/chatbot"
-            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
           >
             <span className="flex items-center gap-2 text-sm font-medium">💬 จัดการแชทบอทน้องริว</span>
             <span className="text-stone-400">→</span>
           </Link>
           <Link
             to="/withdrawals"
-            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
           >
             <span className="flex items-center gap-2 text-sm font-medium">📦 เบิกของ</span>
             <span className="text-stone-400">→</span>
           </Link>
           <Link
             to="/expenses"
-            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
           >
             <span className="flex items-center gap-2 text-sm font-medium">💸 รายจ่าย</span>
             <span className="text-stone-400">→</span>
           </Link>
           <Link
             to="/promo"
-            className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-3 bg-white"
+            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
           >
             <span className="flex items-center gap-2 text-sm font-medium">🎨 การ์ดโปรโมทร้าน</span>
             <span className="text-stone-400">→</span>
@@ -169,8 +184,8 @@ export function SettingsPage() {
 
       <StaffManagementSection />
 
-      <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-stone-500">ข้อมูลร้าน</h2>
+      <section className={CARD + ' space-y-4'}>
+        <h2 className="text-sm font-semibold text-stone-700">ข้อมูลร้าน</h2>
         {text('ชื่อร้าน', 'shop_name')}
         {isOwnerOrExec && text('เบอร์โทร', 'phone')}
         {isOwnerOrExec && text('ที่อยู่ร้าน', 'address')}
@@ -192,7 +207,7 @@ export function SettingsPage() {
                 type="file"
                 accept="image/*"
                 onChange={(e) => { const f = e.target.files?.[0]; if (f) void handleLogoChange(f) }}
-                className="block text-sm text-stone-600 file:mr-3 file:rounded-lg file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-2 file:text-sm"
+                className="block text-sm text-stone-600 file:mr-3 file:rounded-full file:border-0 file:bg-stone-900 file:text-white file:px-3 file:py-2 file:text-sm"
               />
               {busy && <p className="text-xs text-stone-500 mt-1">กำลังอัปโหลด...</p>}
             </div>
@@ -201,15 +216,15 @@ export function SettingsPage() {
       </section>
 
       {isOwnerOrExec && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-stone-500">แจ้งเตือนออเดอร์ใหม่</h2>
+        <section className={CARD + ' space-y-3'}>
+          <h2 className="text-sm font-semibold text-stone-700">แจ้งเตือนออเดอร์ใหม่</h2>
           <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
           {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
         </section>
       )}
 
-      <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-stone-500">เมนูออนไลน์ให้ลูกค้าสั่งเอง</h2>
+      <section className={CARD + ' space-y-2'}>
+        <h2 className="text-sm font-semibold text-stone-700">เมนูออนไลน์ให้ลูกค้าสั่งเอง</h2>
         <p className="text-xs text-stone-400">
           ส่งลิงก์นี้ให้ลูกค้าเลือกสินค้า/สั่งซื้อได้เอง — ออเดอร์ที่ส่งเข้ามาจะรอร้านตรวจสอบและกดยืนยันก่อนเสมอ ยังไม่เข้าคิวอบทันที
         </p>
@@ -217,7 +232,7 @@ export function SettingsPage() {
           type="button"
           onClick={() => void handleCopyMenuLink()}
           className={
-            'w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium ' +
+            'w-full flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ' +
             (menuLinkCopied ? 'bg-green-600 text-white' : 'bg-stone-900 text-white')
           }
         >
@@ -225,14 +240,14 @@ export function SettingsPage() {
         </button>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold text-stone-500">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
+      <section className={CARD + ' space-y-3'}>
+        <h2 className="text-sm font-semibold text-stone-700">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
         {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
       </section>
 
       {isOwner && (
-        <section className="space-y-2">
-          <h2 className="text-sm font-semibold text-stone-500">ระบบแจ้งเตือนภัยพิบัติ</h2>
+        <section className={CARD + ' space-y-2'}>
+          <h2 className="text-sm font-semibold text-stone-700">ระบบแจ้งเตือนภัยพิบัติ</h2>
           <p className="text-xs text-stone-400">
             สวิตช์รวมของระบบติดตาม/แจ้งเตือนภัยพิบัติทั้งหมด (ตอนนี้มีโมดูลติดตามสถานการณ์น้ำท่วมกรุงเทพฯ) — ปิดไว้ได้เมื่อไม่มีเหตุ
             โดยไม่ต้องลบอะไรออก แถบแจ้งเตือนในหน้าเมนูและหน้า /flood จะซ่อนไปเอง พอมีภัยพิบัติจริงค่อยกลับมาติ๊กเปิด ใช้งานได้ทันที
@@ -242,8 +257,8 @@ export function SettingsPage() {
       )}
 
       {isOwnerOrExec && (
-        <section className="space-y-3">
-          <h2 className="text-sm font-semibold text-stone-500">ค่าเริ่มต้นใบเสร็จ</h2>
+        <section className={CARD + ' space-y-3'}>
+          <h2 className="text-sm font-semibold text-stone-700">ค่าเริ่มต้นใบเสร็จ</h2>
           {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
           {checkbox('ใบเสร็จแสดงโลโก้', 'receipt_show_logo')}
           {checkbox('ใบเสร็จแสดงที่อยู่', 'receipt_show_address')}
@@ -253,8 +268,8 @@ export function SettingsPage() {
       )}
 
       {isOwnerOrExec && (
-        <section className="space-y-4">
-          <h2 className="text-sm font-semibold text-stone-500">เลขที่เอกสารและออเดอร์</h2>
+        <section className={CARD + ' space-y-4'}>
+          <h2 className="text-sm font-semibold text-stone-700">เลขที่เอกสารและออเดอร์</h2>
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label htmlFor="order_no_prefix" className="text-sm text-stone-600">ส่วนนำหน้าเลขออเดอร์</label>
@@ -262,7 +277,7 @@ export function SettingsPage() {
                 id="order_no_prefix"
                 value={draft.order_no_prefix}
                 onChange={(e) => set('order_no_prefix', e.target.value)}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2"
+                className={INPUT}
               />
             </div>
             <div className="space-y-1">
@@ -271,7 +286,7 @@ export function SettingsPage() {
                 id="receipt_no_prefix"
                 value={draft.receipt_no_prefix}
                 onChange={(e) => set('receipt_no_prefix', e.target.value)}
-                className="w-full rounded-lg border border-stone-300 px-3 py-2"
+                className={INPUT}
               />
             </div>
           </div>
@@ -286,7 +301,7 @@ export function SettingsPage() {
               min="0"
               value={draft.shipping_lead_days}
               onChange={(e) => set('shipping_lead_days', Number(e.target.value))}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2"
+              className={INPUT}
             />
           </div>
 
@@ -300,10 +315,11 @@ export function SettingsPage() {
         type="button"
         disabled={busy}
         onClick={handleSave}
-        className="rounded-lg bg-stone-900 text-white px-4 py-2.5 disabled:opacity-50"
+        className="w-full rounded-xl bg-stone-900 text-white px-4 py-2.5 font-medium disabled:opacity-50 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
       >
         {busy ? 'กำลังบันทึก...' : 'บันทึก'}
       </button>
+    </div>
     </div>
   )
 }
