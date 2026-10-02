@@ -24,7 +24,7 @@ import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 import { FloodAlertBanner } from './FloodAlertBanner'
 import { DatePicker } from './DatePicker'
-import { CheckoutBar, CheckoutHero, FormSection, IconInput, OrderTicket, StepHero } from './CheckoutParts'
+import { CheckoutHero, FormSection, IconInput, OrderTicket, StepHero } from './CheckoutParts'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -598,7 +598,7 @@ export function CustomerOrderPage() {
     const phoneOk = form.customerPhone.replace(/\D/g, '').length >= 9
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail.trim())
     return (
-      <div className="min-h-screen pb-40 font-warm">
+      <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
@@ -722,15 +722,32 @@ export function CustomerOrderPage() {
 
             <Reveal delay={0.2} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
               <TurnstileWidget onToken={setTurnstileToken} />
-              {!menu.promptpay && (
+              {!menu.promptpay ? (
                 <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
+              ) : (
+                <>
+                  <div className="flex items-end justify-between border-t border-dashed border-stone-200 pt-3">
+                    <span className="text-sm text-stone-500">ยอดรวม</span>
+                    <span className="text-xl font-bold tabular-nums text-stone-900">
+                      {formatBaht(grandTotal)} <span className="text-sm font-medium text-stone-500">บาท</span>
+                    </span>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!turnstileToken}
+                    className={
+                      'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                      (turnstileToken ? ' btn-shimmer' : '')
+                    }
+                  >
+                    {turnstileToken ? 'ไปหน้าชำระเงิน →' : 'รอยืนยันตัวตนสักครู่...'}
+                  </button>
+                </>
               )}
             </Reveal>
           </form>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
-
-        <CheckoutBar total={grandTotal} formId="checkout-form" ready={!!turnstileToken} closed={!menu.promptpay} />
       </div>
     )
   }
