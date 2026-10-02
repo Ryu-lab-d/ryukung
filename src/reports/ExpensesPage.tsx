@@ -34,71 +34,86 @@ export function ExpensesPage() {
   }
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <Link to="/summary" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
-        ← กลับหน้าสรุปยอด
-      </Link>
+    <div className="bg-stone-50 min-h-screen">
+      <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
+        <Link
+          to="/summary"
+          className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        >
+          ← กลับหน้าสรุปยอด
+        </Link>
 
-      <div className="flex items-center justify-between gap-2">
-        <h1 className="text-lg font-semibold">💸 รายจ่าย</h1>
-        <button type="button" onClick={() => setShowAdd(true)} className="rounded-lg bg-stone-900 text-white text-sm font-medium px-3.5 py-2">
-          + บันทึกรายจ่าย
-        </button>
-      </div>
-
-      <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">
-        {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (
+        <div className="flex items-center justify-between gap-2">
+          <h1 className="text-xl font-bold text-stone-900 flex items-center gap-2">💸 รายจ่าย</h1>
           <button
-            key={key}
             type="button"
-            onClick={() => setRangeKey(key)}
-            className={
-              'rounded-full px-3 py-1.5 text-sm font-medium ' +
-              (rangeKey === key ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-600')
-            }
+            onClick={() => setShowAdd(true)}
+            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] shrink-0"
           >
-            {RANGE_LABELS[key]}
+            + บันทึกรายจ่าย
           </button>
-        ))}
-      </div>
-
-      {rangeKey === 'custom' && (
-        <div className="flex gap-2">
-          <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
-          <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         </div>
-      )}
 
-      <div className="rounded-2xl bg-stone-900 text-white p-4 space-y-0.5">
-        <p className="text-xs uppercase tracking-wide text-stone-300">รายจ่ายรวมในช่วงนี้</p>
-        <p className="text-3xl font-bold">{formatBaht(total)}</p>
-      </div>
-
-      {loading ? (
-        <p className="text-stone-500">กำลังโหลด...</p>
-      ) : expenses.length === 0 ? (
-        <p className="text-sm text-stone-400">ยังไม่มีรายจ่ายในช่วงนี้ ลองกด "+ บันทึกรายจ่าย" เพื่อเริ่มบันทึก</p>
-      ) : (
-        <div className="rounded-xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden">
-          {expenses.map((e) => (
+        <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">
+          {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (
             <button
-              key={e.id}
+              key={key}
               type="button"
-              onClick={() => setEditing(e)}
-              className="w-full flex items-center justify-between gap-2 px-3.5 py-3 text-left hover:bg-stone-50"
+              onClick={() => setRangeKey(key)}
+              className={
+                'rounded-full px-3 py-1.5 text-sm font-medium transition-colors ' +
+                (rangeKey === key ? 'bg-stone-900 text-white shadow-sm' : 'text-stone-600')
+              }
             >
-              <div className="min-w-0">
-                <p className="text-sm font-medium">{EXPENSE_CATEGORY_LABEL[e.category] ?? e.category}</p>
-                <p className="text-xs text-stone-500">
-                  {new Date(e.expense_date + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
-                  {e.note && ` · ${e.note}`}
-                </p>
-              </div>
-              <span className="font-semibold tabular-nums shrink-0">{formatBaht(e.amount)}</span>
+              {RANGE_LABELS[key]}
             </button>
           ))}
         </div>
-      )}
+
+        {rangeKey === 'custom' && (
+          <div className="flex gap-2">
+            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm" />
+            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm" />
+          </div>
+        )}
+
+        <div className="rounded-2xl bg-stone-900 text-white p-4 space-y-0.5 shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
+          <p className="text-xs uppercase tracking-wide text-stone-300">รายจ่ายรวมในช่วงนี้</p>
+          <p className="text-3xl font-bold">{formatBaht(total)}</p>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center gap-2.5 py-8 text-stone-400">
+            <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+            กำลังโหลด...
+          </div>
+        ) : expenses.length === 0 ? (
+          <div className="rounded-2xl bg-white border border-stone-200 p-10 text-center">
+            <p className="text-3xl mb-1.5">💸</p>
+            <p className="text-sm text-stone-400">ยังไม่มีรายจ่ายในช่วงนี้ ลองกด "+ บันทึกรายจ่าย" เพื่อเริ่มบันทึก</p>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+            {expenses.map((e) => (
+              <button
+                key={e.id}
+                type="button"
+                onClick={() => setEditing(e)}
+                className="w-full flex items-center justify-between gap-2 px-3.5 py-3 text-left hover:bg-stone-50"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-stone-900">{EXPENSE_CATEGORY_LABEL[e.category] ?? e.category}</p>
+                  <p className="text-xs text-stone-500">
+                    {new Date(e.expense_date + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {e.note && ` · ${e.note}`}
+                  </p>
+                </div>
+                <span className="font-semibold tabular-nums shrink-0 text-stone-900">{formatBaht(e.amount)}</span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
       {(showAdd || editing) && (
         <ExpenseFormModal
