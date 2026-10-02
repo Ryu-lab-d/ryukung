@@ -98,7 +98,7 @@ function CheckoutProgress({ current }: { current: (typeof CHECKOUT_STEPS)[number
       <div className="relative flex justify-between">
         <div className="absolute left-8 right-8 top-4 h-0.5 rounded-full bg-stone-200" aria-hidden="true" />
         <div
-          className="absolute left-8 top-4 h-0.5 rounded-full bg-stone-900 transition-all duration-700 ease-out"
+          className="absolute left-8 top-4 h-1 -mt-px rounded-full bg-gradient-to-r from-amber-500 to-stone-900 transition-all duration-700 ease-out"
           style={{ width: `calc((100% - 4rem) * ${ratio})` }}
           aria-hidden="true"
         />
@@ -108,7 +108,7 @@ function CheckoutProgress({ current }: { current: (typeof CHECKOUT_STEPS)[number
               className={
                 'w-8 h-8 rounded-full grid place-items-center text-sm transition-all duration-500 ' +
                 (i < idx
-                  ? 'bg-stone-900 text-white'
+                  ? 'bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-md'
                   : i === idx
                     ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
                     : 'bg-white border-2 border-stone-200 text-stone-400')
@@ -675,49 +675,76 @@ export function CustomerOrderPage() {
               <p>ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ</p>
             </Reveal>
           ) : (
-            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-4 space-y-3">
+            <div className="space-y-3">
               {items.map((it, i) => (
-                <div
-                  key={it.product_id}
-                  className="animate-product-in flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
-                  style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}
-                >
-                  <div className="relative w-14 h-14 rounded-xl bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px] shadow-sm">
-                    {it.imagePath ? (
-                      <FadeImage src={productImageUrl(it.imagePath)} alt={it.product_name} className="w-full h-full object-cover" />
-                    ) : (
-                      'ไม่มีรูป'
-                    )}
+                <Reveal key={it.product_id} delay={Math.min(i, 6) * 0.06}>
+                  <div className="relative overflow-hidden flex items-center gap-3 rounded-3xl bg-white border border-stone-200/70 p-3 shadow-[0_6px_20px_-10px_rgb(51_32_14_/_0.35)] transition-all duration-300 hover:-translate-y-0.5">
+                    <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
+                    <div className="relative w-[4.5rem] h-[4.5rem] ml-1 rounded-2xl bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px] shadow-sm">
+                      {it.imagePath ? (
+                        <FadeImage src={productImageUrl(it.imagePath)} alt={it.product_name} className="w-full h-full object-cover" />
+                      ) : (
+                        'ไม่มีรูป'
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <p className="text-[15px] font-display font-medium leading-snug line-clamp-2">{it.product_name}</p>
+                      <p className="text-xs text-stone-400">{formatBaht(it.unit_price)} บาท/{it.unit}</p>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center rounded-full bg-stone-100 p-0.5">
+                          <button
+                            type="button" onClick={() => updateQty(i, it.qty - 1)}
+                            aria-label="ลดจำนวน"
+                            className="w-7 h-7 rounded-full bg-white shadow-sm font-semibold transition-transform active:scale-90"
+                          >
+                            −
+                          </button>
+                          <span key={it.qty} className="text-sm font-semibold tabular-nums w-8 text-center animate-qty-pop">{it.qty}</span>
+                          <button
+                            type="button" onClick={() => updateQty(i, it.qty + 1)}
+                            aria-label="เพิ่มจำนวน"
+                            className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 text-white shadow-sm font-semibold transition-transform active:scale-90"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <p className="text-base font-bold tabular-nums text-stone-900">{formatBaht(it.unit_price * it.qty)}</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{it.product_name}</p>
-                    <p className="text-xs text-stone-400">{formatBaht(it.unit_price)} บาท/{it.unit}</p>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <button
-                      type="button" onClick={() => updateQty(i, it.qty - 1)}
-                      className="w-8 h-8 rounded-full bg-stone-100 font-semibold transition-transform active:scale-90"
-                    >
-                      −
-                    </button>
-                    <span key={it.qty} className="text-sm font-medium tabular-nums w-4 text-center animate-qty-pop">{it.qty}</span>
-                    <button
-                      type="button" onClick={() => updateQty(i, it.qty + 1)}
-                      className="w-8 h-8 rounded-full bg-stone-900 text-white font-semibold transition-transform active:scale-90"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <p className="text-sm font-semibold tabular-nums w-16 text-right shrink-0">
-                    {formatBaht(it.unit_price * it.qty)}
-                  </p>
-                </div>
+                </Reveal>
               ))}
-              <div className="flex justify-between text-base font-bold pt-1">
-                <span>ยอดรวม</span>
-                <span className="tabular-nums">{formatBaht(grandTotal)} บาท</span>
-              </div>
-            </Reveal>
+
+              <Reveal delay={0.05}>
+                <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-800 to-stone-900 text-white px-5 py-4 shadow-[0_14px_30px_-14px_rgb(51_32_14_/_0.8)]">
+                  <span className="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-amber-400/15" aria-hidden="true" />
+                  <div className="relative flex items-end justify-between">
+                    <div>
+                      <p className="text-xs text-white/60">ยอดรวมทั้งหมด ({items.length} รายการ)</p>
+                      <p className="text-3xl font-display font-bold tabular-nums text-amber-300 leading-tight">
+                        {formatBaht(grandTotal)} <span className="text-base font-medium text-amber-200">บาท</span>
+                      </p>
+                    </div>
+                    <span className="text-3xl animate-loading-bounce" aria-hidden="true">🍪</span>
+                  </div>
+                </div>
+              </Reveal>
+
+              <Reveal delay={0.1}>
+                <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-stone-600">
+                  {[
+                    ['🔥', 'อบสดใหม่ทุกออเดอร์'],
+                    ['🧑‍🍳', 'ทำเองทุกชิ้น'],
+                    ['💬', 'มีไลน์ดูแลตลอด'],
+                  ].map(([ic, tx]) => (
+                    <div key={tx} className="rounded-2xl bg-white/70 border border-stone-200/70 py-2.5 px-1 space-y-0.5">
+                      <p className="text-xl">{ic}</p>
+                      <p className="leading-tight">{tx}</p>
+                    </div>
+                  ))}
+                </div>
+              </Reveal>
+            </div>
           )}
 
           <Reveal delay={0.08}>
@@ -726,7 +753,7 @@ export function CustomerOrderPage() {
               onClick={() => setStep('checkout')}
               disabled={items.length === 0}
               className={
-                'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                'w-full rounded-full bg-gradient-to-r from-amber-600 to-amber-800 text-white font-bold py-4 text-base shadow-[0_14px_30px_-12px_rgb(146_82_12_/_0.8)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
                 (items.length > 0 ? ' btn-shimmer' : '')
               }
             >
