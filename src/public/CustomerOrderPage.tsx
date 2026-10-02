@@ -24,6 +24,7 @@ import { AboutTabContent } from './AboutTabContent'
 import { TurnstileWidget } from './TurnstileWidget'
 import { FloodAlertBanner } from './FloodAlertBanner'
 import { DatePicker } from './DatePicker'
+import { CheckoutBar, CheckoutHero, FormSection, IconInput, OrderTicket } from './CheckoutParts'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -593,52 +594,45 @@ export function CustomerOrderPage() {
   if (step === 'checkout') {
     const inputClass =
       'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-stone-900 placeholder:text-stone-400 shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-600/60'
+    const nameOk = form.customerName.trim().length >= 2
+    const phoneOk = form.customerPhone.replace(/\D/g, '').length >= 9
+    const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.customerEmail.trim())
     return (
-      <div className="min-h-screen pb-10 font-warm">
+      <div className="min-h-screen pb-40 font-warm">
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
           <CheckoutProgress current="checkout" />
 
-          <div className="text-center py-2 animate-page-in">
-            <p className="text-4xl">📝</p>
-            <h1 className="text-xl font-display font-bold text-stone-900 mt-2">กรอกข้อมูลรับของ</h1>
-            <p className="text-sm text-stone-500 mt-1">กรอกให้ครบเพื่อความรวดเร็วในการจัดส่ง</p>
-          </div>
+          <CheckoutHero count={items.length} total={grandTotal} />
+          <OrderTicket items={items} grandTotal={grandTotal} />
 
-          <CartSummaryList items={items} grandTotal={grandTotal} />
-
-          <form onSubmit={handleCheckoutSubmit} className="space-y-4">
-            <TermsSection icon="👤" title="ข้อมูลผู้สั่งซื้อ" delay={0.06}>
+          <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-4">
+            <FormSection no={1} icon="👤" title="ข้อมูลผู้สั่งซื้อ" subtitle="ใช้ติดต่อและยืนยันตัวตนตอนติดตามออเดอร์" delay={0.04}>
               <div className="space-y-3.5 text-stone-700">
-                <div className="space-y-1">
-                  <label htmlFor="customerName" className="text-xs font-medium text-stone-500">ชื่อผู้สั่งซื้อ</label>
-                  <input
-                    id="customerName" required value={form.customerName}
-                    onChange={(e) => setForm((f) => ({ ...f, customerName: e.target.value }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="customerPhone" className="text-xs font-medium text-stone-500">เบอร์โทรศัพท์</label>
-                  <input
-                    id="customerPhone" required type="tel" value={form.customerPhone}
-                    onChange={(e) => setForm((f) => ({ ...f, customerPhone: e.target.value }))}
-                    className={inputClass}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label htmlFor="customerEmail" className="text-xs font-medium text-stone-500">อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)</label>
-                  <input
-                    id="customerEmail" required type="email" value={form.customerEmail}
-                    onChange={(e) => setForm((f) => ({ ...f, customerEmail: e.target.value }))}
-                    className={inputClass}
-                  />
-                </div>
+                <IconInput
+                  id="customerName" label="ชื่อผู้สั่งซื้อ" icon="🙂" required valid={nameOk} value={form.customerName}
+                  onChange={(v) => setForm((f) => ({ ...f, customerName: v }))}
+                />
+                <IconInput
+                  id="customerPhone" label="เบอร์โทรศัพท์" icon="📞" type="tel" inputMode="tel" required valid={phoneOk}
+                  value={form.customerPhone} onChange={(v) => setForm((f) => ({ ...f, customerPhone: v }))}
+                />
+                <IconInput
+                  id="customerEmail" label="อีเมล (ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)" icon="✉️" type="email" inputMode="email"
+                  required valid={emailOk} value={form.customerEmail}
+                  onChange={(v) => setForm((f) => ({ ...f, customerEmail: v }))}
+                />
               </div>
-            </TermsSection>
+            </FormSection>
 
-            <TermsSection icon={form.fulfillmentType === 'pickup' ? '🏠' : '📦'} title="วิธีรับของ" delay={0.12}>
+            <FormSection
+              no={2}
+              icon={form.fulfillmentType === 'pickup' ? '🏠' : '📦'}
+              title="วิธีรับของ"
+              subtitle="เลือกวิธีรับและวันที่สะดวก"
+              delay={0.1}
+            >
               <div className="space-y-3.5 text-stone-700">
                 <div className="space-y-1">
                   <span id="fulfillmentTypeLabel" className="text-xs font-medium text-stone-500">วิธีรับของ</span>
@@ -691,12 +685,10 @@ export function CustomerOrderPage() {
                 </div>
 
                 {form.fulfillmentType === 'pickup' ? (
-                  <div key="pickup" className="space-y-1 animate-form-in">
-                    <label htmlFor="pickupTime" className="text-xs font-medium text-stone-500">เวลาที่สะดวกมารับ (ถ้ามี)</label>
-                    <input
-                      id="pickupTime" value={form.pickupTime}
-                      onChange={(e) => setForm((f) => ({ ...f, pickupTime: e.target.value }))}
-                      placeholder="เช่น 10:00" className={inputClass}
+                  <div key="pickup" className="animate-form-in">
+                    <IconInput
+                      id="pickupTime" label="เวลาที่สะดวกมารับ (ถ้ามี)" icon="🕐" placeholder="เช่น 10:00"
+                      value={form.pickupTime} onChange={(v) => setForm((f) => ({ ...f, pickupTime: v }))}
                     />
                   </div>
                 ) : (
@@ -719,36 +711,26 @@ export function CustomerOrderPage() {
                   </div>
                 )}
               </div>
-            </TermsSection>
+            </FormSection>
 
-            <TermsSection icon="💬" title="หมายเหตุ (ถ้ามี)" delay={0.18}>
+            <FormSection no={3} icon="💬" title="หมายเหตุ (ถ้ามี)" subtitle="บอกรายละเอียดเพิ่มเติมให้ร้านทราบ" delay={0.16}>
               <textarea
                 id="note" value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))}
                 className={inputClass} rows={2} placeholder="เช่น ไม่ใส่ถั่ว, ห่อของขวัญ"
               />
-            </TermsSection>
+            </FormSection>
 
-            <Reveal delay={0.24} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-4">
+            <Reveal delay={0.2} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
               <TurnstileWidget onToken={setTurnstileToken} />
-
-              {menu.promptpay ? (
-                <button
-                  type="submit"
-                  disabled={!turnstileToken}
-                  className={
-                    'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
-                    (turnstileToken ? ' btn-shimmer' : '')
-                  }
-                >
-                  ไปหน้าชำระเงิน →
-                </button>
-              ) : (
+              {!menu.promptpay && (
                 <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
               )}
             </Reveal>
           </form>
           <LineContactButton lineUrl={menu.line_url} />
         </div>
+
+        <CheckoutBar total={grandTotal} formId="checkout-form" ready={!!turnstileToken} closed={!menu.promptpay} />
       </div>
     )
   }
