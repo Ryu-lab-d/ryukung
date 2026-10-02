@@ -559,6 +559,25 @@ a:focus-visible {
   .animate-hourglass { animation: none; }
 }
 
+/* กระดาษสีโปรยตอนออเดอร์ส่งมอบสำเร็จ (Confetti ในหน้าติดตามออเดอร์) — ร่วงลงพร้อมหมุนแล้วจาง เล่น 2 รอบ */
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0deg); opacity: 0; }
+  12% { opacity: 1; }
+  100% { transform: translateY(150px) rotate(540deg); opacity: 0; }
+}
+.confetti-piece {
+  position: absolute;
+  top: -12px;
+  width: 8px;
+  height: 12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation: confetti-fall 2.2s ease-in 2 backwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .confetti-piece { display: none; }
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

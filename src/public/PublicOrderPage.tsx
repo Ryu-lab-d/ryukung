@@ -112,6 +112,85 @@ function normalizePhone(value: string): string {
   return digits
 }
 
+/** ไอคอน+ข้อความสั้นๆ ของแต่ละขั้นสถานะ ใช้ในการ์ดสถานะสดด้านบนสุดของหน้า (ข้อความอิงชื่อขั้นจริงเท่านั้น ไม่เพิ่มข้อมูลใหม่) */
+const STAGE_VISUAL: Record<string, { icon: string; text: string }> = {
+  pending: { icon: '🕐', text: 'ร้านกำลังตรวจสอบออเดอร์ของคุณ' },
+  to_bake: { icon: '📝', text: 'ร้านรับออเดอร์แล้ว' },
+  baking: { icon: '🧑‍🍳', text: 'ขนมของคุณกำลังถูกทำ' },
+  ready: { icon: '🎁', text: 'แพ็คของเรียบร้อยแล้ว' },
+  waiting_courier: { icon: '🛵', text: 'รอขนส่งเข้ารับพัสดุ' },
+  picked_up: { icon: '📦', text: 'ขนส่งเข้ารับพัสดุแล้ว' },
+  in_transit: { icon: '🚚', text: 'พัสดุกำลังเดินทางไปหาคุณ' },
+  delivered: { icon: '🎉', text: 'ขอบคุณที่อุดหนุนนะคะ' },
+}
+
+/** กระดาษสีโปรยฉลองตอนออเดอร์ส่งมอบสำเร็จ (ดู .confetti-piece ใน index.css) */
+function Confetti() {
+  const colors = ['#f59e0b', '#d97706', '#fbbf24', '#a8551f', '#fcd34d', '#78350f']
+  return (
+    <div className="pointer-events-none absolute inset-x-0 top-0 h-40 overflow-hidden" aria-hidden="true">
+      {Array.from({ length: 18 }).map((_, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: `${(i * 53) % 100}%`,
+            background: colors[i % colors.length],
+            animationDelay: `${(i % 6) * 0.18}s`,
+            animationDuration: `${1.8 + (i % 5) * 0.25}s`,
+          }}
+        />
+      ))}
+    </div>
+  )
+}
+
+/** การ์ดสถานะสดบนสุดของหน้า: ไอคอนใหญ่ของขั้นปัจจุบัน + แถบความคืบหน้าที่ไหลเต็มตามขั้น — ลูกค้าเห็นภาพรวมทันทีโดยไม่ต้องอ่าน
+ * ไทม์ไลน์ละเอียดด้านล่าง (ขั้นเดียวกับ StatusTimeline ทุกประการ ใช้ workStagesFor ตัวเดียวกัน) */
+function LiveStatusCard({ order }: { order: PublicOrderView }) {
+  const stages = workStagesFor(order.fulfillment_type, order.pending_confirmation)
+  const idx = order.pending_confirmation ? 0 : Math.max(0, stages.findIndex((s) => s.key === order.work_status))
+  const stage = stages[idx]
+  const pct = Math.round(((idx + 1) / stages.length) * 100)
+  const [fill, setFill] = useState(0)
+  useEffect(() => {
+    const t = setTimeout(() => setFill(pct), 200)
+    return () => clearTimeout(t)
+  }, [pct])
+
+  if (order.work_status === 'cancelled' || !stage) return null
+  const visual = STAGE_VISUAL[stage.key] ?? { icon: '📍', text: '' }
+  const done = stage.key === 'delivered' && !order.pending_confirmation
+
+  return (
+    <div className={CARD + ' relative overflow-hidden p-5 animate-form-in'} style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}>
+      {done && <Confetti />}
+      <div className="relative flex items-center gap-4">
+        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 border border-amber-100 grid place-items-center text-4xl shrink-0 animate-icon-pop">
+          <span key={stage.key} className={done ? 'animate-qty-pop' : 'animate-bell-ring'}>{visual.icon}</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-xs text-stone-400">สถานะตอนนี้</p>
+          <p className="text-lg font-display font-bold text-stone-900 leading-tight">{stage.label}</p>
+          {visual.text && <p className="text-sm text-stone-500 mt-0.5">{visual.text}</p>}
+        </div>
+      </div>
+      <div className="relative mt-4">
+        <div className="h-2.5 rounded-full bg-stone-100 overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-700 transition-all duration-1000 ease-out"
+            style={{ width: `${fill}%` }}
+          />
+        </div>
+        <div className="flex justify-between text-[11px] text-stone-400 mt-1.5">
+          <span>ขั้นที่ {idx + 1} จาก {stages.length}</span>
+          <span className="tabular-nums">{pct}%</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean; pulsing?: boolean }> = {
   unpaid: { label: 'ยังไม่ชำระเงิน', icon: '!', color: 'bg-red-500', done: false },
   partial: { label: 'มัดจำแล้ว', icon: '½', color: 'bg-amber-500', done: false },
@@ -689,6 +768,10 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
   return (
     <div className="space-y-2">
       <div ref={cardRef} className={CARD + ' p-5 space-y-3'}>
+        <h2 className="text-sm font-display font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-amber-50 border border-amber-100 grid place-items-center text-sm shrink-0">🧾</span>
+          สรุปรายการสั่งซื้อ
+        </h2>
         <div className="space-y-1">
           {order.items.map((it, i) => (
             <div key={i} className="flex justify-between text-sm">
@@ -698,11 +781,11 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
           ))}
         </div>
 
-        <div className="border-t border-stone-100 pt-2 space-y-1 text-sm">
+        <div className="border-t-2 border-dashed border-stone-200 pt-3 space-y-1.5 text-sm">
           <div className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(order.items_total)}</span></div>
           <div className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(order.discount_amount)}</span></div>
           <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
-          <div className="flex justify-between font-semibold text-base"><span>ยอดรวม</span><span>{formatBaht(order.grand_total)}</span></div>
+          <div className="flex justify-between items-end font-bold text-lg pt-1"><span>ยอดรวม</span><span className="tabular-nums">{formatBaht(order.grand_total)}</span></div>
         </div>
       </div>
 
@@ -986,12 +1069,14 @@ export function PublicOrderPage() {
           </div>
         </div>
 
+        <LiveStatusCard order={order} />
+
         {order.line_url && (
           <a
             href={order.line_url}
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm animate-form-in"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-[#06C755] text-white font-semibold py-3 text-sm shadow-sm transition-transform active:scale-95 animate-form-in"
             style={{ animationDelay: '0.06s', animationFillMode: 'backwards' }}
           >
             💬 ติดต่อพนักงาน (แอดไลน์)
@@ -1063,7 +1148,7 @@ export function PublicOrderPage() {
           </div>
           <div className="text-sm space-y-1">
             <div className="flex justify-between"><span className="text-stone-500">วิธีรับของ</span><span>{FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}</span></div>
-            <div className="flex justify-between"><span className="text-stone-500">วันที่ต้องได้ของ</span><span>{order.needed_date ?? '-'}</span></div>
+            <div className="flex justify-between"><span className="text-stone-500">วันที่ต้องได้ของ</span><span className="font-semibold text-stone-900">{order.needed_date ? formatOrderDate(order.needed_date) : '-'}</span></div>
             {order.fulfillment_type === 'pickup' ? (
               <>
                 <div className="flex justify-between"><span className="text-stone-500">จุดนัดรับ</span><span>{order.pickup_place ?? '-'}</span></div>
@@ -1115,6 +1200,15 @@ export function PublicOrderPage() {
 
         <Reveal delay={0.14}>
           <OrderSummaryCard order={order} />
+        </Reveal>
+
+        <Reveal delay={0.1} className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)]">
+          <AmbientGlow />
+          <div className="relative z-10 space-y-1">
+            <p className="text-3xl">🧡</p>
+            <p className="font-display font-semibold">ขอบคุณที่อุดหนุน {order.shop_name} นะคะ</p>
+            <p className="text-sm text-white/80">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
+          </div>
         </Reveal>
       </div>
 
