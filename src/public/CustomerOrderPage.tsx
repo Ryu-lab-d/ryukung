@@ -132,15 +132,15 @@ function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
     <div className="space-y-3">
       <label
         className={
-          'flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 text-sm cursor-pointer select-none transition-all duration-300 ' +
-          (checked ? 'border-amber-400 bg-amber-50 text-stone-900' : 'border-stone-200 bg-white text-stone-700')
+          'flex items-center gap-3 rounded-2xl border-2 px-3.5 py-3.5 text-sm cursor-pointer select-none transition-all duration-300 ' +
+          (checked ? 'border-amber-500 bg-gradient-to-r from-amber-50 to-white text-stone-900 shadow-[0_8px_20px_-10px_rgb(193_130_61_/_0.8)]' : 'border-stone-200 bg-white text-stone-700')
         }
       >
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          className="w-5 h-5 accent-stone-900 shrink-0"
+          className="w-6 h-6 accent-amber-700 shrink-0"
         />
         ฉันอ่านและยอมรับเงื่อนไขการสั่งซื้อข้างต้นแล้ว
       </label>
@@ -149,8 +149,8 @@ function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
         onClick={onConfirm}
         disabled={!checked}
         className={
-          'w-full rounded-xl font-semibold py-3 text-sm transition-all duration-300 active:scale-95 disabled:bg-stone-200 disabled:text-stone-400 ' +
-          (checked ? 'btn-shimmer bg-stone-900 text-white shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)]' : 'bg-stone-200 text-stone-400')
+          'w-full rounded-full font-bold py-3.5 text-sm transition-all duration-300 active:scale-95 disabled:bg-stone-200 disabled:text-stone-400 ' +
+          (checked ? 'btn-shimmer bg-gradient-to-r from-amber-600 to-amber-800 text-white shadow-[0_14px_30px_-12px_rgb(146_82_12_/_0.8)]' : 'bg-stone-200 text-stone-400')
         }
       >
         รับทราบ ไปหน้าชำระเงิน →
@@ -165,10 +165,11 @@ function TermsSection({ icon, title, delay = 0, children }: { icon: string; titl
   return (
     <Reveal
       delay={delay}
-      className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 transition-shadow duration-300 hover:shadow-[0_8px_24px_-8px_rgb(51_32_14_/_0.3)]"
+      className="relative overflow-hidden bg-white rounded-3xl border border-stone-200/70 shadow-[0_6px_20px_-10px_rgb(51_32_14_/_0.3)] p-5 pl-6 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_14px_28px_-12px_rgb(51_32_14_/_0.4)]"
     >
+      <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
       <div className="flex items-center gap-3 mb-2.5">
-        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-50 to-stone-100 border border-amber-100 grid place-items-center text-lg shrink-0">
+        <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 shadow-sm grid place-items-center text-xl shrink-0">
           {icon}
         </div>
         <h2 className="font-display font-semibold text-stone-900">{title}</h2>
@@ -989,19 +990,39 @@ export function CustomerOrderPage() {
 
           <StepHero icon="💳" title="ชำระเงิน" subtitle="สแกนจ่ายเงินก่อน แล้วกดแจ้งชำระเงินด้านล่าง ร้านจะตรวจสอบให้" />
 
-          <Reveal className="relative overflow-hidden rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.5)]">
+          <Reveal className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-stone-800 via-stone-900 to-amber-900 text-white p-6 text-center shadow-[0_18px_36px_-14px_rgb(0_0_0_/_0.65)]">
             <AmbientGlow />
+            <span className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-amber-400/15" aria-hidden="true" />
             <div className="relative z-10">
-              <p className="text-sm text-stone-300">ยอดที่ต้องชำระ</p>
-              <p className="text-4xl font-bold tabular-nums">{formatBaht(grandTotal)}</p>
-              <p className="text-sm text-stone-300">บาท</p>
+              <p className="text-xs tracking-widest text-amber-200/80">ยอดที่ต้องชำระ</p>
+              <p className="text-5xl font-display font-bold tabular-nums text-amber-300 mt-1 leading-none">{formatBaht(grandTotal)}</p>
+              <p className="text-sm text-amber-100/80 mt-1">บาท</p>
             </div>
           </Reveal>
 
-          <Reveal delay={0.06} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
-            <h2 className="text-sm font-display font-semibold text-stone-700">📷 สแกน QR เพื่อชำระเงิน</h2>
+          <Reveal delay={0.03}>
+            <div className="grid grid-cols-3 gap-2 text-center text-[11px] text-stone-600">
+              {[
+                ['1', '📷', 'สแกน QR'],
+                ['2', '🏦', 'โอนตามยอด'],
+                ['3', '✅', 'กดแจ้งชำระ'],
+              ].map(([n, ic, tx]) => (
+                <div key={n} className="relative rounded-2xl bg-white/80 border border-stone-200/70 py-2.5 space-y-0.5 shadow-sm">
+                  <span className="absolute -top-2 left-2 w-5 h-5 rounded-full bg-gradient-to-br from-amber-500 to-amber-700 text-white text-[10px] font-bold grid place-items-center shadow">{n}</span>
+                  <p className="text-xl">{ic}</p>
+                  <p>{tx}</p>
+                </div>
+              ))}
+            </div>
+          </Reveal>
+
+          <Reveal delay={0.06} className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-12px_rgb(51_32_14_/_0.4)] p-5 space-y-3">
+            <h2 className="text-sm font-display font-semibold text-stone-700 flex items-center justify-between">
+              <span>📷 สแกน QR เพื่อชำระเงิน</span>
+              <span className="rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-[10px] font-semibold px-2 py-0.5">PromptPay</span>
+            </h2>
             {menu.promptpay && (
-              <div className="relative overflow-hidden rounded-xl">
+              <div className="relative overflow-hidden rounded-2xl border-2 border-dashed border-amber-300 bg-gradient-to-b from-amber-50/60 to-white p-2">
                 <PromptPayQR promptpayId={menu.promptpay} amount={grandTotal} />
                 <span className="qr-scan" aria-hidden="true" />
               </div>
@@ -1019,7 +1040,7 @@ export function CustomerOrderPage() {
               onClick={() => void handleConfirmPayment()}
               disabled={submitting || paymentSuccessVisible || showLineReminder}
               className={
-                'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                'w-full rounded-full bg-gradient-to-r from-green-600 to-emerald-700 text-white font-bold py-4 shadow-[0_14px_30px_-12px_rgb(5_122_85_/_0.8)] transition-all duration-300 hover:brightness-110 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
                 (submitting ? '' : ' btn-shimmer')
               }
             >
