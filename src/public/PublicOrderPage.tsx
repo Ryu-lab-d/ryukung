@@ -145,6 +145,34 @@ function Confetti() {
   )
 }
 
+/** ชิปเลขออเดอร์ในหัวหน้า กดแล้วคัดลอกเลขออเดอร์ลงคลิปบอร์ด (ลูกค้ามักต้องส่งเลขนี้ให้ร้านทางไลน์) มีฟีดแบ็กเปลี่ยนเป็น ✓ ชั่วครู่ */
+function CopyOrderNo({ orderNo }: { orderNo: string | null }) {
+  const [copied, setCopied] = useState(false)
+  if (!orderNo) {
+    return <p className="text-sm text-white/85 mt-2">ออเดอร์ รอเลขที่ออเดอร์</p>
+  }
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(orderNo!)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1800)
+    } catch {
+      // เบราว์เซอร์ในแอปบางตัวไม่ให้เขียนคลิปบอร์ด — ไม่ต้องแจ้ง error ลูกค้าก็ยังเห็นเลขอยู่ในหน้านี้แล้ว
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={() => void handleCopy()}
+      aria-label={`คัดลอกเลขออเดอร์ ${orderNo}`}
+      className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur border border-white/25 px-3.5 py-1 text-sm text-white/90 transition-all duration-200 hover:bg-white/25 active:scale-95"
+    >
+      <span>ออเดอร์ {orderNo}</span>
+      <span key={String(copied)} className="animate-qty-pop text-xs" aria-hidden="true">{copied ? '✓ คัดลอกแล้ว' : '📋'}</span>
+    </button>
+  )
+}
+
 /** การ์ดสถานะสดบนสุดของหน้า: ไอคอนใหญ่ของขั้นปัจจุบัน + แถบความคืบหน้าที่ไหลเต็มตามขั้น — ลูกค้าเห็นภาพรวมทันทีโดยไม่ต้องอ่าน
  * ไทม์ไลน์ละเอียดด้านล่าง (ขั้นเดียวกับ StatusTimeline ทุกประการ ใช้ workStagesFor ตัวเดียวกัน) */
 function LiveStatusCard({ order }: { order: PublicOrderView }) {
@@ -464,7 +492,10 @@ function UnpaidPaymentPopup({
         </button>
 
         <div className="bg-gradient-to-b from-red-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
-          <div className="w-16 h-16 rounded-full bg-red-100 grid place-items-center mx-auto text-3xl">💳</div>
+          <div className="relative w-16 h-16 mx-auto">
+            <span className="absolute inset-0 rounded-full bg-red-300/60 animate-fab-ring" aria-hidden="true" />
+            <div className="relative w-16 h-16 rounded-full bg-red-100 grid place-items-center text-3xl animate-icon-pop">💳</div>
+          </div>
           <h2 className="text-xl font-display font-bold text-red-700 leading-snug">คุณลูกค้ายังไม่ได้ชำระเงิน</h2>
         </div>
 
@@ -473,7 +504,7 @@ function UnpaidPaymentPopup({
             <button
               type="button"
               onClick={onShowPaymentInfo}
-              className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-sm"
+              className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
             >
               ดูวิธีการชำระเงิน
             </button>
@@ -539,7 +570,10 @@ function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClo
         </button>
 
         <div className="bg-gradient-to-b from-red-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
-          <div className="w-16 h-16 rounded-full bg-red-100 grid place-items-center mx-auto text-3xl">😔</div>
+          <div className="relative w-16 h-16 mx-auto">
+            <span className="absolute inset-0 rounded-full bg-red-300/60 animate-fab-ring" aria-hidden="true" />
+            <div className="relative w-16 h-16 rounded-full bg-red-100 grid place-items-center text-3xl animate-icon-pop">😔</div>
+          </div>
           <h2 className="text-xl font-display font-bold text-red-700 leading-snug">ออเดอร์นี้ถูกยกเลิกแล้ว</h2>
         </div>
 
@@ -608,7 +642,10 @@ function DateChangePopup({ order, onClose }: { order: PublicOrderView; onClose: 
         </button>
 
         <div className="bg-gradient-to-b from-amber-50 to-white rounded-t-3xl px-6 pt-9 pb-5 text-center space-y-2">
-          <div className="w-16 h-16 rounded-full bg-amber-100 grid place-items-center mx-auto text-3xl">📅</div>
+          <div className="relative w-16 h-16 mx-auto">
+            <span className="absolute inset-0 rounded-full bg-amber-300/60 animate-fab-ring" aria-hidden="true" />
+            <div className="relative w-16 h-16 rounded-full bg-amber-100 grid place-items-center text-3xl animate-icon-pop">📅</div>
+          </div>
           <h2 className="text-xl font-display font-bold text-amber-700 leading-snug">มีการเปลี่ยนแปลงกำหนดการ</h2>
         </div>
 
@@ -620,7 +657,7 @@ function DateChangePopup({ order, onClose }: { order: PublicOrderView; onClose: 
           <div className="rounded-xl bg-stone-50 border border-stone-200 px-3.5 py-3.5 flex items-center justify-center gap-2.5 text-sm">
             <span className="line-through text-stone-400">{formatOrderDate(order.previous_needed_date)}</span>
             <span className="text-stone-400">→</span>
-            <span className="font-semibold text-amber-700">{formatOrderDate(order.needed_date)}</span>
+            <span className="font-semibold text-amber-700 animate-qty-pop">{formatOrderDate(order.needed_date)}</span>
           </div>
 
           {order.line_url && (
@@ -637,7 +674,7 @@ function DateChangePopup({ order, onClose }: { order: PublicOrderView; onClose: 
           <button
             type="button"
             onClick={requestClose}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
+            className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
           >
             รับทราบแล้ว
           </button>
@@ -668,20 +705,25 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
           ✕
         </button>
 
-        <div className="rounded-t-3xl px-6 pt-10 pb-7 text-center space-y-3 bg-brand-shader">
-          {logoPath && (
-            <img
-              src={productImageUrl(logoPath)}
-              alt=""
-              className="w-20 h-20 rounded-full mx-auto object-cover border-2"
-              style={{ borderColor: 'rgba(255,255,255,0.4)' }}
-            />
-          )}
-          <p className="text-4xl">🍪</p>
-          <h2 className="text-2xl font-display font-bold text-white leading-snug">ร้านเบเกอรี่ของเด็กอายุ 13 ปี</h2>
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.8)' }}>
-            {shopName} คืออะไร?
-          </p>
+        <div className="relative overflow-hidden rounded-t-3xl px-6 pt-10 pb-7 text-center bg-brand-shader">
+          <AmbientGlow />
+          <div className="relative z-10 space-y-3">
+            {logoPath && (
+              <img
+                src={productImageUrl(logoPath)}
+                alt=""
+                className="w-20 h-20 rounded-full mx-auto object-cover border-2 animate-icon-pop"
+                style={{ borderColor: 'rgba(255,255,255,0.4)' }}
+              />
+            )}
+            <p className="text-4xl animate-hero-text" style={{ animationDelay: '0.2s' }}>🍪</p>
+            <h2 className="text-2xl font-display font-bold text-white leading-snug animate-hero-text" style={{ animationDelay: '0.3s' }}>
+              ร้านเบเกอรี่ของเด็กอายุ 13 ปี
+            </h2>
+            <p className="text-sm animate-hero-text" style={{ color: 'rgba(255,255,255,0.8)', animationDelay: '0.4s' }}>
+              {shopName} คืออะไร?
+            </p>
+          </div>
         </div>
 
         <div className="px-5 py-5 space-y-3 text-sm text-stone-700 leading-relaxed">
@@ -699,7 +741,7 @@ function AboutShopPopup({ shopName, logoPath, onClose }: { shopName: string; log
           <button
             type="button"
             onClick={requestClose}
-            className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm"
+            className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
           >
             เริ่มดูออเดอร์ของฉัน
           </button>
@@ -725,13 +767,21 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
         <h2 className="text-lg font-display font-bold text-stone-900">วิธีใช้งานหน้านี้</h2>
         <div className="space-y-2.5 text-left">
           {items.map((it, i) => (
-            <div key={i} className="flex items-start gap-2.5 text-sm text-stone-600">
-              <span className="text-lg shrink-0">{it.icon}</span>
+            <div
+              key={i}
+              className="animate-timeline-in flex items-start gap-3 text-sm text-stone-600 rounded-xl bg-stone-50 border border-stone-200/70 px-3 py-2.5"
+              style={{ animationDelay: `${0.12 + i * 0.09}s` }}
+            >
+              <span className="text-xl shrink-0">{it.icon}</span>
               <span>{it.text}</span>
             </div>
           ))}
         </div>
-        <button type="button" onClick={requestClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
+        <button
+          type="button"
+          onClick={requestClose}
+          className="btn-shimmer w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
+        >
           เข้าใจแล้ว เริ่มดูออเดอร์
         </button>
       </div>
@@ -1040,9 +1090,9 @@ export function PublicOrderPage() {
               {order.shop_name}
             </h1>
             <SquiggleUnderline className="w-16 h-2 mx-auto mt-1 text-white/40" />
-            <p className="text-sm text-white/85 mt-2 animate-hero-text" style={{ animationDelay: '0.2s' }}>
-              ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}
-            </p>
+            <div className="animate-hero-text" style={{ animationDelay: '0.2s' }}>
+              <CopyOrderNo orderNo={order.order_no} />
+            </div>
             <div className="flex flex-wrap items-center justify-center gap-2 mt-3 animate-hero-text" style={{ animationDelay: '0.3s' }}>
               {order.pending_confirmation && (
                 <span className="text-xs font-medium rounded-full bg-white/15 backdrop-blur border border-white/25 px-3 py-1">
@@ -1208,6 +1258,12 @@ export function PublicOrderPage() {
             <p className="text-3xl">🧡</p>
             <p className="font-display font-semibold">ขอบคุณที่อุดหนุน {order.shop_name} นะคะ</p>
             <p className="text-sm text-white/80">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
+            <a
+              href="/menu"
+              className="btn-shimmer inline-block mt-3 rounded-full bg-white text-stone-900 font-semibold px-6 py-2.5 text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:scale-95"
+            >
+              🛒 สั่งขนมเพิ่ม
+            </a>
           </div>
         </Reveal>
       </div>
