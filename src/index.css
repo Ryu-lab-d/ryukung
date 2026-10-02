@@ -538,6 +538,27 @@ a:focus-visible {
 
 /* แถบข้อความวิ่งต่อเนื่องใต้ hero (Marquee ใน PublicSiteChrome) — เนื้อหาซ้ำ 2 ชุดแล้วเลื่อน -50% ให้วนเนียนไม่มีรอยต่อ
    ชี้เมาส์ค้างแล้วหยุด (อ่านทัน) */
+/* นาฬิกาทรายในป็อปอัพ "รอร้านตรวจสอบการชำระเงิน" — พลิกครึ่งรอบแล้วค้างเป็นจังหวะ + แถบเวลาที่เหลือก่อนปิดเอง */
+@keyframes hourglass-flip {
+  0%, 55% { transform: rotate(0deg); }
+  80%, 100% { transform: rotate(180deg); }
+}
+.animate-hourglass {
+  display: inline-block;
+  animation: hourglass-flip 2.4s ease-in-out infinite;
+}
+@keyframes countdown-bar {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+.animate-countdown-bar {
+  transform-origin: left;
+  animation: countdown-bar linear forwards;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-hourglass { animation: none; }
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

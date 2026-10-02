@@ -6,7 +6,6 @@ import { formatBaht } from '../lib/money'
 import { addDays } from '../lib/dates'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { playAddSound, playPaymentSound } from '../lib/uiSound'
-import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { PromptPayQR } from './PromptPayQR'
 import {
   AmbientGlow,
@@ -205,6 +204,66 @@ function HowToUsePopup({ onClose }: { onClose: () => void }) {
         <button type="button" onClick={requestClose} className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm">
           เข้าใจแล้ว เริ่มเลือกเมนู
         </button>
+      </div>
+    </div>
+  )
+}
+
+/** ป็อปอัพหลังลูกค้ากด "แจ้งชำระเงิน" — ต้องไม่สื่อว่า "สั่งซื้อเสร็จสมบูรณ์" เพราะร้านยังต้องตรวจสอบการชำระเงินและกด
+ * ยืนยันออเดอร์ก่อน (ยังไม่เข้าคิวอบ) จึงเป็นนาฬิกาทรายสีอำพันบอกให้ "รอร้านตรวจสอบ" ไม่ใช่เครื่องหมายถูกสีเขียว
+ * ปิดเองเมื่อแถบเวลาหมด หรือกด "รับทราบ" เพื่อไปต่อทันที (onDone เรียกครั้งเดียวเสมอ) */
+function PaymentPendingPopup({ total, onDone, durationMs = 6000 }: { total: number; onDone: () => void; durationMs?: number }) {
+  const [closing, setClosing] = useState(false)
+  const doneRef = useRef(false)
+
+  function finish() {
+    if (doneRef.current) return
+    doneRef.current = true
+    setClosing(true)
+    setTimeout(onDone, 200)
+  }
+
+  useEffect(() => {
+    const t = setTimeout(finish, durationMs)
+    return () => clearTimeout(t)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  return (
+    <div className={'fixed inset-0 bg-black/60 grid place-items-center p-4 z-50 ' + (closing ? 'animate-overlay-fade-out' : 'animate-overlay-fade')}>
+      <div
+        role="alertdialog"
+        aria-labelledby="payment-pending-title"
+        className={
+          'relative overflow-hidden bg-white rounded-3xl shadow-2xl max-w-sm w-full p-6 text-center space-y-3 ' +
+          (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')
+        }
+      >
+        <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-200 grid place-items-center text-4xl mx-auto animate-icon-pop">
+          <span className="animate-hourglass">⏳</span>
+        </div>
+        <h2 id="payment-pending-title" className="text-lg font-display font-bold text-stone-900">
+          กรุณารอร้านตรวจสอบการชำระเงิน
+        </h2>
+        <p className="text-sm text-stone-600 leading-relaxed">
+          ร้านได้รับการแจ้งชำระเงินยอด <strong className="text-stone-900">{formatBaht(total)} บาท</strong> แล้ว
+          กำลังตรวจสอบและจะยืนยันออเดอร์ให้เร็วที่สุด
+        </p>
+        <p className="text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl px-3 py-2">
+          ออเดอร์ยังไม่เข้าคิวอบจนกว่าร้านจะตรวจสอบและยืนยัน — ติดตามสถานะได้ที่หน้าถัดไป
+        </p>
+        <button
+          type="button"
+          onClick={finish}
+          className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm transition-transform active:scale-95"
+        >
+          รับทราบ
+        </button>
+        <div
+          className="absolute left-0 bottom-0 h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600 animate-countdown-bar"
+          style={{ animationDuration: `${durationMs}ms` }}
+          aria-hidden="true"
+        />
       </div>
     </div>
   )
@@ -815,7 +874,7 @@ export function CustomerOrderPage() {
           <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
           <CheckoutProgress current="payment" />
 
-          <StepHero icon="💳" title="ชำระเงิน" subtitle="สแกนจ่ายเงินก่อน แล้วกดยืนยันด้านล่างเพื่อส่งคำสั่งซื้อ" />
+          <StepHero icon="💳" title="ชำระเงิน" subtitle="สแกนจ่ายเงินก่อน แล้วกดแจ้งชำระเงินด้านล่าง ร้านจะตรวจสอบให้" />
 
           <Reveal className="relative overflow-hidden rounded-2xl bg-stone-900 text-white p-5 text-center shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.5)]">
             <AmbientGlow />
@@ -851,7 +910,7 @@ export function CustomerOrderPage() {
                 (submitting ? '' : ' btn-shimmer')
               }
             >
-              {submitting ? 'กำลังส่งคำสั่งซื้อ...' : '✅ ฉันโอนเงินแล้ว ส่งคำสั่งซื้อ'}
+              {submitting ? 'กำลังแจ้งชำระเงิน...' : '✅ ฉันโอนเงินแล้ว แจ้งชำระเงิน'}
             </button>
             {error && <p className="text-sm text-red-600 text-center">{error}</p>}
           </Reveal>
@@ -860,12 +919,7 @@ export function CustomerOrderPage() {
         </div>
 
         {paymentSuccessVisible && (
-          <SuccessOverlay
-            message="ยืนยันการชำระเงินเสร็จสิ้น ✅"
-            submessage={`ส่งคำสั่งซื้อยอด ${formatBaht(submittedTotal)} บาท เรียบร้อยแล้ว`}
-            onDone={handlePaymentSuccessDone}
-            durationMs={1800}
-          />
+          <PaymentPendingPopup total={submittedTotal} onDone={handlePaymentSuccessDone} />
         )}
         {showLineReminder && <AddLineReminderPopup lineUrl={menu.line_url} onClose={handleLineReminderClose} />}
       </div>
