@@ -79,7 +79,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
               placeholder="ค้นหาลูกค้าเก่าด้วยชื่อหรือเบอร์ (หรือเลื่อนดูรายชื่อด้านล่างได้เลย)"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full rounded-lg border border-stone-300 pl-3 pr-9 py-2.5 text-sm"
+              className="w-full rounded-xl border border-stone-300 bg-white pl-3.5 pr-9 py-2.5 text-sm"
             />
             {search && (
               <button
@@ -96,7 +96,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
           <button
             type="button"
             onClick={() => setCreatingNew(true)}
-            className="flex items-center justify-center gap-1.5 w-full rounded-lg border-2 border-dashed border-stone-300 text-stone-700 font-medium py-2.5 text-sm"
+            className="flex items-center justify-center gap-1.5 w-full rounded-xl border-2 border-dashed border-stone-300 bg-white text-stone-700 font-medium py-2.5 text-sm"
           >
             + เพิ่มลูกค้าใหม่
           </button>
@@ -107,9 +107,9 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
                 key={c.id}
                 type="button"
                 onClick={() => { setValue('customer_id', c.id); setSearch('') }}
-                className="block w-full text-left rounded-lg border border-stone-200 px-3 py-2.5 text-sm"
+                className="block w-full text-left rounded-2xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
               >
-                <span className="font-medium">{c.name}</span>
+                <span className="font-medium text-stone-900">{c.name}</span>
                 {c.phone && <span className="text-stone-500"> · {c.phone}</span>}
               </button>
             ))}
@@ -124,33 +124,33 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
       )}
 
       {creatingNew && (
-        <div className="space-y-2 rounded-lg border border-stone-200 p-3">
-          <p className="text-sm font-medium">ลูกค้าใหม่</p>
+        <div className="space-y-2 rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+          <p className="text-sm font-semibold text-stone-700">ลูกค้าใหม่</p>
           <input
             placeholder="ชื่อลูกค้า"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm"
           />
           <input
             placeholder="เบอร์โทร"
             value={newPhone}
             onChange={(e) => setNewPhone(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm"
           />
           <input
             type="email"
             placeholder="อีเมล (จำเป็น — ใช้แจ้งรับออเดอร์/แจ้งชำระเงิน)"
             value={newEmail}
             onChange={(e) => setNewEmail(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-sm"
+            className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-sm"
           />
           <div className="flex gap-2 pt-1">
             <button
               type="button"
               onClick={handleCreateCustomer}
               disabled={!newName.trim() || !newEmail.trim()}
-              className="flex-1 rounded-lg bg-stone-900 text-white px-3 py-2.5 text-sm font-medium disabled:opacity-40"
+              className="flex-1 rounded-xl bg-stone-900 text-white px-3 py-2.5 text-sm font-medium disabled:opacity-40"
             >
               บันทึกลูกค้าใหม่
             </button>
@@ -163,7 +163,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
                 setNewEmail('')
                 if (draftKey) clearFormDraft(draftKey)
               }}
-              className="rounded-lg border border-stone-300 text-stone-600 px-4 py-2.5 text-sm"
+              className="rounded-xl border border-stone-300 bg-white text-stone-600 px-4 py-2.5 text-sm"
             >
               ยกเลิก
             </button>
@@ -173,12 +173,16 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
 
       {selected && (
         <div className="space-y-3">
-          <div className="flex items-center justify-between rounded-lg border border-stone-200 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2 rounded-2xl border border-stone-200 bg-white px-3.5 py-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
             <div>
-              <p className="text-sm font-medium">{selected.name}</p>
+              <p className="text-sm font-medium text-stone-900">{selected.name}</p>
               <p className="text-xs text-stone-500">{selected.phone}</p>
             </div>
-            <button type="button" onClick={() => setValue('customer_id', null)} className="text-xs text-stone-500 underline shrink-0">
+            <button
+              type="button"
+              onClick={() => setValue('customer_id', null)}
+              className="rounded-full bg-white border border-stone-300 text-stone-700 text-xs font-medium px-3 py-1.5 shadow-sm shrink-0"
+            >
               เปลี่ยนลูกค้า
             </button>
           </div>
@@ -186,7 +190,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
           {selected.email ? (
             <p className="text-xs text-stone-500 px-1">📧 {selected.email}</p>
           ) : (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 space-y-2">
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3.5 space-y-2">
               <p className="text-sm text-amber-800 font-medium">⚠️ ลูกค้าคนนี้ยังไม่มีอีเมล (จำเป็นสำหรับแจ้งเตือนออเดอร์)</p>
               <div className="flex gap-2">
                 <input
@@ -194,13 +198,13 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
                   placeholder="กรอกอีเมลลูกค้า"
                   value={emailDraft}
                   onChange={(e) => setEmailDraft(e.target.value)}
-                  className="flex-1 rounded-lg border border-amber-300 px-3 py-2 text-sm"
+                  className="flex-1 rounded-xl border border-amber-300 bg-white px-3.5 py-2 text-sm"
                 />
                 <button
                   type="button"
                   onClick={() => void handleSaveEmail()}
                   disabled={!emailDraft.trim() || savingEmail}
-                  className="rounded-lg bg-amber-600 text-white px-3 py-2 text-sm font-medium disabled:opacity-40"
+                  className="rounded-xl bg-amber-600 text-white px-3.5 py-2 text-sm font-medium disabled:opacity-40"
                 >
                   {savingEmail ? 'กำลังบันทึก...' : 'บันทึก'}
                 </button>
@@ -209,7 +213,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
           )}
 
           {selected.note && (
-            <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+            <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-sm text-amber-800">
               {selected.note}
             </div>
           )}
@@ -222,7 +226,7 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
                   key={a.id}
                   type="button"
                   onClick={() => pickAddress(a.id)}
-                  className="block w-full text-left rounded-lg border border-stone-200 px-3 py-2.5 text-sm"
+                  className="block w-full text-left rounded-2xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
                 >
                   {a.label}: {a.address_text}
                 </button>

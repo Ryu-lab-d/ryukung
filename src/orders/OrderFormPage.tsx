@@ -168,12 +168,23 @@ export function OrderFormPage() {
 
   return (
     <FormProvider {...methods}>
+      <div className="bg-stone-50 min-h-screen">
       <div className="p-4 pb-28 max-w-2xl mx-auto space-y-4">
-        <h1 className="text-lg font-semibold">{id ? 'แก้ไขออเดอร์' : 'สร้างออเดอร์ใหม่'}</h1>
+        <h1 className="text-xl font-bold text-stone-900">{id ? 'แก้ไขออเดอร์' : 'สร้างออเดอร์ใหม่'}</h1>
 
-        <div className="flex gap-3 text-sm">
+        <div className="flex gap-2 text-sm">
           {STEP_LABELS.map((label, i) => (
-            <span key={label} className={i + 1 === step ? 'font-semibold text-stone-900' : 'text-stone-400'}>
+            <span
+              key={label}
+              className={
+                'rounded-full px-3 py-1 transition-colors ' +
+                (i + 1 === step
+                  ? 'bg-stone-900 text-white font-medium shadow-sm'
+                  : i + 1 < step
+                    ? 'bg-white border border-stone-300 text-stone-600'
+                    : 'bg-stone-100 text-stone-400')
+              }
+            >
               {i + 1}. {label}
             </span>
           ))}
@@ -183,15 +194,15 @@ export function OrderFormPage() {
         {step === 2 && <Step2Products />}
         {step === 3 && <Step3Fulfillment />}
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3.5 py-2.5">{error}</p>}
 
-        <div className="fixed bottom-16 lg:bottom-0 inset-x-0 bg-white border-t border-stone-200 p-3 max-w-2xl mx-auto">
+        <div className="fixed bottom-16 lg:bottom-0 inset-x-0 bg-white/95 backdrop-blur border-t border-stone-200 p-3 max-w-2xl mx-auto shadow-[0_-6px_16px_-8px_rgb(0_0_0_/_0.12)]">
           <div className="flex flex-wrap gap-2">
             {step > 1 && (
               <button
                 type="button"
                 onClick={() => setStep((s) => s - 1)}
-                className="rounded-lg border-2 border-stone-200 text-stone-700 font-medium px-4 py-2.5"
+                className="rounded-full bg-white border border-stone-300 text-stone-700 font-medium px-4 py-2.5 shadow-sm"
               >
                 ← ย้อนกลับ
               </button>
@@ -200,7 +211,7 @@ export function OrderFormPage() {
               type="button"
               disabled={savingDraft}
               onClick={() => runSaveDraft()}
-              className="rounded-lg border-2 border-stone-200 text-stone-700 font-medium px-4 py-2.5 disabled:opacity-50"
+              className="rounded-full bg-white border border-stone-300 text-stone-700 font-medium px-4 py-2.5 shadow-sm disabled:opacity-50"
             >
               {savingDraft ? 'กำลังบันทึก...' : '💾 บันทึกร่าง'}
             </button>
@@ -208,7 +219,7 @@ export function OrderFormPage() {
               <button
                 type="button"
                 onClick={() => setStep((s) => s + 1)}
-                className="ml-auto rounded-lg bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[120px]"
+                className="ml-auto rounded-full bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[120px] shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
               >
                 ถัดไป →
               </button>
@@ -217,13 +228,14 @@ export function OrderFormPage() {
                 type="button"
                 disabled={confirming}
                 onClick={methods.handleSubmit((values) => runConfirm(values))}
-                className="ml-auto rounded-lg bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[140px] disabled:opacity-50"
+                className="ml-auto rounded-full bg-stone-900 text-white font-medium px-6 py-2.5 min-w-[140px] disabled:opacity-50 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
               >
                 {confirming ? 'กำลังยืนยัน...' : '✓ ยืนยันออเดอร์'}
               </button>
             )}
           </div>
         </div>
+      </div>
       </div>
     </FormProvider>
   )

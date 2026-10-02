@@ -71,18 +71,31 @@ export function ReceiptPage() {
     link.click()
   }
 
-  if (orderLoading || receiptsLoading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (orderLoading || receiptsLoading || !order) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        <div className="flex items-center justify-center gap-2.5 py-16 text-stone-400">
+          <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+          กำลังโหลด...
+        </div>
+      </div>
+    )
+  }
 
   const display: ReceiptSnapshot | null = activeReceipt ? (activeReceipt.snapshot as ReceiptSnapshot) : draftSnapshot
 
   return (
-    <div className="p-4 space-y-4 max-w-md mx-auto">
-      <Link to={`/orders/${id}`} className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+    <div className="bg-stone-50 min-h-screen">
+    <div className="p-4 space-y-4 max-w-md mx-auto pb-8">
+      <Link
+        to={`/orders/${id}`}
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับหน้าออเดอร์นี้
       </Link>
 
       {!activeReceipt && (
-        <div className="flex flex-wrap gap-3 text-sm">
+        <div className="flex flex-wrap gap-3 text-sm rounded-2xl bg-white border border-stone-200 px-3.5 py-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
           <label className="flex items-center gap-1"><input type="checkbox" checked={showLogo} onChange={(e) => setShowLogo(e.target.checked)} /> โลโก้</label>
           <label className="flex items-center gap-1"><input type="checkbox" checked={showAddress} onChange={(e) => setShowAddress(e.target.checked)} /> ที่อยู่</label>
           <label className="flex items-center gap-1"><input type="checkbox" checked={showPhone} onChange={(e) => setShowPhone(e.target.checked)} /> เบอร์โทร</label>
@@ -90,7 +103,7 @@ export function ReceiptPage() {
         </div>
       )}
 
-      <div ref={printRef} id="receipt-print-area" className="bg-white border border-stone-200 p-4 space-y-2">
+      <div ref={printRef} id="receipt-print-area" className="bg-white border border-stone-200 p-4 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
         {display?.show_logo && display.logo_path && <img src={productImageUrl(display.logo_path)} alt="" className="h-12" />}
         <h1 className="font-semibold">{display?.shop_name}</h1>
         {display?.show_address && display.address && <p className="text-sm">{display.address}</p>}
@@ -118,24 +131,25 @@ export function ReceiptPage() {
 
       <div className="flex flex-wrap gap-2">
         {!activeReceipt && (
-          <button type="button" disabled={busy} onClick={handleIssue} className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm disabled:opacity-50">
+          <button type="button" disabled={busy} onClick={handleIssue} className="rounded-full bg-stone-900 text-white px-4 py-2 text-sm font-medium disabled:opacity-50 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]">
             ออกใบเสร็จ
           </button>
         )}
         {activeReceipt && (
           <>
-            <button type="button" onClick={() => window.print()} className="rounded-lg bg-stone-900 text-white px-4 py-2 text-sm">
+            <button type="button" onClick={() => window.print()} className="rounded-full bg-stone-900 text-white px-4 py-2 text-sm font-medium shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]">
               พิมพ์ / บันทึกเป็น PDF
             </button>
-            <button type="button" onClick={handleDownloadPng} className="rounded-lg px-4 py-2 text-sm border border-stone-300">
+            <button type="button" onClick={handleDownloadPng} className="rounded-full bg-white px-4 py-2 text-sm font-medium border border-stone-300 text-stone-700">
               บันทึกเป็นรูป
             </button>
-            <button type="button" disabled={busy} onClick={handleReissue} className="rounded-lg px-4 py-2 text-sm text-red-600 border border-red-200 disabled:opacity-50">
+            <button type="button" disabled={busy} onClick={handleReissue} className="rounded-full bg-white px-4 py-2 text-sm font-medium text-red-600 border border-red-200 disabled:opacity-50">
               ยกเลิกใบนี้แล้วออกใหม่
             </button>
           </>
         )}
       </div>
+    </div>
     </div>
   )
 }

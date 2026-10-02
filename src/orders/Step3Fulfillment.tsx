@@ -39,7 +39,7 @@ export function Step3Fulfillment() {
     <div className="space-y-4">
       <div className="space-y-1">
         <label htmlFor="fulfillment_type" className="text-sm text-stone-600">วิธีรับของ</label>
-        <select id="fulfillment_type" {...register('fulfillment_type')} className="w-full rounded-lg border border-stone-300 px-3 py-2">
+        <select id="fulfillment_type" {...register('fulfillment_type')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5">
           {Object.entries(FULFILLMENT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
         </select>
       </div>
@@ -47,11 +47,11 @@ export function Step3Fulfillment() {
       <div className="grid grid-cols-2 gap-3">
         <div className="space-y-1">
           <label htmlFor="needed_date" className="text-sm text-stone-600">วันที่ต้องได้ของ</label>
-          <input id="needed_date" type="date" {...register('needed_date')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+          <input id="needed_date" type="date" {...register('needed_date')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
         </div>
         <div className="space-y-1">
           <label htmlFor="bake_date" className="text-sm text-stone-600">วันที่ต้องอบ (แก้ทับได้)</label>
-          <input id="bake_date" type="date" {...register('bake_date')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+          <input id="bake_date" type="date" {...register('bake_date')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
         </div>
       </div>
 
@@ -59,12 +59,12 @@ export function Step3Fulfillment() {
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1">
             <label htmlFor="pickup_place" className="text-sm text-stone-600">จุดนัดรับ</label>
-            <input id="pickup_place" {...register('pickup_place')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+            <input id="pickup_place" {...register('pickup_place')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
             {errors.pickup_place && <p className="text-xs text-red-600">{errors.pickup_place.message}</p>}
           </div>
           <div className="space-y-1">
             <label htmlFor="pickup_time" className="text-sm text-stone-600">เวลานัดรับ</label>
-            <input id="pickup_time" {...register('pickup_time')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+            <input id="pickup_time" {...register('pickup_time')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
             {errors.pickup_time && <p className="text-xs text-red-600">{errors.pickup_time.message}</p>}
           </div>
         </div>
@@ -73,18 +73,18 @@ export function Step3Fulfillment() {
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <label htmlFor="ship_recipient_name" className="text-sm text-stone-600">ชื่อผู้รับ</label>
-              <input id="ship_recipient_name" {...register('ship_recipient_name')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+              <input id="ship_recipient_name" {...register('ship_recipient_name')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
               {errors.ship_recipient_name && <p className="text-xs text-red-600">{errors.ship_recipient_name.message}</p>}
             </div>
             <div className="space-y-1">
               <label htmlFor="ship_recipient_phone" className="text-sm text-stone-600">เบอร์ผู้รับ</label>
-              <input id="ship_recipient_phone" {...register('ship_recipient_phone')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+              <input id="ship_recipient_phone" {...register('ship_recipient_phone')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
               {errors.ship_recipient_phone && <p className="text-xs text-red-600">{errors.ship_recipient_phone.message}</p>}
             </div>
           </div>
           <div className="space-y-1">
             <label htmlFor="ship_address_text" className="text-sm text-stone-600">ที่อยู่จัดส่ง</label>
-            <textarea id="ship_address_text" {...register('ship_address_text')} className="w-full rounded-lg border border-stone-300 px-3 py-2" />
+            <textarea id="ship_address_text" {...register('ship_address_text')} className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5" />
             {errors.ship_address_text && <p className="text-xs text-red-600">{errors.ship_address_text.message}</p>}
           </div>
         </div>
@@ -96,13 +96,13 @@ export function Step3Fulfillment() {
           <input
             id="shipping_fee" type="number" step="0.01" min="0" inputMode="decimal"
             {...register('shipping_fee', { valueAsNumber: true })}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2"
+            className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5"
           />
         </div>
         <div className="space-y-1">
           <label htmlFor="discount_value" className="text-sm text-stone-600">ส่วนลด</label>
           <div className="flex gap-1">
-            <select {...register('discount_type')} className="rounded-lg border border-stone-300 px-2 py-2 text-sm">
+            <select {...register('discount_type')} className="rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-sm">
               <option value="none">ไม่มี</option>
               <option value="amount">บาท</option>
               <option value="percent">%</option>
@@ -110,13 +110,13 @@ export function Step3Fulfillment() {
             <input
               id="discount_value" type="number" step="0.01" min="0" inputMode="decimal"
               {...register('discount_value', { valueAsNumber: true })}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2"
+              className="w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5"
             />
           </div>
         </div>
       </div>
 
-      <div className="rounded-lg bg-stone-50 p-3 text-sm space-y-1">
+      <div className="rounded-2xl bg-white border border-stone-200 p-4 text-sm space-y-1 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
         <div className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(itemsTotal)}</span></div>
         <div className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(discountAmount)}</span></div>
         <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(shippingFee)}</span></div>

@@ -49,7 +49,16 @@ export function OrderDetailPage() {
   const [reordering, setReordering] = useState(false)
   const [reorderError, setReorderError] = useState<string | null>(null)
 
-  if (loading || !order) return <div className="p-4 text-stone-500">กำลังโหลด...</div>
+  if (loading || !order) {
+    return (
+      <div className="bg-stone-50 min-h-screen">
+        <div className="flex items-center justify-center gap-2.5 py-16 text-stone-400">
+          <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
+          กำลังโหลด...
+        </div>
+      </div>
+    )
+  }
 
   async function handleAdvanceStatus(newStatus: string) {
     const { error } = await changeWorkStatus(order.id, newStatus)
@@ -114,25 +123,29 @@ export function OrderDetailPage() {
   const balanceDue = Number(order.grand_total) - paid
 
   return (
-    <div className="p-4 space-y-4 max-w-2xl mx-auto">
-      <Link to="/" className="inline-flex items-center gap-1 text-sm text-stone-600 underline">
+    <div className="bg-stone-50 min-h-screen">
+    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
+      <Link
+        to="/"
+        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+      >
         ← กลับหน้าออเดอร์
       </Link>
 
       {order.is_draft && order.order_source === 'customer' && (
-        <div className="rounded-lg bg-indigo-50 border border-indigo-200 p-3 space-y-2">
+        <div className="rounded-2xl bg-indigo-50 border border-indigo-200 p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
           <p className="text-sm font-medium text-indigo-800">🛒 ลูกค้าส่งออเดอร์นี้มาเองจากหน้าเมนูออนไลน์ — รอร้านตรวจสอบและยืนยัน</p>
           <div className="flex gap-2">
             <Link
               to={`/orders/${order.id}/edit`}
-              className="flex-1 text-center rounded-lg bg-stone-900 text-white text-sm font-medium py-2.5"
+              className="flex-1 text-center rounded-xl bg-stone-900 text-white text-sm font-medium py-2.5"
             >
               ตรวจสอบ & ยืนยันออเดอร์
             </Link>
             <button
               type="button"
               onClick={() => setShowReject(true)}
-              className="flex-1 rounded-lg border-2 border-red-300 text-red-700 text-sm font-medium py-2.5"
+              className="flex-1 rounded-xl border-2 border-red-300 bg-white text-red-700 text-sm font-medium py-2.5"
             >
               ปฏิเสธออเดอร์
             </button>
@@ -141,32 +154,32 @@ export function OrderDetailPage() {
       )}
 
       {order.customers?.note && (
-        <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-sm text-amber-800">
+        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-sm text-amber-800">
           {order.customers.note}
         </div>
       )}
 
       {order.address_edited_at && (
-        <div className="rounded-lg bg-blue-50 border border-blue-200 px-3 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
+        <div className="rounded-2xl bg-blue-50 border border-blue-200 px-3.5 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
           <span>📮 ลูกค้าเพิ่งแก้ไขที่อยู่จัดส่งเอง เมื่อ {new Date(order.address_edited_at).toLocaleString('th-TH')}</span>
-          <button type="button" onClick={handleAcknowledgeAddressEdit} className="shrink-0 rounded-lg bg-blue-600 text-white text-xs px-2.5 py-1.5 font-medium">
+          <button type="button" onClick={handleAcknowledgeAddressEdit} className="shrink-0 rounded-full bg-blue-600 text-white text-xs px-3 py-1.5 font-medium">
             รับทราบแล้ว
           </button>
         </div>
       )}
 
       {order.payment_claimed_at && (
-        <div className="rounded-lg bg-green-50 border border-green-200 px-3 py-2.5 text-sm text-green-800 flex items-center justify-between gap-2">
+        <div className="rounded-2xl bg-green-50 border border-green-200 px-3.5 py-2.5 text-sm text-green-800 flex items-center justify-between gap-2">
           <span>💰 ลูกค้าแจ้งชำระเงินแล้ว เมื่อ {new Date(order.payment_claimed_at).toLocaleString('th-TH')}</span>
-          <button type="button" onClick={handleAcknowledgePaymentClaim} className="shrink-0 rounded-lg bg-green-600 text-white text-xs px-2.5 py-1.5 font-medium">
+          <button type="button" onClick={handleAcknowledgePaymentClaim} className="shrink-0 rounded-full bg-green-600 text-white text-xs px-3 py-1.5 font-medium">
             รับทราบแล้ว
           </button>
         </div>
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold">{order.order_no ?? 'ร่าง'}</h1>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h1 className="text-xl font-bold text-stone-900">{order.order_no ?? 'ร่าง'}</h1>
           <p className="text-sm text-stone-500">
             {order.customers?.name ?? 'ไม่มีชื่อลูกค้า'}
             {order.customers?.phone && (
@@ -174,12 +187,27 @@ export function OrderDetailPage() {
             )}
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button type="button" onClick={() => void handleReorder()} disabled={reordering} className="text-sm text-stone-600 underline disabled:opacity-50">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => void handleReorder()}
+            disabled={reordering}
+            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3 py-1.5 shadow-sm disabled:opacity-50"
+          >
             {reordering ? 'กำลังสร้าง...' : '🔁 สั่งซ้ำ'}
           </button>
-          <Link to={`/orders/${order.id}/receipt`} className="text-sm text-stone-600 underline">ใบเสร็จ</Link>
-          <Link to={`/orders/${order.id}/edit`} className="text-sm text-stone-600 underline">แก้ไข</Link>
+          <Link
+            to={`/orders/${order.id}/receipt`}
+            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3 py-1.5 shadow-sm"
+          >
+            ใบเสร็จ
+          </Link>
+          <Link
+            to={`/orders/${order.id}/edit`}
+            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-1.5 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
+          >
+            แก้ไข
+          </Link>
         </div>
       </div>
       {reorderError && <p className="text-sm text-red-600">{reorderError}</p>}
@@ -192,8 +220,11 @@ export function OrderDetailPage() {
         onAssign={handleAssign}
       />
 
-      <div className="rounded-lg border border-stone-200 p-3 space-y-1.5">
-        <h2 className="text-sm font-semibold">การส่งของ</h2>
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-1.5 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+        <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-stone-100 grid place-items-center text-sm shrink-0">🚚</span>
+          การส่งของ
+        </h2>
         <div className="flex justify-between text-sm">
           <span className="text-stone-500">วิธีรับของ</span>
           <span>{FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}</span>
@@ -250,8 +281,11 @@ export function OrderDetailPage() {
         )}
       </div>
 
-      <div className="rounded-lg border border-stone-200 p-3 space-y-2">
-        <h2 className="text-sm font-semibold">รายการสินค้า</h2>
+      <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+        <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-7 h-7 rounded-full bg-amber-50 grid place-items-center text-sm shrink-0">🧁</span>
+          รายการสินค้า
+        </h2>
         {items.map((it: any) => (
           <div key={it.id} className="flex justify-between text-sm">
             <span>{it.product_name} x{it.qty}</span>
@@ -269,7 +303,7 @@ export function OrderDetailPage() {
       {order.work_status !== 'cancelled' && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">สถานะงาน</h2>
+            <h2 className="text-sm font-semibold text-stone-700">สถานะงาน</h2>
             <span className={'text-xs font-medium rounded-full px-2.5 py-1 border ' + PAYMENT_COLOR[order.payment_status]}>
               💰 {PAYMENT_LABEL[order.payment_status]}
             </span>
@@ -300,7 +334,7 @@ export function OrderDetailPage() {
           <button
             type="button"
             onClick={() => setShowComposeEmail(true)}
-            className="w-full rounded-lg border-2 border-amber-300 text-amber-700 font-medium py-2.5"
+            className="w-full rounded-xl border-2 border-amber-300 bg-white text-amber-700 font-medium py-2.5"
           >
             ✉️ ส่งอีเมลลูกค้า
           </button>
@@ -317,7 +351,7 @@ export function OrderDetailPage() {
         <button
           type="button"
           onClick={() => setShowCancel(true)}
-          className="w-full rounded-lg border-2 border-red-300 text-red-700 font-medium py-2.5"
+          className="w-full rounded-xl border-2 border-red-300 bg-white text-red-700 font-medium py-2.5"
         >
           ยกเลิกออเดอร์
         </button>
@@ -329,7 +363,7 @@ export function OrderDetailPage() {
           type="button"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
-          className="w-full rounded-lg bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+          className="w-full rounded-xl bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
         >
           {deleting ? 'กำลังลบ...' : '🗑️ ลบออเดอร์ถาวร (ประหยัดพื้นที่)'}
         </button>
@@ -389,6 +423,7 @@ export function OrderDetailPage() {
       {statusError && <Toast variant="error" message={statusError} onDone={() => setStatusError(null)} />}
       {emailMessage && <Toast message={emailMessage} onDone={() => setEmailMessage(null)} />}
     </div>
+    </div>
   )
 }
 
@@ -400,7 +435,7 @@ function DeliveredCleanupBanner({ deliveredAt, onDeleteNow }: { deliveredAt: str
   return (
     <div
       className={
-        'rounded-lg border px-3 py-2.5 text-sm space-y-1.5 ' +
+        'rounded-2xl border px-3.5 py-3 text-sm space-y-1.5 ' +
         (dueForCleanup ? 'bg-orange-50 border-orange-300 text-orange-800' : 'bg-stone-50 border-stone-200 text-stone-600')
       }
     >
@@ -413,11 +448,16 @@ function DeliveredCleanupBanner({ deliveredAt, onDeleteNow }: { deliveredAt: str
       </p>
       <div className="flex items-center gap-3">
         {dueForCleanup && (
-          <button type="button" onClick={onDeleteNow} className="rounded-lg bg-orange-600 text-white text-xs px-2.5 py-1.5 font-medium">
+          <button type="button" onClick={onDeleteNow} className="rounded-full bg-orange-600 text-white text-xs px-3 py-1.5 font-medium">
             ลบตอนนี้
           </button>
         )}
-        <Link to="/storage" className="text-xs underline">ดูรายการที่ครบกำหนดลบทั้งหมด</Link>
+        <Link
+          to="/storage"
+          className="rounded-full bg-white border border-stone-300 text-stone-700 text-xs font-medium px-3 py-1.5 shadow-sm"
+        >
+          ดูรายการที่ครบกำหนดลบทั้งหมด
+        </Link>
       </div>
     </div>
   )
