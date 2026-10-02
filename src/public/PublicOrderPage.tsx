@@ -190,26 +190,28 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
   if (order.work_status === 'cancelled') {
     return (
       <div
-        className="relative overflow-hidden rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-white p-5 shadow-[0_8px_24px_-12px_rgb(220_38_38_/_0.5)] animate-form-in"
+        className="relative overflow-hidden rounded-3xl border-2 border-red-300 bg-gradient-to-br from-red-50 via-white to-rose-50 shadow-lg animate-form-in animate-cancel-glow"
         style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}
       >
-        <div className="flex items-center gap-4">
+        <div className="h-2.5 cancel-stripes" aria-hidden="true" />
+        <span aria-hidden="true" className="pointer-events-none absolute -right-6 -bottom-8 text-[9rem] leading-none text-red-100 select-none">✕</span>
+        <div className="relative p-5 flex items-center gap-4">
           <div className="relative w-16 h-16 shrink-0">
             <span className="absolute inset-0 rounded-2xl bg-red-300/50 animate-fab-ring" aria-hidden="true" />
-            <div className="relative w-16 h-16 rounded-2xl bg-red-100 border border-red-200 grid place-items-center text-4xl animate-icon-pop">❌</div>
+            <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-red-700 shadow-md grid place-items-center text-3xl text-white font-bold animate-icon-pop">✕</div>
           </div>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-red-400">สถานะตอนนี้</p>
-            <p className="text-lg font-display font-bold text-red-700 leading-tight">ออเดอร์นี้ถูกยกเลิกแล้ว</p>
-            {order.cancelled_reason && <p className="text-sm text-red-900/70 mt-0.5">เหตุผล: {order.cancelled_reason}</p>}
+            <p className="text-xl font-display font-bold text-red-700 leading-tight">ออเดอร์นี้ถูกยกเลิกแล้ว</p>
+            {order.cancelled_reason && (
+              <p className="text-sm text-red-900/70 mt-1 rounded-lg bg-white/70 border border-red-100 px-2.5 py-1.5">เหตุผล: {order.cancelled_reason}</p>
+            )}
           </div>
         </div>
-        <div className="mt-4 h-2.5 rounded-full bg-red-100 overflow-hidden" aria-hidden="true">
-          <div
-            className="h-full w-full rounded-full bg-red-400/70"
-            style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 8px, rgb(255 255 255 / 0.35) 8px 16px)' }}
-          />
+        <div className="absolute top-5 right-3 rounded-md border-[3px] border-red-600/80 text-red-600/80 px-2 py-0.5 text-sm font-display font-extrabold tracking-widest bg-white/60 animate-cancel-stamp" aria-hidden="true">
+          ยกเลิก
         </div>
+        <div className="h-2.5 cancel-stripes" aria-hidden="true" />
       </div>
     )
   }
@@ -1176,7 +1178,7 @@ export function PublicOrderPage() {
                 </span>
               )}
               {order.work_status === 'cancelled' && (
-                <span className="text-xs font-semibold rounded-full bg-white text-red-700 px-3 py-1 shadow-sm">❌ ยกเลิกแล้ว</span>
+                <span className="text-xs font-bold rounded-full bg-white text-red-700 px-3 py-1 shadow-md ring-2 ring-red-300/60 animate-icon-pop">✕ ยกเลิกแล้ว</span>
               )}
               {order.needed_date && order.work_status !== 'delivered' && order.work_status !== 'cancelled' && (() => {
                 const n = daysUntil(order.needed_date)
@@ -1218,11 +1220,11 @@ export function PublicOrderPage() {
             สถานะออเดอร์
           </h2>
           {order.work_status === 'cancelled' ? (
-            <div className="flex gap-3 animate-timeline-in">
-              <div className="w-7 h-7 rounded-full bg-red-600 text-white grid place-items-center text-sm shrink-0">✕</div>
-              <div className="-mt-0.5 pb-2">
+            <div className="flex gap-3 animate-timeline-in rounded-xl bg-red-50 border border-red-200 p-3">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-500 to-red-700 text-white grid place-items-center text-sm shrink-0 shadow">✕</div>
+              <div>
                 <p className="font-semibold text-red-700">ยกเลิกออเดอร์แล้ว</p>
-                <p className="text-xs text-stone-500 mt-0.5">ออเดอร์นี้ไม่ดำเนินการต่อ</p>
+                <p className="text-xs text-red-900/60 mt-0.5">ออเดอร์นี้ไม่ดำเนินการต่อ หากมีข้อสงสัยทักไลน์ร้านได้เลยค่ะ</p>
               </div>
             </div>
           ) : (
