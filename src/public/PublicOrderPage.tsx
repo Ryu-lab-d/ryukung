@@ -1037,19 +1037,30 @@ export function PublicOrderPage() {
   // ขั้นที่ 1: ยืนยันชื่อหรือเบอร์ก่อนเสมอ — ปุ่มกดไม่ได้จนกว่าจะรู้ผลจริงจากฐานข้อมูลแล้วว่าชื่อ/เบอร์คืออะไร
   if (customerName === null) {
     return (
-      <div className="min-h-screen bg-stone-50 grid place-items-center p-4 font-warm">
-        <PageTexture />
+      <div className="relative overflow-hidden min-h-screen bg-brand-shader grid place-items-center p-4 font-warm">
+        <AmbientGlow />
         <form
           onSubmit={handleConfirmName}
           className={
-            'w-full max-w-sm ' + CARD + ' p-6 space-y-4 text-center animate-form-in' +
+            'relative z-10 w-full max-w-sm overflow-hidden rounded-3xl bg-white/95 backdrop-blur shadow-[0_24px_50px_-18px_rgb(33_21_10_/_0.7)] p-6 pt-0 space-y-4 text-center animate-form-in' +
             (shake ? ' animate-shake' : '')
           }
         >
-          <div className="text-4xl animate-icon-pop">🥐</div>
-          <h1 className="text-lg font-display font-semibold">ตรวจสอบออเดอร์ของคุณ</h1>
-          {order && <p className="text-xs text-stone-400 font-mono tracking-wide">ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}</p>}
-          <p className="text-sm text-stone-500">กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชทเพื่อยืนยันตัวตน</p>
+          <div className="-mx-6 h-1.5 bg-gradient-to-r from-amber-300 via-amber-600 to-amber-300" aria-hidden="true" />
+          <div className="relative w-20 h-20 mx-auto mt-6">
+            <span className="absolute inset-0 rounded-full bg-amber-300/60 animate-fab-ring" aria-hidden="true" />
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-amber-50 to-amber-200 border-4 border-white shadow-lg grid place-items-center text-4xl animate-icon-pop">🥐</div>
+          </div>
+          <div>
+            <h1 className="text-xl font-display font-bold text-stone-900">ตรวจสอบออเดอร์ของคุณ</h1>
+            <SquiggleUnderline className="w-16 h-2 mx-auto mt-1 text-amber-700/50" />
+          </div>
+          {order && (
+            <p className="inline-block rounded-full bg-stone-50 border border-stone-200 px-3 py-1 text-xs text-stone-500 font-mono tracking-wide">
+              ออเดอร์ {order.order_no ?? 'รอเลขที่ออเดอร์'}
+            </p>
+          )}
+          <p className="text-sm text-stone-500 leading-relaxed">🔒 กรุณากรอกชื่อผู้สั่งซื้อหรือเบอร์โทรศัพท์ให้ตรงกับที่แจ้งไว้ในแชท เพื่อยืนยันตัวตนก่อนดูออเดอร์</p>
           <div className="space-y-1.5 text-left">
             <input
               autoFocus
@@ -1063,7 +1074,7 @@ export function PublicOrderPage() {
               autoCorrect="off"
               autoComplete="off"
               spellCheck={false}
-              className="w-full rounded-lg border border-stone-300 px-3 py-2.5 text-center"
+              className="w-full rounded-2xl border-2 border-stone-200 bg-stone-50/60 px-3 py-3 text-center transition-all focus:outline-none focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-300/30"
             />
             {nameError && (
               <InlineError message="ชื่อ/เบอร์ไม่ตรงกับที่แจ้งไว้ กรุณาลองใหม่ให้ตรงกับที่คุยในแชท" className="justify-center" />
@@ -1072,7 +1083,7 @@ export function PublicOrderPage() {
           <button
             type="submit"
             disabled={!nameInput.trim() || order === undefined}
-            className="w-full rounded-lg bg-stone-900 text-white py-2.5 font-semibold disabled:opacity-40"
+            className="btn-shimmer w-full rounded-full bg-gradient-to-r from-stone-800 to-stone-900 text-white py-3 font-semibold shadow-[0_10px_20px_-10px_rgb(51_32_14_/_0.8)] transition-all active:scale-95 disabled:opacity-40 disabled:shadow-none"
           >
             {order === undefined ? 'กำลังโหลดข้อมูล...' : 'ดูรายละเอียดออเดอร์'}
           </button>
