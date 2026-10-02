@@ -499,3 +499,24 @@ a:focus-visible {
 .animate-node-ping {
   animation: node-ping 1.8s ease-out infinite;
 }
+
+/* เส้นสแกนวิ่งขึ้นลงบน QR ชำระเงิน ให้รู้ทันทีว่านี่คือจุดที่ต้องสแกน (ใส่ใน container ที่ relative overflow-hidden) */
+@keyframes qr-scan {
+  0% { top: 0; opacity: 0; }
+  12% { opacity: 1; }
+  88% { opacity: 1; }
+  100% { top: calc(100% - 3px); opacity: 0; }
+}
+.qr-scan {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(217 138 46 / 0.9), transparent);
+  box-shadow: 0 0 12px 2px rgb(217 138 46 / 0.5);
+  animation: qr-scan 2.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .qr-scan { display: none; }
+}

@@ -71,10 +71,53 @@ function BackButton({ onClick, children }: { onClick: () => void; children: Reac
     <button
       type="button"
       onClick={onClick}
-      className="flex items-center gap-1.5 rounded-full border border-stone-300 bg-white text-stone-700 font-medium px-4 py-2 text-sm w-fit"
+      className="flex items-center gap-1.5 rounded-full border border-stone-300 bg-white text-stone-700 font-medium px-4 py-2 text-sm w-fit shadow-sm transition-all duration-200 hover:-translate-x-0.5 hover:border-stone-400 active:scale-95"
     >
       {children}
     </button>
+  )
+}
+
+const CHECKOUT_STEPS = [
+  { key: 'review', label: 'ทวนรายการ', icon: '🧺' },
+  { key: 'checkout', label: 'ที่อยู่', icon: '📝' },
+  { key: 'terms', label: 'เงื่อนไข', icon: '📋' },
+  { key: 'payment', label: 'ชำระเงิน', icon: '💳' },
+] as const
+
+/** แถบบอกขั้นตอนสั่งซื้อ (ทวนรายการ → ที่อยู่ → เงื่อนไข → ชำระเงิน) ให้ลูกค้ารู้ตลอดว่าอยู่ตรงไหนและเหลืออีกกี่ขั้น
+ * เส้นเชื่อมค่อยๆ ไหลเต็มไปถึงขั้นปัจจุบันตอนเปลี่ยนหน้า ขั้นที่ผ่านแล้วเป็นเครื่องหมายถูก ขั้นปัจจุบันมีวงแสงเรือง */
+function CheckoutProgress({ current }: { current: (typeof CHECKOUT_STEPS)[number]['key'] }) {
+  const idx = CHECKOUT_STEPS.findIndex((s) => s.key === current)
+  const ratio = idx / (CHECKOUT_STEPS.length - 1)
+  return (
+    <div className="px-1 animate-page-in" role="group" aria-label={`ขั้นตอนที่ ${idx + 1} จาก ${CHECKOUT_STEPS.length}`}>
+      <div className="relative flex justify-between">
+        <div className="absolute left-8 right-8 top-4 h-0.5 rounded-full bg-stone-200" aria-hidden="true" />
+        <div
+          className="absolute left-8 top-4 h-0.5 rounded-full bg-stone-900 transition-all duration-700 ease-out"
+          style={{ width: `calc((100% - 4rem) * ${ratio})` }}
+          aria-hidden="true"
+        />
+        {CHECKOUT_STEPS.map((s, i) => (
+          <div key={s.key} className="relative z-10 flex flex-col items-center gap-1 w-16">
+            <span
+              className={
+                'w-8 h-8 rounded-full grid place-items-center text-sm transition-all duration-500 ' +
+                (i < idx
+                  ? 'bg-stone-900 text-white'
+                  : i === idx
+                    ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
+                    : 'bg-white border-2 border-stone-200 text-stone-400')
+              }
+            >
+              {i < idx ? '✓' : s.icon}
+            </span>
+            <span className={'text-[11px] ' + (i === idx ? 'font-semibold text-stone-900' : 'text-stone-400')}>{s.label}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
@@ -84,12 +127,17 @@ function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
   const [checked, setChecked] = useState(false)
   return (
     <div className="space-y-3">
-      <label className="flex items-center gap-2 text-sm text-stone-700 cursor-pointer select-none">
+      <label
+        className={
+          'flex items-center gap-3 rounded-xl border-2 px-3.5 py-3 text-sm cursor-pointer select-none transition-all duration-300 ' +
+          (checked ? 'border-amber-400 bg-amber-50 text-stone-900' : 'border-stone-200 bg-white text-stone-700')
+        }
+      >
         <input
           type="checkbox"
           checked={checked}
           onChange={(e) => setChecked(e.target.checked)}
-          className="w-4 h-4 accent-stone-900 shrink-0"
+          className="w-5 h-5 accent-stone-900 shrink-0"
         />
         ฉันอ่านและยอมรับเงื่อนไขการสั่งซื้อข้างต้นแล้ว
       </label>
@@ -97,7 +145,10 @@ function TermsAcceptBox({ onConfirm }: { onConfirm: () => void }) {
         type="button"
         onClick={onConfirm}
         disabled={!checked}
-        className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm disabled:bg-stone-200 disabled:text-stone-400"
+        className={
+          'w-full rounded-xl font-semibold py-3 text-sm transition-all duration-300 active:scale-95 disabled:bg-stone-200 disabled:text-stone-400 ' +
+          (checked ? 'btn-shimmer bg-stone-900 text-white shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)]' : 'bg-stone-200 text-stone-400')
+        }
       >
         รับทราบ ไปหน้าชำระเงิน →
       </button>
@@ -111,10 +162,10 @@ function TermsSection({ icon, title, delay = 0, children }: { icon: string; titl
   return (
     <Reveal
       delay={delay}
-      className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5"
+      className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 transition-shadow duration-300 hover:shadow-[0_8px_24px_-8px_rgb(51_32_14_/_0.3)]"
     >
       <div className="flex items-center gap-3 mb-2.5">
-        <div className="w-10 h-10 rounded-full bg-stone-50 border border-stone-200 grid place-items-center text-lg shrink-0">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-50 to-stone-100 border border-amber-100 grid place-items-center text-lg shrink-0">
           {icon}
         </div>
         <h2 className="font-display font-semibold text-stone-900">{title}</h2>
@@ -451,6 +502,7 @@ export function CustomerOrderPage() {
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('menu')}>← แก้ไขตะกร้า</BackButton>
+          <CheckoutProgress current="review" />
 
           <div className="text-center py-2 animate-page-in">
             <p className="text-4xl">🧺</p>
@@ -524,12 +576,13 @@ export function CustomerOrderPage() {
 
   if (step === 'checkout') {
     const inputClass =
-      'w-full rounded-xl border border-stone-300 px-3.5 py-2.5 text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-stone-900/15 focus:border-stone-400'
+      'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-stone-900 placeholder:text-stone-400 shadow-sm transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-amber-500/20 focus:border-amber-600/60'
     return (
       <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
+          <CheckoutProgress current="checkout" />
 
           <div className="text-center py-2 animate-page-in">
             <p className="text-4xl">📝</p>
@@ -572,15 +625,36 @@ export function CustomerOrderPage() {
             <TermsSection icon={form.fulfillmentType === 'pickup' ? '🏠' : '📦'} title="วิธีรับของ" delay={0.12}>
               <div className="space-y-3.5 text-stone-700">
                 <div className="space-y-1">
-                  <label htmlFor="fulfillmentType" className="text-xs font-medium text-stone-500">วิธีรับของ</label>
-                  <select
-                    id="fulfillmentType" value={form.fulfillmentType}
-                    onChange={(e) => setForm((f) => ({ ...f, fulfillmentType: e.target.value as 'pickup' | 'shipping' }))}
-                    className={inputClass}
+                  <span id="fulfillmentTypeLabel" className="text-xs font-medium text-stone-500">วิธีรับของ</span>
+                  <div
+                    role="radiogroup"
+                    aria-labelledby="fulfillmentTypeLabel"
+                    className="relative grid grid-cols-2 gap-1 rounded-2xl bg-stone-100 p-1"
                   >
-                    <option value="pickup">นัดรับเอง</option>
-                    <option value="shipping">ส่งไปรษณีย์/ขนส่ง</option>
-                  </select>
+                    <div
+                      className="absolute top-1 bottom-1 left-1 w-[calc(50%-6px)] rounded-xl bg-stone-900 shadow-md transition-transform duration-300 ease-out"
+                      style={{ transform: form.fulfillmentType === 'shipping' ? 'translateX(calc(100% + 4px))' : 'translateX(0)' }}
+                      aria-hidden="true"
+                    />
+                    {([
+                      ['pickup', '🏠', 'นัดรับเอง'],
+                      ['shipping', '📦', 'ส่งไปรษณีย์/ขนส่ง'],
+                    ] as const).map(([value, icon, label]) => (
+                      <button
+                        key={value}
+                        type="button"
+                        role="radio"
+                        aria-checked={form.fulfillmentType === value}
+                        onClick={() => setForm((f) => ({ ...f, fulfillmentType: value }))}
+                        className={
+                          'relative z-10 rounded-xl py-2.5 text-sm font-medium transition-colors duration-300 active:scale-95 ' +
+                          (form.fulfillmentType === value ? 'text-white' : 'text-stone-600')
+                        }
+                      >
+                        {icon} {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="neededDate" className="text-xs font-medium text-stone-500">วันที่สะดวกนัดรับ</label>
@@ -593,7 +667,7 @@ export function CustomerOrderPage() {
                 </div>
 
                 {form.fulfillmentType === 'pickup' ? (
-                  <div className="space-y-1">
+                  <div key="pickup" className="space-y-1 animate-form-in">
                     <label htmlFor="pickupTime" className="text-xs font-medium text-stone-500">เวลาที่สะดวกมารับ (ถ้ามี)</label>
                     <input
                       id="pickupTime" value={form.pickupTime}
@@ -602,7 +676,7 @@ export function CustomerOrderPage() {
                     />
                   </div>
                 ) : (
-                  <div className="space-y-3.5">
+                  <div key="shipping" className="space-y-3.5 animate-form-in">
                     <div className="space-y-1">
                       <label htmlFor="shipAddressText" className="text-xs font-medium text-stone-500">ที่อยู่จัดส่ง</label>
                       <textarea
@@ -637,7 +711,10 @@ export function CustomerOrderPage() {
                 <button
                   type="submit"
                   disabled={!turnstileToken}
-                  className="w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] disabled:opacity-40 disabled:shadow-none"
+                  className={
+                    'w-full rounded-xl bg-stone-900 text-white font-semibold py-3.5 shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-all duration-300 active:scale-95 disabled:opacity-40 disabled:shadow-none' +
+                    (turnstileToken ? ' btn-shimmer' : '')
+                  }
                 >
                   ไปหน้าชำระเงิน →
                 </button>
@@ -659,6 +736,7 @@ export function CustomerOrderPage() {
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
+          <CheckoutProgress current="terms" />
 
           <div className="text-center py-2 animate-page-in">
             <p className="text-4xl">📋</p>
@@ -714,6 +792,7 @@ export function CustomerOrderPage() {
         <PageTexture />
         <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
+          <CheckoutProgress current="payment" />
 
           <div className="text-center py-2 animate-page-in">
             <p className="text-4xl">💳</p>
@@ -729,7 +808,12 @@ export function CustomerOrderPage() {
 
           <Reveal delay={0.06} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
             <h2 className="text-sm font-display font-semibold text-stone-700">📷 สแกน QR เพื่อชำระเงิน</h2>
-            {menu.promptpay && <PromptPayQR promptpayId={menu.promptpay} amount={grandTotal} />}
+            {menu.promptpay && (
+              <div className="relative overflow-hidden rounded-xl">
+                <PromptPayQR promptpayId={menu.promptpay} amount={grandTotal} />
+                <span className="qr-scan" aria-hidden="true" />
+              </div>
+            )}
             <p className="text-xs text-stone-400 text-center leading-relaxed">
               ร้านจะตรวจสอบและยืนยันออเดอร์ให้เร็วที่สุดหลังจากกดยืนยันด้านล่าง
             </p>
