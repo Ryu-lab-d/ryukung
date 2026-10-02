@@ -594,6 +594,44 @@ function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClo
             </div>
           )}
 
+          {/* ข้อความตามสถานะการชำระเงินจริงของออเดอร์ที่ถูกยกเลิก — ลูกค้าหลายคนยังไม่ได้โอนเงินเลย (ไม่มีเงินให้คืน) บางคนโอนแล้ว
+              แต่ร้านยังไม่ได้บันทึก (ต้องส่งสลิปให้ตรวจ) ต้องแยกให้ชัดไม่งั้นสับสนหรือโอนเงินเข้ามาทั้งที่ออเดอร์ถูกยกเลิกแล้ว */}
+          {order.refund_status === 'refunded' && (
+            <div className="rounded-xl bg-green-50 border border-green-200 px-3.5 py-3 text-sm text-green-800 space-y-1">
+              <p className="font-medium">✅ ร้านโอนเงินคืนให้เรียบร้อยแล้ว</p>
+              <p>หากยังไม่เห็นเงินเข้าบัญชี หรือมีข้อสงสัย ทักไลน์ร้านได้เลยนะคะ</p>
+            </div>
+          )}
+          {order.refund_status === 'none' && (order.payment_status === 'paid' || order.payment_status === 'partial') && (
+            <div className="rounded-xl bg-stone-50 border border-stone-200 px-3.5 py-3 text-sm text-stone-600 space-y-1">
+              <p className="font-medium text-stone-700">💳 ออเดอร์นี้มีการชำระเงินแล้ว</p>
+              <p>หากต้องการสอบถามเรื่องเงินที่ชำระไว้ แอดไลน์ร้านและแจ้งชื่อผู้สั่งซื้อได้เลยนะคะ</p>
+            </div>
+          )}
+          {order.refund_status === 'none' &&
+            order.payment_status !== 'paid' &&
+            order.payment_status !== 'partial' &&
+            order.payment_claimed_at && (
+              <div className="rounded-xl bg-amber-50 border border-amber-200 px-3.5 py-3 text-sm text-amber-800 space-y-1">
+                <p className="font-medium">🕐 ร้านยังไม่ได้บันทึกการชำระเงินของออเดอร์นี้</p>
+                <p>
+                  ถ้าคุณโอนเงินมาแล้ว กรุณาแอดไลน์ร้านพร้อมแนบสลิปและชื่อผู้สั่งซื้อ ร้านจะตรวจสอบและโอนคืนให้นะคะ
+                </p>
+              </div>
+            )}
+          {order.refund_status === 'none' &&
+            order.payment_status !== 'paid' &&
+            order.payment_status !== 'partial' &&
+            !order.payment_claimed_at && (
+              <div className="rounded-xl bg-sky-50 border border-sky-200 px-3.5 py-3 text-sm text-sky-900 space-y-1">
+                <p className="font-medium">ℹ️ ออเดอร์นี้ยังไม่มีการชำระเงิน จึงไม่มีเงินที่ต้องคืน</p>
+                <p>
+                  กรุณา <strong>ไม่ต้องโอนเงิน</strong> สำหรับออเดอร์นี้อีกนะคะ แต่ถ้าคุณเพิ่งโอนไปแล้ว
+                  แอดไลน์ร้านพร้อมแนบสลิปได้เลย ร้านจะตรวจสอบและโอนคืนให้
+                </p>
+              </div>
+            )}
+
           {order.line_url && (
             <a
               href={order.line_url}
@@ -604,6 +642,13 @@ function CancelledOrderPopup({ order, onClose }: { order: PublicOrderView; onClo
               💬 แอดไลน์ร้าน
             </a>
           )}
+
+          <a
+            href="/menu"
+            className="flex items-center justify-center gap-2 w-full rounded-xl bg-stone-900 text-white font-semibold py-3 text-sm shadow-[0_10px_28px_-10px_rgb(0_0_0_/_0.4)] transition-transform active:scale-95"
+          >
+            🛒 สั่งขนมใหม่อีกครั้ง
+          </a>
 
           <button
             type="button"
