@@ -578,6 +578,33 @@ a:focus-visible {
   .confetti-piece { display: none; }
 }
 
+/* ดาวระยิบระยับใน hero (✦ ตัวอักษร ไม่ใช่อิโมจิลอยเกลื่อน — มีแค่ไม่กี่ดวงและจางๆ) */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; transform: scale(0.7) rotate(0deg); }
+  50% { opacity: 0.95; transform: scale(1.25) rotate(25deg); }
+}
+.animate-twinkle {
+  animation: twinkle 3.2s ease-in-out infinite;
+}
+
+/* แสงสะท้อนวิ่งผ่านตัวอักษร (ใส่กับ span ด้านใน ไม่ใส่ตรงกับ element ที่มี animate-hero-text เพราะสองอนิเมชันทับกัน) */
+@keyframes text-shine {
+  0% { background-position: 120% 0; }
+  100% { background-position: -120% 0; }
+}
+.text-shine {
+  background-image: linear-gradient(110deg, #ffffff 35%, #fde68a 50%, #ffffff 65%);
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: text-shine 5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-twinkle { animation: none; opacity: 0.5; }
+  .text-shine { animation: none; background-image: none; color: #ffffff; }
+}
+
 @keyframes marquee {
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }

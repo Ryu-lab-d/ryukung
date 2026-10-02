@@ -594,15 +594,16 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
-        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        <div key="step-review" className="animate-page-in max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('menu')}>← แก้ไขตะกร้า</BackButton>
           <CheckoutProgress current="review" />
 
           <StepHero icon="🧺" title="ทวนรายการที่สั่ง" subtitle="เช็คสินค้า+จำนวนให้ครบก่อนไปขั้นตอนถัดไป" />
 
           {items.length === 0 ? (
-            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-6 text-center text-sm text-stone-500">
-              ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ
+            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-8 text-center text-sm text-stone-500 space-y-2">
+              <p className="text-5xl animate-loading-bounce" aria-hidden="true">🧺</p>
+              <p>ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ</p>
             </Reveal>
           ) : (
             <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-4 space-y-3">
@@ -612,9 +613,9 @@ export function CustomerOrderPage() {
                   className="animate-product-in flex items-center justify-between gap-3 pb-3 border-b border-stone-100 last:border-0 last:pb-0"
                   style={{ animationDelay: `${Math.min(i, 8) * 0.06}s` }}
                 >
-                  <div className="w-12 h-12 rounded-lg bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px]">
+                  <div className="relative w-14 h-14 rounded-xl bg-stone-100 overflow-hidden shrink-0 grid place-items-center text-stone-300 text-[10px] shadow-sm">
                     {it.imagePath ? (
-                      <img src={productImageUrl(it.imagePath)} alt={it.product_name} className="w-full h-full object-cover" />
+                      <FadeImage src={productImageUrl(it.imagePath)} alt={it.product_name} className="w-full h-full object-cover" />
                     ) : (
                       'ไม่มีรูป'
                     )}
@@ -677,7 +678,7 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
-        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        <div key="step-checkout" className="animate-page-in max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('review')}>← กลับไปทวนรายการ</BackButton>
           <CheckoutProgress current="checkout" />
 
@@ -834,7 +835,7 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
-        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        <div key="step-terms" className="animate-page-in max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('checkout')}>← กลับไปแก้ข้อมูล</BackButton>
           <CheckoutProgress current="terms" />
 
@@ -886,7 +887,7 @@ export function CustomerOrderPage() {
     return (
       <div className="min-h-screen pb-10 font-warm">
         <PageTexture />
-        <div className="max-w-md mx-auto px-4 pt-4 space-y-4">
+        <div key="step-payment" className="animate-page-in max-w-md mx-auto px-4 pt-4 space-y-4">
           <BackButton onClick={() => setStep('terms')}>← กลับไปดูเงื่อนไข</BackButton>
           <CheckoutProgress current="payment" />
 
@@ -976,6 +977,22 @@ export function CustomerOrderPage() {
           เป็น CTA หลักตัวเดียวที่เด่นที่สุดในหน้า (bg-stone-900 ใหญ่กว่า) ส่วนไลน์/โทรเป็นแค่ทางเลือกรอง */}
       <div className="relative overflow-hidden animate-form-in bg-brand-shader">
         <AmbientGlow />
+        {[
+          ['10%', '20%', '0s'],
+          ['84%', '16%', '0.9s'],
+          ['72%', '68%', '1.7s'],
+          ['18%', '74%', '2.3s'],
+          ['48%', '8%', '1.3s'],
+        ].map(([left, top, delay], i) => (
+          <span
+            key={i}
+            className="pointer-events-none absolute z-[5] text-amber-200 animate-twinkle"
+            style={{ left, top, animationDelay: delay }}
+            aria-hidden="true"
+          >
+            ✦
+          </span>
+        ))}
         <div className="relative z-10 max-w-5xl mx-auto px-4 pt-12 pb-10 md:py-20 md:flex md:items-center md:gap-12">
           <div className="text-center md:text-left md:flex-1">
             {menu.logo_path && (
@@ -990,7 +1007,7 @@ export function CustomerOrderPage() {
               className="text-3xl md:text-5xl font-display font-bold text-white mt-4 leading-tight animate-hero-text"
               style={{ animationDelay: '0.15s' }}
             >
-              {menu.shop_name}
+              <span className="text-shine">{menu.shop_name}</span>
             </h1>
             <div className="animate-hero-text" style={{ animationDelay: '0.28s' }}>
               <SquiggleUnderline className="w-20 h-2.5 mx-auto md:mx-0 mt-1.5 text-white/40" />
