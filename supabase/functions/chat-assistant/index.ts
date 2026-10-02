@@ -11,8 +11,8 @@ import Anthropic from '@anthropic-ai/sdk'
  * - ถ้าฟังก์ชันนี้ล้มเหลวหรือยังไม่ได้ตั้งคีย์ หน้าเว็บจะถอยกลับไปใช้ระบบจับคำแบบเดิมเอง (ดู ChatBot.tsx)
  */
 
-// เปลี่ยนโมเดลได้ด้วย secret CHAT_MODEL (เช่น claude-haiku-4-5 ถูกกว่าราว 4 เท่า) โดยไม่ต้องแก้โค้ด
-const MODEL = Deno.env.get('CHAT_MODEL') ?? 'claude-opus-5-5'
+// เจ้าของร้านสั่งให้ใช้ Haiku ตลอด (เร็วและถูก เหมาะกับแชทถามตอบสั้นๆ) — ห้ามเปลี่ยนเป็นรุ่นอื่นโดยไม่ถามเจ้าของร้านก่อน
+const MODEL = 'claude-haiku-4-5'
 const PER_IP_DAILY_LIMIT = 40
 const GLOBAL_DAILY_LIMIT = 1500
 const MAX_HISTORY = 10
