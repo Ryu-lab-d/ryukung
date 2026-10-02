@@ -186,7 +186,34 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
     return () => clearTimeout(t)
   }, [pct])
 
-  if (order.work_status === 'cancelled' || !stage) return null
+  // ออเดอร์ที่ถูกยกเลิก: การ์ดสีแดงเด่นๆ แทนการ์ดสถานะปกติ ให้ลูกค้ารับรู้ทันทีโดยไม่ต้องพึ่งป็อปอัพอย่างเดียว (ปิดป็อปอัพแล้วก็ยังเห็น)
+  if (order.work_status === 'cancelled') {
+    return (
+      <div
+        className="relative overflow-hidden rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-white p-5 shadow-[0_8px_24px_-12px_rgb(220_38_38_/_0.5)] animate-form-in"
+        style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}
+      >
+        <div className="flex items-center gap-4">
+          <div className="relative w-16 h-16 shrink-0">
+            <span className="absolute inset-0 rounded-2xl bg-red-300/50 animate-fab-ring" aria-hidden="true" />
+            <div className="relative w-16 h-16 rounded-2xl bg-red-100 border border-red-200 grid place-items-center text-4xl animate-icon-pop">❌</div>
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs text-red-400">สถานะตอนนี้</p>
+            <p className="text-lg font-display font-bold text-red-700 leading-tight">ออเดอร์นี้ถูกยกเลิกแล้ว</p>
+            {order.cancelled_reason && <p className="text-sm text-red-900/70 mt-0.5">เหตุผล: {order.cancelled_reason}</p>}
+          </div>
+        </div>
+        <div className="mt-4 h-2.5 rounded-full bg-red-100 overflow-hidden" aria-hidden="true">
+          <div
+            className="h-full w-full rounded-full bg-red-400/70"
+            style={{ backgroundImage: 'repeating-linear-gradient(45deg, transparent 0 8px, rgb(255 255 255 / 0.35) 8px 16px)' }}
+          />
+        </div>
+      </div>
+    )
+  }
+  if (!stage) return null
   const visual = STAGE_VISUAL[stage.key] ?? { icon: '📍', text: '' }
   const done = stage.key === 'delivered' && !order.pending_confirmation
 
@@ -1126,7 +1153,12 @@ export function PublicOrderPage() {
     <div className="min-h-screen bg-stone-50 p-4 font-warm">
       <PageTexture />
       <div className="max-w-md mx-auto space-y-4">
-        <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)] animate-form-in">
+        <div
+          className={
+            'relative overflow-hidden rounded-3xl text-white p-6 text-center shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)] animate-form-in ' +
+            (order.work_status === 'cancelled' ? 'bg-gradient-to-br from-red-900 via-red-700 to-stone-800' : 'bg-brand-shader')
+          }
+        >
           <AmbientGlow />
           <div className="relative z-10">
             <p className="text-sm text-white/80 animate-hero-text">สวัสดีคุณ{customerName} 👋</p>
@@ -1142,6 +1174,9 @@ export function PublicOrderPage() {
                 <span className="text-xs font-medium rounded-full bg-white/15 backdrop-blur border border-white/25 px-3 py-1">
                   🕐 รอร้านตรวจสอบและยืนยันออเดอร์
                 </span>
+              )}
+              {order.work_status === 'cancelled' && (
+                <span className="text-xs font-semibold rounded-full bg-white text-red-700 px-3 py-1 shadow-sm">❌ ยกเลิกแล้ว</span>
               )}
               {order.needed_date && order.work_status !== 'delivered' && order.work_status !== 'cancelled' && (() => {
                 const n = daysUntil(order.needed_date)
@@ -1182,13 +1217,23 @@ export function PublicOrderPage() {
             <span className="w-7 h-7 rounded-full bg-amber-50 border border-amber-100 grid place-items-center text-sm shrink-0">📍</span>
             สถานะออเดอร์
           </h2>
-          <StatusTimeline
-            workStatus={order.work_status}
-            paymentStatus={order.payment_status}
-            paymentClaimedAt={order.payment_claimed_at}
-            fulfillmentType={order.fulfillment_type}
-            pending={order.pending_confirmation}
-          />
+          {order.work_status === 'cancelled' ? (
+            <div className="flex gap-3 animate-timeline-in">
+              <div className="w-7 h-7 rounded-full bg-red-600 text-white grid place-items-center text-sm shrink-0">✕</div>
+              <div className="-mt-0.5 pb-2">
+                <p className="font-semibold text-red-700">ยกเลิกออเดอร์แล้ว</p>
+                <p className="text-xs text-stone-500 mt-0.5">ออเดอร์นี้ไม่ดำเนินการต่อ</p>
+              </div>
+            </div>
+          ) : (
+            <StatusTimeline
+              workStatus={order.work_status}
+              paymentStatus={order.payment_status}
+              paymentClaimedAt={order.payment_claimed_at}
+              fulfillmentType={order.fulfillment_type}
+              pending={order.pending_confirmation}
+            />
+          )}
 
           {order.work_status === 'delivered' && order.line_url && (
             <a
@@ -1202,7 +1247,7 @@ export function PublicOrderPage() {
             </a>
           )}
 
-          {order.payment_status !== 'paid' && (
+          {order.payment_status !== 'paid' && order.work_status !== 'cancelled' && (
             <button
               type="button"
               onClick={() => setShowPaymentInfo((v) => !v)}
@@ -1211,7 +1256,7 @@ export function PublicOrderPage() {
               💳 ยังไม่ได้ชำระเงิน · ดูวิธีชำระเงิน
             </button>
           )}
-          {showPaymentInfo && (
+          {showPaymentInfo && order.work_status !== 'cancelled' && (
             <PaymentInfoPanel
               promptpay={order.promptpay}
               balanceDue={order.balance_due}
@@ -1276,7 +1321,7 @@ export function PublicOrderPage() {
         </Reveal>
 
         <Reveal delay={0.08} className="flex gap-2">
-          {order.needed_date && (
+          {order.needed_date && order.work_status !== 'cancelled' && (
             <AddToCalendarButton
               orderNo={order.order_no ?? 'รอเลขที่'}
               shopName={order.shop_name}
@@ -1299,8 +1344,12 @@ export function PublicOrderPage() {
         <Reveal delay={0.1} className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_16px_40px_-16px_rgb(51_32_14_/_0.6)]">
           <AmbientGlow />
           <div className="relative z-10 space-y-1">
-            <p className="text-3xl">🧡</p>
-            <p className="font-display font-semibold">ขอบคุณที่อุดหนุน {order.shop_name} นะคะ</p>
+            <p className="text-3xl">{order.work_status === 'cancelled' ? '🙏' : '🧡'}</p>
+            <p className="font-display font-semibold">
+              {order.work_status === 'cancelled'
+                ? `ขออภัยในความไม่สะดวก ไว้โอกาสหน้า ${order.shop_name} ยินดีให้บริการนะคะ`
+                : `ขอบคุณที่อุดหนุน ${order.shop_name} นะคะ`}
+            </p>
             <p className="text-sm text-white/80">ทำสดใหม่ทุกออเดอร์ · หวานน้อย อร่อยแน่ ไม่เหมือนใคร</p>
             <a
               href="/menu"
