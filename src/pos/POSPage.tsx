@@ -188,7 +188,7 @@ export function POSPage() {
                     onClick={() => addProduct(p)}
                     className={'text-left rounded-xl ' + (p.id === justAddedId ? 'animate-cart-bump' : '')}
                   >
-                    <ProductCard product={p} mode="picker" />
+                    <ProductCard product={p} mode="picker" qtyInCart={items.find((it) => it.product_id === p.id)?.qty ?? 0} />
                   </button>
                 ))}
               </div>
@@ -210,7 +210,7 @@ export function POSPage() {
 
         {/* แถบสรุปยอดลอยด้านล่าง เฉพาะจอแคบ — กันต้องเลื่อนหาปุ่มชำระเงินตอนตะกร้าอยู่ใต้รายการสินค้ายาวๆ */}
         {items.length > 0 && (
-          <div className="lg:hidden fixed bottom-16 inset-x-0 bg-white border-t border-stone-200 p-3 shadow-[0_-4px_16px_-4px_rgb(0_0_0_/_0.08)]">
+          <div className="lg:hidden fixed bottom-16 inset-x-0 z-20 bg-white/95 backdrop-blur border-t border-amber-200 p-3 shadow-[0_-10px_28px_-12px_rgb(51_32_14_/_0.45)] animate-form-in">
             <div className="flex items-center justify-between gap-3 max-w-5xl mx-auto">
               <div>
                 <p className="text-xs text-stone-500">ยอดรวม ({items.length} รายการ)</p>
@@ -221,7 +221,7 @@ export function POSPage() {
               <button
                 type="button"
                 onClick={() => setStep('payment')}
-                className="rounded-xl bg-stone-900 text-white font-semibold px-6 py-3 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
+                className="btn-shimmer rounded-full bg-gradient-to-r from-green-600 to-emerald-700 text-white font-bold px-7 py-3 shadow-[0_12px_24px_-10px_rgb(5_122_85_/_0.8)] active:scale-95"
               >
                 ชำระเงิน
               </button>

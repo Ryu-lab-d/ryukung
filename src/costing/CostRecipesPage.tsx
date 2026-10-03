@@ -46,17 +46,22 @@ export function CostRecipesPage() {
                 <Link
                   key={r.id}
                   to={`/costing/${r.id}/edit`}
-                  className="rounded-2xl border border-stone-200 bg-white p-4 space-y-1.5 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] hover:border-stone-300 transition-colors"
+                  className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-4 pl-5 space-y-2 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.45)]"
                 >
-                  <p className="font-medium text-stone-900 truncate">{r.name}</p>
-                  <p className="text-xs text-stone-500">ทำได้ {r.yield_qty} ชิ้น</p>
-                  <div className="flex justify-between text-sm pt-1">
-                    <span className="text-stone-500">ต้นทุน/ชิ้น</span>
-                    <span className="font-medium text-stone-900">{formatBaht(calc.costPerUnit)}</span>
+                  <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="font-display font-semibold text-stone-900 leading-snug">{r.name}</p>
+                    <span className="shrink-0 rounded-full bg-amber-100 text-amber-800 text-xs font-semibold px-2.5 py-1">ทำได้ {r.yield_qty} ชิ้น</span>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-stone-500">ราคาขายแนะนำ</span>
-                    <span className="font-semibold text-stone-900">{formatBaht(calc.suggestedPrice)}</span>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2">
+                      <p className="text-[11px] text-stone-500">ต้นทุน/ชิ้น</p>
+                      <p className="text-lg font-bold tabular-nums text-stone-900">{formatBaht(calc.costPerUnit)}</p>
+                    </div>
+                    <div className="rounded-2xl bg-green-50 border border-green-100 px-3 py-2">
+                      <p className="text-[11px] text-green-700">ราคาขายแนะนำ</p>
+                      <p className="text-lg font-bold tabular-nums text-green-700">{formatBaht(calc.suggestedPrice)}</p>
+                    </div>
                   </div>
                 </Link>
               )
