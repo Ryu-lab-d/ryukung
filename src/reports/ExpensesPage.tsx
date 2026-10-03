@@ -11,6 +11,10 @@ import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
 
+const EXPENSE_ICON: Record<string, string> = {
+  rent_utilities: '🏠', packaging: '📦', marketing: '📣', transport: '🛵', equipment: '🔧', ingredients_other: '🧂', other: '💸',
+}
+
 export function ExpensesPage() {
   const [rangeKey, setRangeKey] = useState<RangeKey>('30d')
   const [customFrom, setCustomFrom] = useState('')
@@ -95,22 +99,26 @@ export function ExpensesPage() {
             <p className="text-sm text-stone-400">ยังไม่มีรายจ่ายในช่วงนี้ ลองกด "+ บันทึกรายจ่าย" เพื่อเริ่มบันทึก</p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+          <div className="space-y-2.5">
             {expenses.map((e) => (
               <button
                 key={e.id}
                 type="button"
                 onClick={() => setEditing(e)}
-                className="w-full flex items-center justify-between gap-2 px-3.5 py-3 text-left hover:bg-stone-50"
+                className="relative overflow-hidden w-full flex items-center justify-between gap-3 rounded-2xl border border-stone-200 bg-white pl-5 pr-3.5 py-3 text-left shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.45)]"
               >
-                <div className="min-w-0">
+                <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-red-400 to-rose-600" aria-hidden="true" />
+                <span className="w-10 h-10 rounded-2xl bg-red-50 border border-red-100 grid place-items-center text-xl shrink-0" aria-hidden="true">
+                  {EXPENSE_ICON[e.category] ?? '💸'}
+                </span>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-stone-900">{EXPENSE_CATEGORY_LABEL[e.category] ?? e.category}</p>
                   <p className="text-xs text-stone-500">
                     {new Date(e.expense_date + 'T00:00:00').toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' })}
                     {e.note && ` · ${e.note}`}
                   </p>
                 </div>
-                <span className="font-semibold tabular-nums shrink-0 text-stone-900">{formatBaht(e.amount)}</span>
+                <span className="font-bold tabular-nums shrink-0 text-red-700">{formatBaht(e.amount)}</span>
               </button>
             ))}
           </div>

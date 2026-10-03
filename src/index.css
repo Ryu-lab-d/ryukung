@@ -994,3 +994,8 @@ a:focus-visible {
   .glow-card { transform: none !important; }
   .glow-card::before { display: none; }
 }
+
+/* ช่องปฏิทินโผล่ไล่ทีละช่อง */
+@keyframes cal-cell-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
+.cal-cell { animation: cal-cell-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+@media (prefers-reduced-motion: reduce) { .cal-cell { animation: none; } }

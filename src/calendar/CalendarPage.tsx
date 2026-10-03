@@ -110,22 +110,23 @@ export function CalendarPage() {
           </button>
         </div>
 
-        <div className="rounded-2xl bg-white border border-stone-200 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)] p-3 space-y-3">
+        <div className="relative overflow-hidden rounded-3xl bg-white border border-stone-200 shadow-[0_14px_32px_-18px_rgb(51_32_14_/_0.5)] p-3 pt-4 space-y-3">
+          <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-300 via-amber-600 to-amber-300" aria-hidden="true" />
           <div className="flex items-center justify-between">
             <button
               type="button"
               onClick={() => setViewDate(new Date(year, month - 1, 1))}
               aria-label="เดือนก่อนหน้า"
-              className="rounded-full border border-stone-200 w-9 h-9 grid place-items-center text-stone-600 hover:bg-stone-50"
+              className="rounded-full border border-stone-200 bg-white w-10 h-10 grid place-items-center text-xl text-stone-700 shadow-sm active:scale-90 hover:bg-amber-50"
             >
               ‹
             </button>
-            <p className="font-bold text-stone-900">{MONTH_LABELS[month]} {year + 543}</p>
+            <p key={`${year}-${month}`} className="text-lg font-display font-bold text-stone-900 animate-form-in">{MONTH_LABELS[month]} {year + 543}</p>
             <button
               type="button"
               onClick={() => setViewDate(new Date(year, month + 1, 1))}
               aria-label="เดือนถัดไป"
-              className="rounded-full border border-stone-200 w-9 h-9 grid place-items-center text-stone-600 hover:bg-stone-50"
+              className="rounded-full border border-stone-200 bg-white w-10 h-10 grid place-items-center text-xl text-stone-700 shadow-sm active:scale-90 hover:bg-amber-50"
             >
               ›
             </button>
@@ -156,14 +157,19 @@ export function CalendarPage() {
                   type="button"
                   aria-label={key}
                   onClick={() => { setSelectedKey(key); setHolidayNote('') }}
+                  style={{ animationDelay: `${Math.min(gridDays.indexOf(d), 41) * 0.012}s` }}
                   className={
-                    'aspect-square rounded-xl border p-1 flex flex-col items-center justify-start gap-0.5 text-xs transition-colors ' +
-                    (isHoliday ? 'bg-red-50 border-red-200 ' : 'bg-white border-stone-200 hover:border-stone-300 ') +
+                    'cal-cell aspect-square rounded-2xl border p-1 flex flex-col items-center justify-start gap-0.5 text-xs transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-90 ' +
+                    (isHoliday
+                      ? 'bg-red-50 border-red-200 '
+                      : bakeCount + neededCount > 0
+                        ? 'bg-gradient-to-b from-amber-50 to-white border-amber-300 '
+                        : 'bg-white border-stone-200 hover:border-amber-300 ') +
                     (!inMonth ? 'opacity-40 ' : '') +
-                    (isToday ? 'ring-2 ring-stone-900 ring-offset-1 ' : '')
+                    (isToday ? 'ring-2 ring-amber-600 ring-offset-1 shadow-[0_8px_16px_-8px_rgb(146_82_12_/_0.8)] ' : '')
                   }
                 >
-                  <span className={isToday ? 'font-bold text-stone-900' : 'text-stone-700'}>{d.getDate()}</span>
+                  <span className={isToday ? 'font-bold text-white bg-gradient-to-br from-amber-500 to-amber-800 rounded-full w-6 h-6 grid place-items-center' : 'text-stone-700'}>{d.getDate()}</span>
                   {isHoliday && <span className="text-[10px] font-medium text-red-600">หยุด</span>}
                   <div className="flex gap-1 mt-auto">
                     {bakeCount > 0 && <span className="text-[10px]">🥐{bakeCount}</span>}
