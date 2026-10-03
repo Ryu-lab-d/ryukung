@@ -865,3 +865,8 @@ a:focus-visible {
   .tap-ring { display: none; }
   .admin-shell nav a svg { animation: none !important; }
 }
+
+/* แท่งกราฟยอดขายงอกขึ้นจากฐานไล่ทีละแท่ง */
+@keyframes bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+.bar-grow { transform-origin: bottom; animation: bar-grow 0.7s cubic-bezier(0.22, 1, 0.36, 1) backwards; }
+@media (prefers-reduced-motion: reduce) { .bar-grow { animation: none; } }

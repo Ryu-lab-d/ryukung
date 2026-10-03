@@ -172,22 +172,34 @@ export function OrderFormPage() {
       <div className="p-4 pb-28 max-w-2xl mx-auto space-y-4">
         <h1 className="text-xl font-bold text-stone-900">{id ? 'แก้ไขออเดอร์' : 'สร้างออเดอร์ใหม่'}</h1>
 
-        <div className="flex gap-2 text-sm">
-          {STEP_LABELS.map((label, i) => (
-            <span
-              key={label}
-              className={
-                'rounded-full px-3 py-1 transition-colors ' +
-                (i + 1 === step
-                  ? 'bg-stone-900 text-white font-medium shadow-sm'
-                  : i + 1 < step
-                    ? 'bg-white border border-stone-300 text-stone-600'
-                    : 'bg-stone-100 text-stone-400')
-              }
-            >
-              {i + 1}. {label}
-            </span>
-          ))}
+        <div className="relative rounded-3xl bg-white border border-stone-200 px-3 py-3 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.45)]">
+          <div className="absolute left-[16.6%] right-[16.6%] top-[1.65rem] h-1 rounded-full bg-stone-200" aria-hidden="true" />
+          <div
+            className="absolute left-[16.6%] top-[1.65rem] h-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-700 transition-all duration-700"
+            style={{ width: `${((step - 1) / (STEP_LABELS.length - 1)) * 66.8}%` }}
+            aria-hidden="true"
+          />
+          <div className="relative grid grid-cols-3 text-center text-xs">
+            {STEP_LABELS.map((label, i) => (
+              <div key={label} className="flex flex-col items-center gap-1">
+                <span
+                  className={
+                    'w-8 h-8 rounded-full grid place-items-center text-sm font-bold transition-all duration-500 ' +
+                    (i + 1 === step
+                      ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
+                      : i + 1 < step
+                        ? 'bg-gradient-to-br from-green-500 to-emerald-700 text-white'
+                        : 'bg-white border-2 border-stone-200 text-stone-400')
+                  }
+                >
+                  {i + 1 < step ? '✓' : i + 1}
+                </span>
+                <span className={i + 1 === step ? 'font-semibold text-stone-900' : 'text-stone-500'}>
+                  {i + 1}. {label}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {step === 1 && <Step1Customer orderId={orderId} />}

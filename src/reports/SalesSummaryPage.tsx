@@ -235,11 +235,12 @@ function SalesTrendChart({ trend, loading }: { trend: { date: string; sales: num
       {trend.map((t) => {
         const heightPercent = t.sales > 0 ? Math.max((t.sales / max) * 100, 4) : 1
         const day = new Date(t.date + 'T00:00:00')
+        const idx = trend.indexOf(t)
         return (
           <div key={t.date} className="flex-1 h-full flex flex-col items-center justify-end gap-1">
             <div
-              className={'w-full rounded-t ' + (t.sales > 0 ? 'bg-stone-900' : 'bg-stone-100')}
-              style={{ height: `${heightPercent}%` }}
+              className={'bar-grow w-full rounded-t-lg ' + (t.sales > 0 ? 'bg-gradient-to-t from-amber-800 to-amber-500 shadow-[0_4px_10px_-4px_rgb(146_82_12_/_0.7)]' : 'bg-stone-100')}
+              style={{ height: `${heightPercent}%`, animationDelay: `${idx * 0.05}s` }}
               title={`${day.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}: ${formatBaht(t.sales)} บาท`}
             />
             <span className="text-[10px] text-stone-400 tabular-nums">{day.getDate()}</span>

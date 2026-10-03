@@ -1,3 +1,4 @@
+import { avatarStyle, initials } from '../customers/avatar'
 import { useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { useCustomers } from '../customers/useCustomers'
@@ -107,10 +108,13 @@ export function Step1Customer({ orderId }: { orderId: string | null }) {
                 key={c.id}
                 type="button"
                 onClick={() => { setValue('customer_id', c.id); setSearch('') }}
-                className="block w-full text-left rounded-2xl border border-stone-200 bg-white px-3.5 py-2.5 text-sm shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
+                className="flex items-center gap-3 w-full text-left rounded-2xl border border-stone-200 bg-white px-3 py-2.5 text-sm shadow-[0_6px_16px_-12px_rgb(51_32_14_/_0.5)] transition-all hover:-translate-y-0.5 hover:border-amber-400 active:scale-[0.98]"
               >
-                <span className="font-medium text-stone-900">{c.name}</span>
-                {c.phone && <span className="text-stone-500"> · {c.phone}</span>}
+                <span aria-hidden="true" className={'w-9 h-9 shrink-0 rounded-full grid place-items-center font-semibold ' + avatarStyle(c.name)}>{initials(c.name)}</span>
+                <span className="min-w-0">
+                  <span className="font-medium text-stone-900">{c.name}</span>
+                  {c.phone && <span className="text-stone-500"> · {c.phone}</span>}
+                </span>
               </button>
             ))}
             {search && visible.length === 0 && (
