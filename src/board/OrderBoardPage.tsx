@@ -5,6 +5,7 @@ import { AlertBar } from './AlertBar'
 import { BoardDesktop } from './BoardDesktop'
 import { BoardMobile, type MobileQuickFilter } from './BoardMobile'
 import { LowStockAlertCard } from '../ingredients/LowStockAlertCard'
+import { PageHero } from '../layout/PageHero'
 
 export function OrderBoardPage() {
   const { orders, loading, changeStatus, reload } = useOrderBoard()
@@ -32,19 +33,14 @@ export function OrderBoardPage() {
 
   return (
     <div className="pb-24 bg-stone-50 min-h-screen">
-      <div className="px-4 pt-5 pb-1 flex items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-stone-900">ออเดอร์</h1>
-          <p className="text-sm text-stone-500 mt-0.5">
-            {activeCount} ออเดอร์กำลังดำเนินการ<span className="hidden lg:inline"> — ลากการ์ดเพื่อเปลี่ยนสถานะ</span>
-          </p>
-        </div>
-        <Link
-          to="/orders/new"
-          className="hidden lg:inline-flex shrink-0 items-center gap-1.5 rounded-full bg-stone-900 text-white text-sm font-semibold px-4 py-2"
+      <div className="px-4 pt-4">
+        <PageHero
+          icon="🧾"
+          title="ออเดอร์"
+          subtitle={<>{activeCount} ออเดอร์กำลังดำเนินการ<span className="hidden lg:inline"> — ลากการ์ดเพื่อเปลี่ยนสถานะ</span></>}
         >
-          + สร้างออเดอร์
-        </Link>
+          <Link to="/orders/new" className="hidden lg:inline-flex">+ สร้างออเดอร์</Link>
+        </PageHero>
       </div>
       <AlertBar
         orders={orders}

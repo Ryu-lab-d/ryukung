@@ -13,6 +13,7 @@ import { TodaySalesPanel } from './TodaySalesPanel'
 import { HeldSalesPanel, type HeldSale } from './HeldSalesPanel'
 import { MilestoneToast } from './MilestoneToast'
 import { useTodaySales } from './useTodaySales'
+import { PageHero } from '../layout/PageHero'
 
 type Step = 'cart' | 'payment' | 'complete'
 
@@ -134,10 +135,7 @@ export function POSPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 space-y-4 max-w-5xl mx-auto pb-8">
-        <div>
-          <h1 className="text-xl font-bold text-stone-900">ขายหน้าร้าน</h1>
-          <p className="text-sm text-stone-500 mt-0.5">ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย</p>
-        </div>
+        <PageHero icon="🛒" title="ขายหน้าร้าน" subtitle="ลูกค้าเดินเข้ามาซื้อ ไม่ต้องกรอกข้อมูลลูกค้า เลือกสินค้าแล้วรับเงินได้เลย" />
 
         <TodaySalesPanel sales={todaySales} loading={todaySalesLoading} />
         <HeldSalesPanel

@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom'
 import { useCostRecipes } from './useCostRecipes'
 import { computeRecipeCost } from './costMath'
 import { formatBaht } from '../lib/money'
+import { PageHero } from '../layout/PageHero'
 
 export function CostRecipesPage() {
   const { recipes, loading } = useCostRecipes()
@@ -9,18 +10,9 @@ export function CostRecipesPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 max-w-2xl mx-auto space-y-4 pb-8">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-stone-900">คำนวณต้นทุน</h1>
-            <p className="text-sm text-stone-500 mt-0.5">{recipes.length} สูตรทั้งหมด</p>
-          </div>
-          <Link
-            to="/costing/new"
-            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] shrink-0"
-          >
-            + คำนวณเมนูใหม่
-          </Link>
-        </div>
+        <PageHero icon="🧮" title="คำนวณต้นทุน" subtitle={`${recipes.length} สูตรทั้งหมด`}>
+          <Link to="/costing/new">+ คำนวณเมนูใหม่</Link>
+        </PageHero>
 
         {loading ? (
           <div className="flex items-center justify-center gap-2.5 py-8 text-stone-400">

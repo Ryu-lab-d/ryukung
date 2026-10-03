@@ -4,6 +4,7 @@ import { useCalendarOrders, type CalendarOrder } from './useCalendarOrders'
 import { useHolidays } from './useHolidays'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
+import { PageHero } from '../layout/PageHero'
 
 function holidayNoteDraftKey(dateKey: string | null): string | null {
   return dateKey ? `calendar-holiday-note:${dateKey}` : null
@@ -96,19 +97,9 @@ export function CalendarPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 max-w-3xl mx-auto space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-stone-900">ปฏิทินออเดอร์</h1>
-            <p className="text-sm text-stone-500 mt-0.5">กดวันที่เพื่อดูออเดอร์ หรือตั้งเป็นวันหยุดร้าน</p>
-          </div>
-          <button
-            type="button"
-            onClick={() => setViewDate(new Date())}
-            className="shrink-0 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
-          >
-            วันนี้
-          </button>
-        </div>
+        <PageHero icon="📅" title="ปฏิทินออเดอร์" subtitle="กดวันที่เพื่อดูออเดอร์ หรือตั้งเป็นวันหยุดร้าน">
+          <button type="button" onClick={() => setViewDate(new Date())}>วันนี้</button>
+        </PageHero>
 
         <div className="relative overflow-hidden rounded-3xl bg-white border border-stone-200 shadow-[0_14px_32px_-18px_rgb(51_32_14_/_0.5)] p-3 pt-4 space-y-3">
           <div className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-300 via-amber-600 to-amber-300" aria-hidden="true" />

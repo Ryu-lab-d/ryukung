@@ -9,6 +9,7 @@ import { computeProductProfitability } from './productProfitability'
 import { useIngredients } from '../ingredients/useIngredients'
 import { formatBaht } from '../lib/money'
 import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
+import { PageHero } from '../layout/PageHero'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
 const TREND_DAYS = 14
@@ -38,10 +39,7 @@ export function SalesSummaryPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
-        <div>
-          <h1 className="text-xl font-bold text-stone-900">สรุปยอด</h1>
-          <p className="text-sm text-stone-500 mt-0.5">ภาพรวมยอดขาย กำไร และสินค้าขายดี</p>
-        </div>
+        <PageHero icon="📊" title="สรุปยอด" subtitle="ภาพรวมยอดขาย กำไร และสินค้าขายดี" />
 
         {/* ตัวเลือกช่วงเวลาแบบแท็บกลุ่มเดียว ให้เห็นชัดว่าอันไหนถูกเลือกอยู่ */}
         <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">

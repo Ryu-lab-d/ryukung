@@ -8,6 +8,7 @@ import { ExpenseFormModal } from './ExpenseFormModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { formatBaht } from '../lib/money'
 import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
+import { PageHero } from '../layout/PageHero'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
 
@@ -48,16 +49,9 @@ export function ExpensesPage() {
           ← กลับหน้าสรุปยอด
         </Link>
 
-        <div className="flex items-center justify-between gap-2">
-          <h1 className="text-xl font-bold text-stone-900 flex items-center gap-2">💸 รายจ่าย</h1>
-          <button
-            type="button"
-            onClick={() => setShowAdd(true)}
-            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] shrink-0"
-          >
-            + บันทึกรายจ่าย
-          </button>
-        </div>
+        <PageHero icon="💸" title="รายจ่าย" subtitle="บันทึกค่าใช้จ่ายของร้าน แยกตามหมวด">
+          <button type="button" onClick={() => setShowAdd(true)}>+ บันทึกรายจ่าย</button>
+        </PageHero>
 
         <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">
           {(Object.keys(RANGE_LABELS) as RangeKey[]).map((key) => (

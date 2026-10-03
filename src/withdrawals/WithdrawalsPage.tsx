@@ -5,6 +5,7 @@ import { computeWithdrawalTotals } from './withdrawalMath'
 import { formatBaht } from '../lib/money'
 import { useAuth } from '../auth/AuthProvider'
 import { useStaffMembers } from '../staff/useStaffMembers'
+import { PageHero } from '../layout/PageHero'
 
 const STATUS_LABEL: Record<string, string> = { open: 'กำลังขาย', settled: 'ปิดรอบแล้ว' }
 const STATUS_COLOR: Record<string, string> = {
@@ -27,18 +28,9 @@ export function WithdrawalsPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 max-w-2xl mx-auto space-y-4 pb-8">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-stone-900">เบิกของ</h1>
-            <p className="text-sm text-stone-500 mt-0.5">{withdrawals.length} รายการทั้งหมด</p>
-          </div>
-          <Link
-            to="/withdrawals/new"
-            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] shrink-0"
-          >
-            + เบิกของใหม่
-          </Link>
-        </div>
+        <PageHero icon="📦" title="เบิกของ" subtitle={`${withdrawals.length} รายการทั้งหมด`}>
+          <Link to="/withdrawals/new">+ เบิกของใหม่</Link>
+        </PageHero>
         <p className="text-sm text-stone-500">
           บันทึกตอนเอาสินค้าที่ทำไว้ไปขายนอกร้าน (เช่น ที่โรงเรียน) แล้วกลับมาปิดรอบใส่ว่าขายได้กี่ชิ้น ได้เงินเท่าไหร่
         </p>

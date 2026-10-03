@@ -5,6 +5,7 @@ import { updateContentStatus } from './api'
 import { PLATFORMS, PLATFORM_ICON, CONTENT_STAGES, STATUS_LABEL, STATUS_ICON, STATUS_COLOR, nextContentStatus } from './contentMeta'
 import type { ContentPlatform, ContentStatus } from './contentMeta'
 import { QuickAddContentModal } from './QuickAddContentModal'
+import { PageHero } from '../layout/PageHero'
 
 function formatPostDate(d: string | null): string {
   if (!d) return 'ยังไม่กำหนดวันโพสต์'
@@ -50,27 +51,10 @@ export function ContentPlannerPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-stone-900">แผนคอนเทนต์</h1>
-            <p className="text-sm text-stone-500 mt-0.5">{items.length} รายการทั้งหมด</p>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <Link
-              to="/content/stats"
-              className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-2 shadow-sm"
-            >
-              📊 สถิติ
-            </Link>
-            <button
-              type="button"
-              onClick={() => setShowQuickAdd(true)}
-              className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
-            >
-              + เพิ่มไอเดีย
-            </button>
-          </div>
-        </div>
+        <PageHero icon="🎬" title="แผนคอนเทนต์" subtitle={`${items.length} รายการทั้งหมด`}>
+          <Link to="/content/stats">📊 สถิติ</Link>
+          <button type="button" onClick={() => setShowQuickAdd(true)}>+ เพิ่มไอเดีย</button>
+        </PageHero>
 
         <input
           placeholder="🔍 ค้นหาชื่อคอนเทนต์หรือไอเดีย"

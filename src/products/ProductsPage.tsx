@@ -4,6 +4,7 @@ import { useProducts } from './useProducts'
 import { useCategories } from './useCategories'
 import { ProductCard } from './ProductCard'
 import { CatalogTabs } from './CatalogTabs'
+import { PageHero } from '../layout/PageHero'
 
 export function ProductsPage() {
   const { products, loading } = useProducts()
@@ -34,18 +35,9 @@ export function ProductsPage() {
       <div className="p-4 space-y-4 pb-8">
         <CatalogTabs active="products" />
 
-        <div className="flex items-center justify-between gap-2">
-          <div>
-            <h1 className="text-xl font-bold text-stone-900">สินค้า</h1>
-            <p className="text-sm text-stone-500 mt-0.5">{products.length} รายการทั้งหมด</p>
-          </div>
-          <Link
-            to="/products/new"
-            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-2 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
-          >
-            + เพิ่มสินค้า
-          </Link>
-        </div>
+        <PageHero icon="🍪" title="สินค้า" subtitle={`${products.length} รายการทั้งหมด`}>
+          <Link to="/products/new">+ เพิ่มสินค้า</Link>
+        </PageHero>
 
         <input
           placeholder="🔍 ค้นหาสินค้า"

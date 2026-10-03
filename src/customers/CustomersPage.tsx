@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
 import { formatBaht } from '../lib/money'
 import { avatarStyle, initials } from './avatar'
+import { PageHero } from '../layout/PageHero'
 
 export function CustomersPage() {
   const { customers, loading } = useCustomers()
@@ -24,20 +25,9 @@ export function CustomersPage() {
 
   return (
     <div className="p-4 max-w-2xl mx-auto space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <h1 className="text-lg font-semibold text-stone-900">ลูกค้า</h1>
-          <span className="rounded-full bg-stone-100 text-stone-500 text-xs font-medium px-2 py-0.5">
-            {customers.length} คน
-          </span>
-        </div>
-        <Link
-          to="/customers/new"
-          className="flex items-center gap-1 rounded-lg bg-stone-900 text-white text-sm px-3 py-2 shadow-sm hover:bg-stone-800 transition-colors"
-        >
-          <span className="text-base leading-none">+</span> เพิ่มลูกค้า
-        </Link>
-      </div>
+      <PageHero icon="👥" title="ลูกค้า" chips={[`${customers.length} คน`]}>
+        <Link to="/customers/new">+ เพิ่มลูกค้า</Link>
+      </PageHero>
 
       <div className="relative">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-stone-400">🔍</span>
