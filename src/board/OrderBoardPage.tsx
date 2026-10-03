@@ -7,7 +7,7 @@ import { BoardMobile, type MobileQuickFilter } from './BoardMobile'
 import { LowStockAlertCard } from '../ingredients/LowStockAlertCard'
 
 export function OrderBoardPage() {
-  const { orders, loading, changeStatus } = useOrderBoard()
+  const { orders, loading, changeStatus, reload } = useOrderBoard()
   const [mobileTab, setMobileTab] = useState('to_bake')
   const [quick, setQuick] = useState<MobileQuickFilter>(null)
   const autoPicked = useRef(false)
@@ -65,6 +65,7 @@ export function OrderBoardPage() {
         quick={quick}
         onClearQuick={() => setQuick(null)}
         onChangeStatus={changeStatus}
+        onPaid={() => void reload()}
       />
       <Link
         to="/orders/new"

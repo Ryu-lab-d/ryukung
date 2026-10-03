@@ -1,5 +1,8 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import { OrderCard } from './OrderCard'
+import { recordPayment } from '../orders/api'
+import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
 import { isToday } from '../lib/dates'
 import { nextStatus, stageLabel } from '../orders/workStatus'
@@ -30,6 +33,7 @@ export function BoardMobile({
   quick,
   onClearQuick,
   onChangeStatus,
+  onPaid,
 }: {
   orders: BoardOrder[]
   tab: string
@@ -37,8 +41,10 @@ export function BoardMobile({
   quick: MobileQuickFilter
   onClearQuick: () => void
   onChangeStatus: (orderId: string, status: string) => Promise<{ error: { message: string } | null }>
+  onPaid: () => void
 }) {
   const [error, setError] = useState<string | null>(null)
+  const [payingId, setPayingId] = useState<string | null>(null)
 
   // แผงสรุปด้านบนกรองข้ามแท็บ: "อบวันนี้"/"ค้างเงิน" โชว์ทุกออเดอร์ที่เข้าเงื่อนไขไม่ว่าอยู่ขั้นไหน
   const visible = quick
@@ -48,6 +54,24 @@ export function BoardMobile({
           : o.payment_status !== 'paid' && !o.is_draft
       )
     : orders.filter((o) => inTab(o, tab))
+
+  // รับเงินเต็มยอดด้วยปุ่มเดียวจากการ์ด (ใช้กับออเดอร์ที่ยังไม่จ่ายเลย) — ไม่มีอีเมลแจ้งลูกค้าเหมือนบันทึกจากหน้าออเดอร์
+  async function handlePayFull(o: BoardOrder, method: 'transfer' | 'cash') {
+    setPayingId(o.id + method)
+    const { error } = await recordPayment(o.id, {
+      amount: o.grand_total,
+      method,
+      paid_at: new Date().toISOString(),
+      slip_path: null,
+      note: null,
+    })
+    setPayingId(null)
+    if (error) {
+      setError(error.message)
+      return
+    }
+    onPaid()
+  }
 
   async function handleAdvance(orderId: string, status: string) {
     const { error } = await onChangeStatus(orderId, status)
@@ -108,7 +132,27 @@ export function BoardMobile({
           return (
             <div key={o.id} className="space-y-1.5 animate-form-in">
               <OrderCard order={o} />
-              {next && (
+              {!o.is_draft && o.payment_status === 'unpaid' && o.grand_total > 0 && (
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    disabled={payingId !== null}
+                    onClick={() => void handlePayFull(o, 'transfer')}
+                    className="rounded-2xl bg-gradient-to-r from-green-600 to-emerald-700 text-white text-sm font-bold py-2.5 shadow-[0_10px_20px_-10px_rgb(5_122_85_/_0.8)] active:scale-95 disabled:opacity-60"
+                  >
+                    {payingId === o.id + 'transfer' ? '...' : `🏦 โอนแล้ว ${formatBaht(o.grand_total)}`}
+                  </button>
+                  <button
+                    type="button"
+                    disabled={payingId !== null}
+                    onClick={() => void handlePayFull(o, 'cash')}
+                    className="rounded-2xl bg-white border-2 border-green-600 text-green-700 text-sm font-bold py-2.5 active:scale-95 disabled:opacity-60"
+                  >
+                    {payingId === o.id + 'cash' ? '...' : '💵 เงินสด'}
+                  </button>
+                </div>
+              )}
+              {next && o.payment_status !== 'unpaid' && (
                 <button
                   type="button"
                   onClick={() => void handleAdvance(o.id, next)}
@@ -117,7 +161,14 @@ export function BoardMobile({
                   ย้ายไปขั้น "{stageLabel(o.fulfillment_type, next)}" →
                 </button>
               )}
-              {o.is_draft && <p className="text-center text-xs text-stone-400">แตะการ์ดเพื่อเปิดดูและยืนยันออเดอร์</p>}
+              {o.is_draft && (
+                <Link
+                  to={`/orders/${o.id}`}
+                  className="block w-full rounded-full bg-gradient-to-r from-indigo-600 to-indigo-800 text-white text-center text-sm font-bold py-2.5 shadow-[0_10px_20px_-10px_rgb(67_56_202_/_0.8)] active:scale-95"
+                >
+                  👀 เปิดดู &amp; ยืนยันออเดอร์ →
+                </Link>
+              )}
             </div>
           )
         })}

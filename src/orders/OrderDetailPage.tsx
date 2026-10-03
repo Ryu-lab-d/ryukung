@@ -21,6 +21,7 @@ import { paymentReceivedEmail } from '../lib/emailTemplates'
 import { productImageUrl } from '../products/ProductCard'
 import { ComposeEmailModal } from './ComposeEmailModal'
 import { AmbientGlow } from '../public/PublicSiteChrome'
+import { NextActionCard } from './NextActionCard'
 import { daysFromToday } from '../lib/dates'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
@@ -261,6 +262,12 @@ export function OrderDetailPage() {
           </div>
         </div>
       </div>
+      <NextActionCard
+        order={order}
+        balanceDue={balanceDue}
+        onPaid={(amount) => handlePaymentRecorded(amount)}
+        onAdvance={(status) => handleAdvanceStatus(status)}
+      />
       {reorderError && <p className="text-sm text-red-600">{reorderError}</p>}
 
       {order.work_status !== 'cancelled' && (
