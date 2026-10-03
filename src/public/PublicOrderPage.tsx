@@ -243,6 +243,7 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
             style={{ width: `${fill}%` }}
           >
             <span className="absolute inset-x-1 top-0.5 h-1 rounded-full bg-white/40" aria-hidden="true" />
+            <span className="progress-stripes absolute inset-0 rounded-full" aria-hidden="true" />
           </div>
         </div>
         <div className="flex justify-between px-0.5 -mt-[1.15rem] mb-2 relative" aria-hidden="true">

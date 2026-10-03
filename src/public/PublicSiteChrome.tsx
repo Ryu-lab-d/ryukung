@@ -21,6 +21,8 @@ export function SquiggleUnderline({ className = '' }: { className?: string }) {
   return (
     <svg viewBox="0 0 120 12" preserveAspectRatio="none" className={className} aria-hidden="true">
       <path
+        className="squiggle-draw"
+        pathLength="1"
         d="M2 7 Q 12 2, 22 7 T 42 7 T 62 7 T 82 7 T 102 7 T 122 7"
         fill="none"
         stroke="currentColor"
@@ -49,9 +51,37 @@ export function WaveDivider({ className = '' }: { className?: string }) {
 /** จุดไล่แสงอุ่นๆ 2 ดวงคนละสี เคลื่อนไหวคนละจังหวะตลอดเวลาเหนือพื้นหลัง .bg-brand-shader ของ hero — เป็นลูกเล่น
  * เสริมให้เห็นชัดเจนจริงๆ (ไม่ subtle จนสังเกตไม่ออก) ต้องวางใน container ที่มี `relative overflow-hidden` เสมอ
  * กันแสงล้นออกนอก hero */
+const TREATS: [string, string, string, string, string][] = [
+  // [emoji, left, size(px), duration(s), delay(s)]
+  ['🍪', '6%', '26', '14', '0'],
+  ['🥐', '22%', '20', '17', '3'],
+  ['🧁', '40%', '24', '15', '7'],
+  ['🍞', '58%', '22', '18', '1.5'],
+  ['🍩', '74%', '26', '16', '5'],
+  ['🥨', '90%', '20', '19', '9'],
+]
+
+/** ขนมลอยขึ้นช้าๆ พร้อมหมุน/โยก เป็นฉากหลังของ hero สีแบรนด์ทุกหน้า — จางมาก ไม่บังเนื้อหา ปิดเองเมื่อผู้ใช้ตั้งลดการเคลื่อนไหว */
+export function FloatingTreats() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {TREATS.map(([emoji, left, size, dur, delay]) => (
+        <span
+          key={emoji}
+          className="treat-rise absolute select-none"
+          style={{ left, fontSize: `${size}px`, animationDuration: `${dur}s`, animationDelay: `-${delay}s` }}
+        >
+          {emoji}
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function AmbientGlow() {
   return (
     <>
+      <FloatingTreats />
       <div
         className="pointer-events-none absolute inset-[-25%] opacity-40 animate-ambient-shine"
         style={{ background: 'radial-gradient(circle at 30% 30%, rgb(255 205 130 / 0.6), transparent 50%)' }}
@@ -396,4 +426,94 @@ export function flyToCart(sourceEl: HTMLElement, targetEl: HTMLElement, emoji = 
     { duration: 620, easing: 'cubic-bezier(0.32, 0, 0.6, 1)' }
   )
   anim.onfinish = () => clone.remove()
+}
+
+/** ประกายแตกกระจายจากจุดที่กดเพิ่มสินค้า (ดาว ✦ + เม็ดสีทอง) — เล่นด้วย Web Animations แล้วลบตัวเอง ไม่ค้างใน DOM */
+export function burstSparkles(sourceEl: HTMLElement, count = 12) {
+  if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+  const rect = sourceEl.getBoundingClientRect()
+  const cx = rect.left + rect.width / 2
+  const cy = rect.top + rect.height / 2
+  const colors = ['#fbbf24', '#f59e0b', '#fde68a', '#ffffff', '#d97706']
+  for (let i = 0; i < count; i++) {
+    const el = document.createElement('span')
+    const star = i % 3 === 0
+    el.textContent = star ? '✦' : ''
+    el.setAttribute('aria-hidden', 'true')
+    const size = star ? 14 + Math.random() * 8 : 5 + Math.random() * 5
+    el.style.cssText = [
+      'position:fixed',
+      `left:${cx - size / 2}px`,
+      `top:${cy - size / 2}px`,
+      `width:${size}px`,
+      `height:${size}px`,
+      `font-size:${size}px`,
+      'line-height:1',
+      'text-align:center',
+      `color:${colors[i % colors.length]}`,
+      star ? '' : `background:${colors[i % colors.length]};border-radius:50%`,
+      'z-index:100',
+      'pointer-events:none',
+    ].join(';')
+    document.body.appendChild(el)
+    const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5
+    const dist = 38 + Math.random() * 46
+    const anim = el.animate(
+      [
+        { transform: 'translate(0,0) scale(0.2) rotate(0deg)', opacity: 1 },
+        { transform: `translate(${Math.cos(angle) * dist}px, ${Math.sin(angle) * dist - 14}px) scale(1.15) rotate(120deg)`, opacity: 1, offset: 0.55 },
+        { transform: `translate(${Math.cos(angle) * dist * 1.25}px, ${Math.sin(angle) * dist * 1.25 + 22}px) scale(0.1) rotate(220deg)`, opacity: 0 },
+      ],
+      { duration: 620 + Math.random() * 220, easing: 'cubic-bezier(0.22, 1, 0.36, 1)' }
+    )
+    anim.onfinish = () => el.remove()
+  }
+}
+
+/** ตัวเลขนับขึ้นจาก 0 → ค่าจริงแบบนุ่มๆ (ease-out) ใช้กับยอดเงินให้ดูมีชีวิต — เปลี่ยนค่าใหม่ก็นับต่อจากค่าเดิม */
+export function CountUp({ value, format = (n: number) => String(n), duration = 800 }: { value: number; format?: (n: number) => string; duration?: number }) {
+  const [shown, setShown] = useState(0)
+  const fromRef = useRef(0)
+  useEffect(() => {
+    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      setShown(value)
+      return
+    }
+    const from = fromRef.current
+    const start = performance.now()
+    let raf = 0
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / duration)
+      const eased = 1 - Math.pow(1 - t, 3)
+      const v = from + (value - from) * eased
+      setShown(v)
+      fromRef.current = v
+      if (t < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [value, duration])
+  return <>{format(shown)}</>
+}
+
+/** กระดาษสีโปรยฝูงใหญ่เต็มการ์ด (ใช้ในป็อปอัพแจ้งชำระสำเร็จ) — ต้องวางใน container ที่ `relative overflow-hidden` */
+export function ConfettiRain({ pieces = 28 }: { pieces?: number }) {
+  const colors = ['#f59e0b', '#d97706', '#fbbf24', '#a8551f', '#fcd34d', '#16a34a', '#ef4444']
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {Array.from({ length: pieces }).map((_, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: `${(i * 37) % 100}%`,
+            background: colors[i % colors.length],
+            animationDelay: `${(i % 8) * 0.12}s`,
+            animationDuration: `${1.6 + (i % 5) * 0.3}s`,
+            animationIterationCount: 2,
+          }}
+        />
+      ))}
+    </div>
+  )
 }

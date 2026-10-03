@@ -18,6 +18,9 @@ import {
   Reveal,
   SquiggleUnderline,
   WaveDivider,
+  burstSparkles,
+  CountUp,
+  ConfettiRain,
   flyToCart,
   type SiteTab,
 } from './PublicSiteChrome'
@@ -254,6 +257,7 @@ function PaymentPendingPopup({ total, onDone, durationMs = 6000 }: { total: numb
           (closing ? 'animate-toast-pop-out' : 'animate-toast-pop')
         }
       >
+        <ConfettiRain />
         <div className="w-20 h-20 rounded-full bg-amber-50 border-2 border-amber-200 grid place-items-center text-4xl mx-auto animate-icon-pop">
           <span className="animate-hourglass">⏳</span>
         </div>
@@ -521,6 +525,7 @@ export function CustomerOrderPage() {
     // เล่นเสียงเป็นบรรทัดแรกสุดเสมอ ก่อน setState ใดๆ — iOS Safari ต้องมี user gesture อยู่ใน call stack
     // เดียวกันตอนสร้าง AudioContext ครั้งแรก (เหมือน POSPage.tsx)
     playAddSound()
+    if (sourceEl) burstSparkles(sourceEl)
     setJustAddedId(p.id)
     setTimeout(() => setJustAddedId((cur) => (cur === p.id ? null : cur)), 300)
 
@@ -730,7 +735,7 @@ export function CustomerOrderPage() {
                     <div>
                       <p className="text-xs text-white/60">ยอดรวมทั้งหมด ({items.length} รายการ)</p>
                       <p className="text-3xl font-display font-bold tabular-nums text-amber-300 leading-tight">
-                        {formatBaht(grandTotal)} <span className="text-base font-medium text-amber-200">บาท</span>
+                        <CountUp value={grandTotal} format={formatBaht} /> <span className="text-base font-medium text-amber-200">บาท</span>
                       </p>
                     </div>
                     <span className="text-3xl animate-loading-bounce" aria-hidden="true">🍪</span>
@@ -1022,7 +1027,7 @@ export function CustomerOrderPage() {
             <span className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-amber-400/15" aria-hidden="true" />
             <div className="relative z-10">
               <p className="text-xs tracking-widest text-amber-200/80">ยอดที่ต้องชำระ</p>
-              <p className="text-5xl font-display font-bold tabular-nums text-amber-300 mt-1 leading-none">{formatBaht(grandTotal)}</p>
+              <p className="text-5xl font-display font-bold tabular-nums text-amber-300 mt-1 leading-none"><CountUp value={grandTotal} format={formatBaht} duration={1100} /></p>
               <p className="text-sm text-amber-100/80 mt-1">บาท</p>
             </div>
           </Reveal>
@@ -1286,7 +1291,7 @@ export function CustomerOrderPage() {
                   <Reveal key={p.id} delay={(idx % 3) * 0.08} className="h-full">
                     <div
                       className={
-                        'group h-full rounded-3xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_22px_36px_-14px_rgb(51_32_14_/_0.45)] ' +
+                        'group card-shine h-full rounded-3xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_22px_36px_-14px_rgb(51_32_14_/_0.45)] ' +
                         (inCart
                           ? 'border-amber-600 ring-2 ring-amber-400/40 shadow-[0_10px_24px_-10px_rgb(193_130_61_/_0.7)]'
                           : 'border-stone-200/70 shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]') +

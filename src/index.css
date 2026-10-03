@@ -699,3 +699,55 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .admin-shell main > * { animation: none; }
 }
+
+
+/* ===== แอนิเมชันเพิ่มเติมหน้าลูกค้า ===== */
+/* ขนมลอยขึ้นใน hero: ลอยจากล่างขึ้นบน โยกซ้ายขวา หมุนเบาๆ แล้วจางหาย */
+@keyframes treat-rise {
+  0% { top: 108%; transform: translateX(0) rotate(-12deg); opacity: 0; }
+  12% { opacity: 0.55; }
+  50% { transform: translateX(14px) rotate(14deg); opacity: 0.5; }
+  88% { opacity: 0.35; }
+  100% { top: -18%; transform: translateX(-10px) rotate(-18deg); opacity: 0; }
+}
+.treat-rise {
+  animation: treat-rise 16s linear infinite;
+  filter: drop-shadow(0 4px 6px rgb(0 0 0 / 0.25));
+}
+/* เส้นหยักใต้หัวข้อวาดตัวเองเข้ามา */
+@keyframes squiggle-draw {
+  from { stroke-dashoffset: 1; }
+  to { stroke-dashoffset: 0; }
+}
+.squiggle-draw {
+  stroke-dasharray: 1;
+  animation: squiggle-draw 1.1s ease-out 0.3s backwards;
+}
+/* แสงสะท้อนกวาดผ่านการ์ดสินค้าตอนชี้ */
+.card-shine { position: relative; }
+.card-shine::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 35%, rgb(255 255 255 / 0.5) 50%, transparent 65%);
+  transform: translateX(-130%);
+  pointer-events: none;
+  z-index: 5;
+}
+@media (hover: hover) {
+  .card-shine:hover::after { transform: translateX(130%); transition: transform 0.9s ease; }
+}
+/* ลายเฉียงวิ่งบนแถบความคืบหน้า */
+@keyframes stripes-move {
+  to { background-position: 28px 0; }
+}
+.progress-stripes {
+  background-image: repeating-linear-gradient(-45deg, rgb(255 255 255 / 0.28) 0 7px, transparent 7px 14px);
+  background-size: 19.8px 19.8px;
+  animation: stripes-move 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .treat-rise, .progress-stripes { animation: none; }
+  .treat-rise { display: none; }
+  .squiggle-draw { animation: none; }
+}
