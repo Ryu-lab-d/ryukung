@@ -999,3 +999,83 @@ a:focus-visible {
 @keyframes cal-cell-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
 .cal-cell { animation: cal-cell-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
 @media (prefers-reduced-motion: reduce) { .cal-cell { animation: none; } }
+
+/* =====================================================================
+   ธีมเหลืองทอง: ทองสว่างเป็นสีหลักของปุ่ม/แถบ/หัวข้อ ทั้งหน้าลูกค้าและหลังบ้าน
+   (ครอบทับ class เดิมด้วย CSS กลาง ไม่ต้องไล่แก้ทีละไฟล์)
+   ===================================================================== */
+
+/* ทองสว่างแทนบรอนซ์ในทุกพื้นไล่สีที่เคยเป็นอำพันเข้ม */
+.from-amber-300 { --tw-gradient-from: #fff0a8; }
+.from-amber-400 { --tw-gradient-from: #ffe07a; }
+.from-amber-500 { --tw-gradient-from: #ffcf45; }
+.from-amber-600 { --tw-gradient-from: #f7b500; }
+.via-amber-600 { --tw-gradient-via: #ecaa00; }
+.to-amber-700 { --tw-gradient-to: #dd9200; }
+.to-amber-800 { --tw-gradient-to: #c98300; }
+/* ตัวหนังสือบนพื้นทองใช้น้ำตาลเข้มให้อ่านชัด */
+[class*="from-amber-500"][class*="to-amber-"], [class*="from-amber-600"][class*="to-amber-"] { color: #2b1604; }
+
+/* พื้น hero สีแบรนด์: เพิ่มประกายทองสว่างตรงกลางแถบ */
+.bg-brand-shader {
+  background-image: linear-gradient(
+    120deg,
+    #1e1207 0%,
+    #4a2e18 12%,
+    #8a5a1c 26%,
+    #d49a1f 40%,
+    #ffd24d 52%,
+    #d49a1f 64%,
+    #8a5a1c 78%,
+    #3a2412 90%,
+    #1e1207 100%
+  );
+}
+
+/* ปุ่มหลักทุกปุ่ม (เดิมน้ำตาลเข้ม) → ทองไล่สี ตัวหนังสือน้ำตาลเข้ม มีเงาทอง */
+button.bg-stone-900:not(:disabled), a.bg-stone-900,
+button.from-stone-800.to-stone-900:not(:disabled), a.from-stone-800.to-stone-900,
+button.from-stone-700.to-stone-900:not(:disabled) {
+  background-image: linear-gradient(135deg, #ffe27a 0%, #f7b500 48%, #d98a00 100%) !important;
+  color: #2b1604 !important;
+  font-weight: 700;
+  box-shadow: 0 10px 22px -10px rgb(217 138 0 / 0.9), inset 0 1px 0 rgb(255 255 255 / 0.55) !important;
+  text-shadow: 0 1px 0 rgb(255 255 255 / 0.35);
+}
+button.bg-stone-900:not(:disabled):hover, a.bg-stone-900:hover,
+button.from-stone-800.to-stone-900:not(:disabled):hover, a.from-stone-800.to-stone-900:hover {
+  background-image: linear-gradient(135deg, #fff0a8 0%, #ffc61a 48%, #e89a00 100%) !important;
+}
+/* ปุ่มสีเขียว/แดง/ขาวที่ตั้งใจให้เป็นสีอื่นไม่โดน (เลือกเฉพาะ stone-900) */
+
+/* หัวข้อหน้าหลังบ้าน: ตัวหนังสือไล่ทองเข้ม มีประกายวิ่ง */
+@keyframes gold-text-shine { to { background-position: 200% 0; } }
+.admin-shell main h1 {
+  background-image: linear-gradient(100deg, #5b3a05 0%, #a26a00 30%, #e0a100 50%, #a26a00 70%, #5b3a05 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: admin-h1-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards, gold-text-shine 6s linear infinite;
+}
+.admin-shell main .text-white h1, .admin-shell main h1.text-white { background: none; color: inherit; animation: admin-h1-in 0.5s ease backwards; }
+.admin-shell main h1:not(.flex):not(.inline-flex)::after {
+  background: linear-gradient(90deg, #ffe07a, #f7b500, #d98a00);
+  box-shadow: 0 0 10px rgb(247 181 0 / 0.7);
+}
+
+/* การ์ดขาวทรงใหญ่: ขอบบนสีทอง */
+:is(.admin-shell main, .font-warm) .rounded-3xl.bg-white.border {
+  border-top: 3px solid #f2b632;
+}
+
+/* แถบเมนูบน/ล่าง: เส้นทอง */
+.admin-shell > header { border-bottom: 2px solid #f2b632; }
+.admin-shell > nav { border-top: 2px solid #f2b632; }
+.admin-shell > nav a.font-semibold { color: #8a5200; }
+
+/* ป้าย/ชิปที่เลือกอยู่ในหน้าลูกค้า → ทอง */
+.font-warm button.bg-stone-900:not(:disabled) { color: #2b1604 !important; }
+
+/* โทนพื้นหลังหลังบ้านอุ่นขึ้นเป็นครีมทอง */
+.admin-shell { background-image: linear-gradient(180deg, #fff8e6 0%, #fbf1e4 40%); }
