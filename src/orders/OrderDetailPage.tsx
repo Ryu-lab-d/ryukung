@@ -20,10 +20,14 @@ import { sendCustomerEmail } from '../lib/customerEmail'
 import { paymentReceivedEmail } from '../lib/emailTemplates'
 import { productImageUrl } from '../products/ProductCard'
 import { ComposeEmailModal } from './ComposeEmailModal'
+import { AmbientGlow } from '../public/PublicSiteChrome'
+import { daysFromToday } from '../lib/dates'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
 }
+
+const FULFILLMENT_ICON: Record<string, string> = { pickup: '🏠', shipping: '📦', rider: '🛵', self_deliver: '🚲' }
 
 const PAYMENT_LABEL: Record<string, string> = { unpaid: 'ยังไม่ชำระ', partial: 'มัดจำแล้ว', paid: 'จ่ายครบแล้ว' }
 const PAYMENT_COLOR: Record<string, string> = {
@@ -121,6 +125,17 @@ export function OrderDetailPage() {
 
   const paid = payments.reduce((sum: number, p: any) => sum + Number(p.amount), 0)
   const balanceDue = Number(order.grand_total) - paid
+  const dueDays = order.needed_date && order.work_status !== 'delivered' && order.work_status !== 'cancelled' ? daysFromToday(order.needed_date) : null
+  const due =
+    dueDays === null
+      ? null
+      : dueDays < 0
+        ? { text: `เลยกำหนด ${-dueDays} วัน`, cls: 'bg-red-600 text-white' }
+        : dueDays === 0
+          ? { text: 'ต้องส่งวันนี้!', cls: 'bg-orange-500 text-white' }
+          : dueDays === 1
+            ? { text: 'พรุ่งนี้', cls: 'bg-amber-200 text-amber-900' }
+            : { text: `อีก ${dueDays} วัน`, cls: 'bg-white/90 text-stone-700' }
 
   return (
     <div className="bg-stone-50 min-h-screen">
@@ -177,47 +192,104 @@ export function OrderDetailPage() {
         </div>
       )}
 
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h1 className="text-xl font-bold text-stone-900">{order.order_no ?? 'ร่าง'}</h1>
-          <p className="text-sm text-stone-500">
-            {order.customers?.name ?? 'ไม่มีชื่อลูกค้า'}
-            {order.customers?.phone && (
-              <> · <a href={`tel:${order.customers.phone}`} className="underline">{order.customers.phone}</a></>
+      <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
+        <AmbientGlow />
+        <div className="relative z-10 space-y-3">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-white/70">เลขออเดอร์</p>
+              <h1 className="text-2xl font-bold leading-tight">{order.order_no ?? 'ร่าง'}</h1>
+              <p className="text-base mt-0.5 truncate">{order.customers?.name ?? 'ไม่มีชื่อลูกค้า'}</p>
+            </div>
+            <div className="flex flex-col items-end gap-1.5 shrink-0">
+              <span className={'text-xs font-semibold rounded-full px-3 py-1 border bg-white ' + PAYMENT_COLOR[order.payment_status]}>
+                💰 {PAYMENT_LABEL[order.payment_status]}
+              </span>
+              {due && <span className={'text-xs font-bold rounded-full px-3 py-1 ' + due.cls}>{due.text}</span>}
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2 text-center">
+            <div className="rounded-2xl bg-white/15 backdrop-blur px-2 py-2">
+              <p className="text-[11px] text-white/70">ยอดรวม</p>
+              <p className="text-base font-bold tabular-nums">{formatBaht(order.grand_total)}</p>
+            </div>
+            <div className="rounded-2xl bg-white/15 backdrop-blur px-2 py-2">
+              <p className="text-[11px] text-white/70">จ่ายแล้ว</p>
+              <p className="text-base font-bold tabular-nums">{formatBaht(paid)}</p>
+            </div>
+            <div className={'rounded-2xl px-2 py-2 ' + (balanceDue > 0 ? 'bg-red-500/80' : 'bg-green-500/70')}>
+              <p className="text-[11px] text-white/80">คงเหลือ</p>
+              <p className="text-base font-bold tabular-nums">{formatBaht(balanceDue)}</p>
+            </div>
+          </div>
+
+          <div className="rounded-2xl bg-black/15 px-3.5 py-2.5 text-sm space-y-1">
+            <p>
+              {FULFILLMENT_ICON[order.fulfillment_type] ?? '📦'} {FULFILLMENT_LABELS[order.fulfillment_type] ?? order.fulfillment_type}
+              {order.needed_date ? ` · ${order.needed_date}` : ''}
+              {order.fulfillment_type === 'pickup' && order.pickup_time ? ` · 🕐 ${order.pickup_time}` : ''}
+            </p>
+            {order.fulfillment_type === 'pickup' && order.pickup_place && <p>📍 {order.pickup_place}</p>}
+            {order.fulfillment_type !== 'pickup' && order.ship_address_text && <p className="line-clamp-2">📍 {order.ship_address_text}</p>}
+          </div>
+
+          <div className="grid grid-cols-4 gap-2">
+            {order.customers?.phone ? (
+              <a href={`tel:${order.customers.phone}`} className="rounded-2xl bg-green-500 text-white text-xs font-semibold py-2.5 text-center shadow-md">
+                <span className="block text-lg leading-none mb-0.5">📞</span>โทร
+              </a>
+            ) : (
+              <span className="rounded-2xl bg-white/10 text-white/50 text-xs font-semibold py-2.5 text-center">
+                <span className="block text-lg leading-none mb-0.5">📞</span>ไม่มีเบอร์
+              </span>
             )}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center justify-end gap-1.5 shrink-0">
-          <button
-            type="button"
-            onClick={() => void handleReorder()}
-            disabled={reordering}
-            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3 py-1.5 shadow-sm disabled:opacity-50"
-          >
-            {reordering ? 'กำลังสร้าง...' : '🔁 สั่งซ้ำ'}
-          </button>
-          <Link
-            to={`/orders/${order.id}/receipt`}
-            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3 py-1.5 shadow-sm"
-          >
-            ใบเสร็จ
-          </Link>
-          <Link
-            to={`/orders/${order.id}/edit`}
-            className="rounded-full bg-stone-900 text-white text-sm font-medium px-3.5 py-1.5 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
-          >
-            แก้ไข
-          </Link>
+            <Link to={`/orders/${order.id}/edit`} className="rounded-2xl bg-white text-stone-900 text-xs font-semibold py-2.5 text-center shadow-md">
+              <span className="block text-lg leading-none mb-0.5">✏️</span>แก้ไข
+            </Link>
+            <Link to={`/orders/${order.id}/receipt`} className="rounded-2xl bg-white text-stone-900 text-xs font-semibold py-2.5 text-center shadow-md">
+              <span className="block text-lg leading-none mb-0.5">🧾</span>ใบเสร็จ
+            </Link>
+            <button
+              type="button"
+              onClick={() => void handleReorder()}
+              disabled={reordering}
+              className="rounded-2xl bg-white text-stone-900 text-xs font-semibold py-2.5 text-center shadow-md disabled:opacity-50"
+            >
+              <span className="block text-lg leading-none mb-0.5">🔁</span>{reordering ? 'รอ...' : 'สั่งซ้ำ'}
+            </button>
+          </div>
         </div>
       </div>
       {reorderError && <p className="text-sm text-red-600">{reorderError}</p>}
 
-      {!order.is_draft && <CopyPublicLinkButton token={order.public_token} />}
+      {order.work_status !== 'cancelled' && (
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-stone-700">สถานะงาน</h2>
+            <span className={'text-xs font-medium rounded-full px-2.5 py-1 border ' + PAYMENT_COLOR[order.payment_status]}>
+              💰 {PAYMENT_LABEL[order.payment_status]}
+            </span>
+          </div>
+          <WorkStatusStepper
+            fulfillmentType={order.fulfillment_type}
+            workStatus={order.work_status}
+            paymentStatus={order.payment_status}
+            onAdvance={handleAdvanceStatus}
+          />
+        </div>
+      )}
 
-      <AssigneeSection
-        assignedTo={order.assigned_to}
-        assigneeName={order.staff_members?.display_name ?? order.staff_members?.email ?? null}
-        onAssign={handleAssign}
+      {order.work_status === 'delivered' && order.delivered_at && (
+        <DeliveredCleanupBanner deliveredAt={order.delivered_at} onDeleteNow={() => setShowDeleteConfirm(true)} />
+      )}
+
+      <PaymentsSection
+        orderId={order.id}
+        payments={payments}
+        balanceDue={balanceDue}
+        paymentClaimedAt={order.payment_claimed_at}
+        onRecorded={handlePaymentRecorded}
       />
 
       <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-1.5 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
@@ -300,33 +372,18 @@ export function OrderDetailPage() {
         </div>
       </div>
 
-      {order.work_status !== 'cancelled' && (
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-stone-700">สถานะงาน</h2>
-            <span className={'text-xs font-medium rounded-full px-2.5 py-1 border ' + PAYMENT_COLOR[order.payment_status]}>
-              💰 {PAYMENT_LABEL[order.payment_status]}
-            </span>
-          </div>
-          <WorkStatusStepper
-            fulfillmentType={order.fulfillment_type}
-            workStatus={order.work_status}
-            paymentStatus={order.payment_status}
-            onAdvance={handleAdvanceStatus}
-          />
-        </div>
-      )}
+      <details className="rounded-3xl border border-stone-200 bg-white shadow-[0_8px_22px_-14px_rgb(51_32_14_/_0.4)] group">
+        <summary className="cursor-pointer select-none list-none flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-stone-700">
+          <span>🛠️ เครื่องมือเพิ่มเติม <span className="text-xs font-normal text-stone-400">(ลิงก์ลูกค้า · ผู้ดูแล · อีเมล · ขนส่ง)</span></span>
+          <span className="text-stone-400 transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="p-4 pt-0 space-y-3">
+      {!order.is_draft && <CopyPublicLinkButton token={order.public_token} />}
 
-      {order.work_status === 'delivered' && order.delivered_at && (
-        <DeliveredCleanupBanner deliveredAt={order.delivered_at} onDeleteNow={() => setShowDeleteConfirm(true)} />
-      )}
-
-      <PaymentsSection
-        orderId={order.id}
-        payments={payments}
-        balanceDue={balanceDue}
-        paymentClaimedAt={order.payment_claimed_at}
-        onRecorded={handlePaymentRecorded}
+      <AssigneeSection
+        assignedTo={order.assigned_to}
+        assigneeName={order.staff_members?.display_name ?? order.staff_members?.email ?? null}
+        onAssign={handleAssign}
       />
 
       {order.work_status !== 'cancelled' && (
@@ -345,6 +402,14 @@ export function OrderDetailPage() {
 
       <ShippingSection order={order} onSaved={reload} />
 
+        </div>
+      </details>
+      <details className="rounded-3xl border border-red-200 bg-red-50/40 group">
+        <summary className="cursor-pointer select-none list-none flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-red-700">
+          <span>⚠️ ยกเลิก / ลบออเดอร์</span>
+          <span className="text-red-400 transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="p-4 pt-0 space-y-3">
       {order.work_status === 'cancelled' ? (
         <p className="text-sm text-stone-500">ออเดอร์นี้ถูกยกเลิกแล้ว · สถานะคืนเงิน: {order.refund_status}</p>
       ) : (
@@ -368,6 +433,9 @@ export function OrderDetailPage() {
           {deleting ? 'กำลังลบ...' : '🗑️ ลบออเดอร์ถาวร (ประหยัดพื้นที่)'}
         </button>
       </div>
+
+        </div>
+      </details>
 
       {showCancel && (
         <CancelOrderDialog
