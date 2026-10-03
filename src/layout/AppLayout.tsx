@@ -18,13 +18,16 @@ export function AppLayout({ children }: { children: ReactNode }) {
   })
 
   return (
-    <div className="min-h-screen bg-stone-50">
+    <div className="admin-shell min-h-screen bg-stone-50">
       <WelcomeOverlay />
 
       {/* แถบนำทางด้านบน กึ่งกลางจอ แสดงเฉพาะจอกว้างระดับคอม (เดิมเป็นแถบข้างซ้าย ย้ายมาไว้บนตามที่ร้านขอ) —
           ไอแพด (แนวตั้งและแนวนอน) ใช้เมนูล่างแบบมือถือแทน เพราะจอ ~768-1024px ใช้งานด้วยนิ้วลำบากกว่า */}
-      <header className="hidden lg:flex items-center gap-4 border-b border-stone-200 bg-white px-6 py-3">
-        <div className="font-semibold shrink-0">RYUKUNG BAKERY</div>
+      <header className="hidden lg:flex items-center gap-4 sticky top-0 z-30 border-b border-amber-900/10 bg-white/85 backdrop-blur-md shadow-[0_6px_20px_-14px_rgb(51_32_14_/_0.5)] px-6 py-3">
+        <div className="shrink-0 flex items-center gap-2.5 font-display font-semibold text-stone-900">
+          <span className="w-9 h-9 rounded-xl bg-brand-shader grid place-items-center text-lg shadow-md" aria-hidden="true">🥐</span>
+          RYUKUNG BAKERY
+        </div>
         <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
           {visibleItems.map((item) => (
             <NavLink
@@ -32,8 +35,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm whitespace-nowrap ' +
-                (isActive ? 'bg-stone-900 text-white' : 'text-stone-700 hover:bg-stone-100')
+                'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm whitespace-nowrap transition-all duration-200 ' +
+                (isActive
+                  ? 'bg-gradient-to-r from-stone-800 to-stone-900 text-white shadow-[0_8px_16px_-8px_rgb(51_32_14_/_0.8)]'
+                  : 'text-stone-700 hover:bg-amber-100/70')
               }
             >
               <NavIcon name={item.icon} />
@@ -56,7 +61,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           มีไอคอนช่วยให้กวาดตาหาเมนูได้เร็วโดยไม่ต้องอ่านตัวหนังสือเล็กๆ ทีละช่อง และเพิ่มความสูงของพื้นที่กดให้ถึง ~48px
           ตามแนวทาง touch target ขั้นต่ำ เพราะช่องนึงแคบมากตอนมี 7 เมนูพร้อมกันบนจอมือถือทั่วไป */}
       <nav
-        className="lg:hidden fixed bottom-0 inset-x-0 bg-white border-t border-stone-200 grid [padding-bottom:env(safe-area-inset-bottom)]"
+        className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-white/90 backdrop-blur-md border-t border-amber-900/10 shadow-[0_-8px_24px_-14px_rgb(51_32_14_/_0.5)] grid [padding-bottom:env(safe-area-inset-bottom)]"
         style={{ gridTemplateColumns: `repeat(${visibleItems.length}, minmax(0, 1fr))` }}
       >
         {visibleItems.map((item) => (
@@ -65,8 +70,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
             to={item.path}
             end={item.path === '/'}
             className={({ isActive }) =>
-              'flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-12 text-center text-[11px] leading-tight ' +
-              (isActive ? 'text-stone-900 font-semibold' : 'text-stone-500')
+              'relative flex flex-col items-center justify-center gap-0.5 py-2.5 min-h-12 text-center text-[11px] leading-tight transition-colors ' +
+              (isActive
+                ? 'text-amber-800 font-semibold bg-gradient-to-b from-amber-100/80 to-transparent before:absolute before:top-0 before:inset-x-3 before:h-[3px] before:rounded-b-full before:bg-gradient-to-r before:from-amber-500 before:to-amber-700'
+                : 'text-stone-500')
             }
           >
             <NavIcon name={item.icon} className="w-5 h-5" />

@@ -658,3 +658,44 @@ a:focus-visible {
   .animate-cancel-stamp, .animate-cancel-glow { animation: none; }
   .animate-cancel-stamp { transform: rotate(-10deg); }
 }
+
+
+/* ===== ธีมหลังบ้าน (พนักงาน) — ครอบทุกหน้าที่อยู่ใน AppLayout (.admin-shell) ด้วยกฎกลางจุดเดียว
+   ไม่ต้องไล่แก้ทีละหน้า: หัวข้อใช้ฟอนต์ Mitr, ปุ่มทึบสีเข้มเป็นแคปซูลไล่สีมีเงา, การ์ดขาวมีเงานุ่ม,
+   ช่องกรอกเรืองทองตอนโฟกัส, เนื้อหาเลื่อนเข้ามานุ่มๆ ตอนเปลี่ยนหน้า ===== */
+.admin-shell h1, .admin-shell h2 {
+  font-family: var(--font-display);
+}
+.admin-shell h1 {
+  letter-spacing: 0.01em;
+}
+.admin-shell main > * {
+  animation: page-in 0.4s ease-out backwards;
+}
+.admin-shell button.bg-stone-900:not(:disabled),
+.admin-shell a.bg-stone-900 {
+  background-image: linear-gradient(135deg, var(--color-stone-700), var(--color-stone-900));
+  box-shadow: 0 10px 20px -10px rgb(51 32 14 / 0.75);
+}
+.admin-shell button.bg-stone-900:not(:disabled):hover,
+.admin-shell a.bg-stone-900:hover {
+  background-image: linear-gradient(135deg, var(--color-amber-700), var(--color-amber-900));
+}
+.admin-shell .bg-white.border:not(input):not(button):not(select):not(textarea):not(.shadow-none) {
+  box-shadow: 0 6px 20px -12px rgb(51 32 14 / 0.35);
+}
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+.admin-shell select,
+.admin-shell textarea {
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+.admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):focus,
+.admin-shell select:focus,
+.admin-shell textarea:focus {
+  outline: none;
+  border-color: rgb(180 83 9 / 0.65);
+  box-shadow: 0 0 0 4px rgb(245 158 11 / 0.2);
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell main > * { animation: none; }
+}
