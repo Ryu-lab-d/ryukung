@@ -46,7 +46,7 @@ const STATS = [
 
 const SECTION_TITLE = 'text-lg font-display font-semibold text-stone-900'
 
-const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
+const CARD = 'bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)]'
 
 export function AboutTabContent({ onGoToMenu }: { onGoToMenu: () => void }) {
   return (

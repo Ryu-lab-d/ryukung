@@ -25,7 +25,7 @@ function daysUntil(dateStr: string): number {
 }
 
 /** สไตล์การ์ดมาตรฐานของเว็บไซต์ลูกค้า (เข้าชุดกับ /menu) — เงาอุ่นมีมิติแทน shadow-sm เทาแบนๆ */
-const CARD = 'bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]'
+const CARD = 'bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)]'
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
@@ -220,11 +220,15 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
   const done = stage.key === 'delivered' && !order.pending_confirmation
 
   return (
-    <div className={CARD + ' relative overflow-hidden p-5 animate-form-in'} style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}>
+    <div className={CARD + ' relative overflow-hidden p-5 pt-6 animate-form-in'} style={{ animationDelay: '0.08s', animationFillMode: 'backwards' }}>
+      <div className={'absolute inset-x-0 top-0 h-1.5 ' + (done ? 'bg-gradient-to-r from-green-400 via-emerald-500 to-green-400' : 'bg-gradient-to-r from-amber-300 via-amber-600 to-amber-300')} aria-hidden="true" />
       {done && <Confetti />}
       <div className="relative flex items-center gap-4">
-        <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-50 to-stone-100 border border-amber-100 grid place-items-center text-4xl shrink-0 animate-icon-pop">
-          <span key={stage.key} className={done ? 'animate-qty-pop' : 'animate-bell-ring'}>{visual.icon}</span>
+        <div className="relative w-[4.5rem] h-[4.5rem] shrink-0">
+          {!done && <span className="absolute inset-0 rounded-3xl bg-amber-300/40 animate-fab-ring" aria-hidden="true" />}
+          <div className="relative w-[4.5rem] h-[4.5rem] rounded-3xl bg-gradient-to-br from-amber-100 to-white border-2 border-white shadow-lg grid place-items-center text-4xl animate-icon-pop">
+            <span key={stage.key} className={done ? 'animate-qty-pop' : 'animate-bell-ring'}>{visual.icon}</span>
+          </div>
         </div>
         <div className="min-w-0">
           <p className="text-xs text-stone-400">สถานะตอนนี้</p>
@@ -233,11 +237,18 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
         </div>
       </div>
       <div className="relative mt-4">
-        <div className="h-2.5 rounded-full bg-stone-100 overflow-hidden">
+        <div className="relative h-3.5 rounded-full bg-stone-100 shadow-inner overflow-hidden">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-700 transition-all duration-1000 ease-out"
+            className={'relative h-full rounded-full transition-all duration-1000 ease-out ' + (done ? 'bg-gradient-to-r from-green-400 to-emerald-600' : 'bg-gradient-to-r from-amber-400 to-amber-700')}
             style={{ width: `${fill}%` }}
-          />
+          >
+            <span className="absolute inset-x-1 top-0.5 h-1 rounded-full bg-white/40" aria-hidden="true" />
+          </div>
+        </div>
+        <div className="flex justify-between px-0.5 -mt-[1.15rem] mb-2 relative" aria-hidden="true">
+          {stages.map((_, i) => (
+            <span key={i} className={'w-2.5 h-2.5 rounded-full border-2 border-white shadow ' + (i <= idx ? (done ? 'bg-emerald-600' : 'bg-amber-700') : 'bg-stone-300')} />
+          ))}
         </div>
         <div className="flex justify-between text-[11px] text-stone-400 mt-1.5">
           <span>ขั้นที่ {idx + 1} จาก {stages.length}</span>

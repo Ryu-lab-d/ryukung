@@ -43,7 +43,7 @@ const VERDICT_STYLE: Record<VehicleVerdict, string> = {
  * ระบบเดียวกัน แทนที่จะเป็นกริดตัวเลขแบนๆ ไม่มีจุดสังเกต */
 function StatSection({ icon, title, accent, children }: { icon: string; title: string; accent: string; children: ReactNode }) {
   return (
-    <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+    <Reveal className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5">
       <div className="flex items-center gap-3 mb-3.5">
         <div className={`w-10 h-10 rounded-full grid place-items-center text-lg shrink-0 ${accent}`}>{icon}</div>
         <h2 className="font-display font-semibold text-stone-900">{title}</h2>
@@ -270,7 +270,7 @@ export function FloodPage() {
 
         {disasterMode === true && (
         <>
-        <Reveal as="section" className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+        <Reveal as="section" className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5">
           <div className="flex items-center gap-3 mb-3.5">
             <div className="w-10 h-10 rounded-full bg-blue-50 grid place-items-center text-lg shrink-0">🗺️</div>
             <h2 className="font-display font-semibold text-stone-900">แผนที่ถนนสายหลัก</h2>
@@ -291,7 +291,7 @@ export function FloodPage() {
           </div>
         </Reveal>
 
-        <Reveal as="section" className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5">
+        <Reveal as="section" className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5">
           <div className="flex items-center gap-3 mb-3.5">
             <div className="w-10 h-10 rounded-full bg-red-50 grid place-items-center text-lg shrink-0">🚧</div>
             <h2 className="font-display font-semibold text-stone-900">ถนนที่ได้รับผลกระทบหนักสุด</h2>

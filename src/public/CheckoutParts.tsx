@@ -59,7 +59,7 @@ export function OrderTicket({ items, grandTotal, delay = 0 }: { items: TicketIte
   return (
     <Reveal
       delay={delay}
-      className="relative bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)]"
+      className="relative bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)]"
     >
       <div className="p-5 pb-4 space-y-3">
         <h2 className="text-sm font-display font-semibold text-stone-700">🧺 รายการที่สั่ง ({items.length})</h2>
@@ -120,7 +120,7 @@ export function FormSection({
   return (
     <Reveal
       delay={delay}
-      className="relative overflow-hidden bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 pl-6 transition-all duration-300 focus-within:shadow-[0_12px_32px_-12px_rgb(51_32_14_/_0.4)] focus-within:border-amber-300/80"
+      className="relative overflow-hidden bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5 pl-6 transition-all duration-300 focus-within:shadow-[0_12px_32px_-12px_rgb(51_32_14_/_0.4)] focus-within:border-amber-300/80"
     >
       <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
       <div className="flex items-center gap-3 mb-4">

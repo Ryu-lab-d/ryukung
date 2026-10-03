@@ -422,7 +422,7 @@ function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; on
  * ชำระเงิน — ห่อ Reveal+เงาอุ่นในตัวเองเลย ไม่ต้องให้หน้าที่เรียกใช้มาห่อซ้ำเอง กันสไตล์เพี้ยนไปคนละแบบ */
 function CartSummaryList({ items, grandTotal, delay = 0 }: { items: CartItem[]; grandTotal: number; delay?: number }) {
   return (
-    <Reveal delay={delay} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-2.5">
+    <Reveal delay={delay} className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5 space-y-2.5">
       <h2 className="text-sm font-display font-semibold text-stone-700">🧺 รายการที่สั่ง ({items.length})</h2>
       <div className="space-y-1.5">
         {items.map((it) => (
@@ -678,7 +678,7 @@ export function CustomerOrderPage() {
           <StepHero icon="🧺" title="ทวนรายการที่สั่ง" subtitle="เช็คสินค้า+จำนวนให้ครบก่อนไปขั้นตอนถัดไป" />
 
           {items.length === 0 ? (
-            <Reveal className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-8 text-center text-sm text-stone-500 space-y-2">
+            <Reveal className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-8 text-center text-sm text-stone-500 space-y-2">
               <p className="text-5xl animate-loading-bounce" aria-hidden="true">🧺</p>
               <p>ตะกร้าว่างเปล่า กลับไปเลือกสินค้ากันก่อนนะ</p>
             </Reveal>
@@ -922,7 +922,7 @@ export function CustomerOrderPage() {
               />
             </FormSection>
 
-            <Reveal delay={0.2} className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5 space-y-3">
+            <Reveal delay={0.2} className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5 space-y-3">
               <TurnstileWidget onToken={setTurnstileToken} />
               {!menu.promptpay ? (
                 <p className="text-sm text-red-600 text-center">ร้านยังไม่เปิดรับสั่งซื้อออนไลน์ตอนนี้ กรุณาติดต่อร้านโดยตรง</p>
@@ -998,7 +998,7 @@ export function CustomerOrderPage() {
 
           <Reveal
             delay={0.22}
-            className="bg-white rounded-2xl border border-stone-200/70 shadow-[0_2px_16px_-6px_rgb(51_32_14_/_0.18)] p-5"
+            className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5"
           >
             <TermsAcceptBox onConfirm={handleTermsConfirmed} />
           </Reveal>
