@@ -14,3 +14,12 @@ export function isToday(dateStr: string | null): boolean {
   const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`
   return dateStr === todayStr
 }
+
+/** จำนวนวันจากวันนี้ถึงวันที่ที่ให้ (ลบ = เลยกำหนดมาแล้ว) คิดแบบวันล้วนไม่สนเวลา */
+export function daysFromToday(dateStr: string): number {
+  const now = new Date()
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const target = Date.UTC(y, m - 1, d)
+  const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate())
+  return Math.round((target - today) / 86400000)
+}
