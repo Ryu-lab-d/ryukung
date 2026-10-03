@@ -75,6 +75,20 @@ describe('ลูกค้าสั่งของเอง — submit_customer_o
     if (customer.data) cleanupIds.customers.push(customer.data.id)
   })
 
+  it('นัดรับเองแต่ไม่ระบุสถานที่นัดรับ — ถูกปฏิเสธ (ส่งขนส่งไม่ต้องระบุ)', async () => {
+    const pub = adminClient()
+    const base = {
+      p_customer_name: 'ทดสอบ-จุดนัดรับ', p_customer_phone: '0899990002', p_customer_email: 'pickup-test@example.com',
+      p_needed_date: '2026-09-01', p_pickup_time: '10:00',
+      p_ship_recipient_name: null, p_ship_recipient_phone: null, p_ship_address_text: null,
+      p_note: null, p_items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }],
+    }
+    for (const place of [null, '', '   ']) {
+      const res = await pub.rpc('submit_customer_order', { ...base, p_fulfillment_type: 'pickup', p_pickup_place: place })
+      expect(res.error?.message).toContain('สถานที่นัดรับ')
+    }
+  })
+
   it('ไม่กรอกอีเมล หรือกรอกรูปแบบผิด ถูกปฏิเสธ', async () => {
     const pub = adminClient()
     const missing = await pub.rpc('submit_customer_order', {

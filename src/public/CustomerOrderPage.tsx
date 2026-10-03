@@ -26,6 +26,7 @@ import { TurnstileWidget } from './TurnstileWidget'
 import { FloodAlertBanner } from './FloodAlertBanner'
 import { DatePicker } from './DatePicker'
 import { CheckoutHero, FormSection, IconInput, OrderTicket, StepHero } from './CheckoutParts'
+import { InlineError } from '../lib/InlineError'
 
 type Step = 'menu' | 'review' | 'checkout' | 'terms' | 'payment'
 
@@ -463,6 +464,7 @@ export function CustomerOrderPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null)
   const [splashActive, setSplashActive] = useState(true)
   const [dateError, setDateError] = useState<string | null>(null)
+  const [placeError, setPlaceError] = useState(false)
   const [zoomProduct, setZoomProduct] = useState<PublicMenu['products'][number] | null>(null)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
@@ -554,6 +556,11 @@ export function CustomerOrderPage() {
       document.getElementById('neededDate')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
       return
     }
+    if (form.fulfillmentType === 'pickup' && !form.pickupPlace.trim()) {
+      setPlaceError(true)
+      document.getElementById('pickupPlace')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
     // ยังไม่ไปหน้าชำระเงินทันที — ต้องผ่านหน้าเงื่อนไขการสั่งซื้อ (step 'terms') ก่อนเสมอ
     setStep('terms')
   }
@@ -573,7 +580,7 @@ export function CustomerOrderPage() {
       customerEmail: form.customerEmail,
       fulfillmentType: form.fulfillmentType,
       neededDate: form.neededDate,
-      pickupPlace: form.fulfillmentType === 'pickup' ? form.pickupPlace || null : null,
+      pickupPlace: form.fulfillmentType === 'pickup' ? form.pickupPlace.trim() || null : null,
       pickupTime: form.fulfillmentType === 'pickup' ? form.pickupTime || null : null,
       // ผู้รับของคือคนสั่งซื้อเอง (ระบบสั่งเองไม่มีช่องแยกกรอกชื่อ/เบอร์ผู้รับต่างหาก) — ซิงค์จากข้อมูล
       // ผู้สั่งซื้อโดยตรงเสมอ กันเคสเดิมที่ค่านี้ไม่เคยถูกตั้งเลยเพราะไม่มี input ให้กรอก
@@ -860,7 +867,27 @@ export function CustomerOrderPage() {
                 </div>
 
                 {form.fulfillmentType === 'pickup' ? (
-                  <div key="pickup" className="animate-form-in">
+                  <div key="pickup" className="space-y-3.5 animate-form-in">
+                    <div className="space-y-2">
+                      <IconInput
+                        id="pickupPlace" label="สถานที่นัดรับสินค้า" icon="📍" required
+                        placeholder="เช่น หน้าร้าน, ปากซอย, หน้าหมู่บ้าน..."
+                        hint="ระบุจุดที่สะดวกให้ร้านนัดรับ — ร้านจะเห็นข้อมูลนี้ในออเดอร์ทันที"
+                        valid={form.pickupPlace.trim().length > 0}
+                        value={form.pickupPlace} onChange={(v) => { setPlaceError(false); setForm((f) => ({ ...f, pickupPlace: v })) }}
+                      />
+                      {menu.address && form.pickupPlace.trim() !== menu.address.trim() && (
+                        <button
+                          type="button"
+                          onClick={() => { setPlaceError(false); setForm((f) => ({ ...f, pickupPlace: menu.address!.trim() })) }}
+                          className="w-full text-left rounded-xl border border-dashed border-amber-300 bg-amber-50/70 px-3 py-2 text-xs text-amber-900 transition-all hover:bg-amber-100 active:scale-[0.98]"
+                        >
+                          🏪 รับที่ร้าน: <span className="font-medium">{menu.address}</span>
+                          <span className="ml-1 text-amber-700">(แตะเพื่อใช้ที่อยู่นี้)</span>
+                        </button>
+                      )}
+                      {placeError && <InlineError message="กรุณาระบุสถานที่นัดรับสินค้า" />}
+                    </div>
                     <IconInput
                       id="pickupTime" label="เวลาที่สะดวกมารับ (ถ้ามี)" icon="🕐" placeholder="เช่น 10:00"
                       value={form.pickupTime} onChange={(v) => setForm((f) => ({ ...f, pickupTime: v }))}
@@ -1279,7 +1306,7 @@ export function CustomerOrderPage() {
                         ) : 'ไม่มีรูป'}
                         <span className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-black/35 to-transparent" aria-hidden="true" />
                         <span className="absolute left-2 bottom-2 rounded-full bg-white/95 backdrop-blur px-2.5 py-1 text-sm font-bold text-stone-900 shadow-md">
-                          {formatBaht(p.price)} <span className="text-[10px] font-medium text-stone-500">฿/{p.unit}</span>
+                          {formatBaht(p.price)} <span className="text-[10px] font-medium text-stone-500">บาท/{p.unit}</span>
                         </span>
                         {p.image_path && (
                           <span className="absolute right-2 bottom-2 w-7 h-7 rounded-full bg-black/35 text-white text-xs grid place-items-center opacity-80 md:opacity-0 md:group-hover:opacity-100 transition-opacity" aria-hidden="true">🔍</span>
