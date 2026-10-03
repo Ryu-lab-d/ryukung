@@ -139,16 +139,16 @@ export function OrderDetailPage() {
 
   return (
     <div className="bg-stone-50 min-h-screen">
-    <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
+    <div className="p-4 grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-5xl mx-auto pb-8 items-start">
       <Link
         to="/"
-        className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
+        className="inline-flex w-fit items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm lg:col-span-2"
       >
         ← กลับหน้าออเดอร์
       </Link>
 
       {order.is_draft && order.order_source === 'customer' && (
-        <div className="rounded-2xl bg-indigo-50 border border-indigo-200 p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
+        <div className="lg:col-span-2 rounded-2xl bg-indigo-50 border border-indigo-200 p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]">
           <p className="text-sm font-medium text-indigo-800">🛒 ลูกค้าส่งออเดอร์นี้มาเองจากหน้าเมนูออนไลน์ — รอร้านตรวจสอบและยืนยัน</p>
           <div className="flex gap-2">
             <Link
@@ -169,13 +169,13 @@ export function OrderDetailPage() {
       )}
 
       {order.customers?.note && (
-        <div className="rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-sm text-amber-800">
+        <div className="lg:col-span-2 rounded-2xl bg-amber-50 border border-amber-200 px-3.5 py-2.5 text-sm text-amber-800">
           {order.customers.note}
         </div>
       )}
 
       {order.address_edited_at && (
-        <div className="rounded-2xl bg-blue-50 border border-blue-200 px-3.5 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
+        <div className="lg:col-span-2 rounded-2xl bg-blue-50 border border-blue-200 px-3.5 py-2.5 text-sm text-blue-800 flex items-center justify-between gap-2">
           <span>📮 ลูกค้าเพิ่งแก้ไขที่อยู่จัดส่งเอง เมื่อ {new Date(order.address_edited_at).toLocaleString('th-TH')}</span>
           <button type="button" onClick={handleAcknowledgeAddressEdit} className="shrink-0 rounded-full bg-blue-600 text-white text-xs px-3 py-1.5 font-medium">
             รับทราบแล้ว
@@ -184,7 +184,7 @@ export function OrderDetailPage() {
       )}
 
       {order.payment_claimed_at && (
-        <div className="rounded-2xl bg-green-50 border border-green-200 px-3.5 py-2.5 text-sm text-green-800 flex items-center justify-between gap-2">
+        <div className="lg:col-span-2 rounded-2xl bg-green-50 border border-green-200 px-3.5 py-2.5 text-sm text-green-800 flex items-center justify-between gap-2">
           <span>💰 ลูกค้าแจ้งชำระเงินแล้ว เมื่อ {new Date(order.payment_claimed_at).toLocaleString('th-TH')}</span>
           <button type="button" onClick={handleAcknowledgePaymentClaim} className="shrink-0 rounded-full bg-green-600 text-white text-xs px-3 py-1.5 font-medium">
             รับทราบแล้ว
@@ -192,7 +192,7 @@ export function OrderDetailPage() {
         </div>
       )}
 
-      <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
+      <div className="lg:col-span-2 relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
         <AmbientGlow />
         <div className="relative z-10 space-y-3">
           <div className="flex items-start justify-between gap-3">
@@ -264,7 +264,7 @@ export function OrderDetailPage() {
       {reorderError && <p className="text-sm text-red-600">{reorderError}</p>}
 
       {order.work_status !== 'cancelled' && (
-        <div className="space-y-2">
+        <div className="space-y-2 lg:col-span-2">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-stone-700">สถานะงาน</h2>
             <span className={'text-xs font-medium rounded-full px-2.5 py-1 border ' + PAYMENT_COLOR[order.payment_status]}>
@@ -404,7 +404,7 @@ export function OrderDetailPage() {
 
         </div>
       </details>
-      <details className="rounded-3xl border border-red-200 bg-red-50/40 group">
+      <details className="lg:col-span-2 rounded-3xl border border-red-200 bg-red-50/40 group">
         <summary className="cursor-pointer select-none list-none flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-red-700">
           <span>⚠️ ยกเลิก / ลบออเดอร์</span>
           <span className="text-red-400 transition-transform group-open:rotate-180">▾</span>
@@ -503,7 +503,7 @@ function DeliveredCleanupBanner({ deliveredAt, onDeleteNow }: { deliveredAt: str
   return (
     <div
       className={
-        'rounded-2xl border px-3.5 py-3 text-sm space-y-1.5 ' +
+        'lg:col-span-2 rounded-2xl border px-3.5 py-3 text-sm space-y-1.5 ' +
         (dueForCleanup ? 'bg-orange-50 border-orange-300 text-orange-800' : 'bg-stone-50 border-stone-200 text-stone-600')
       }
     >

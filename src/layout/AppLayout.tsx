@@ -28,14 +28,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <span className="w-9 h-9 rounded-xl bg-brand-shader grid place-items-center text-lg shadow-md" aria-hidden="true">🥐</span>
           RYUKUNG BAKERY
         </div>
-        <nav className="flex-1 flex items-center justify-center gap-1 overflow-x-auto">
+        <nav className="flex-1 min-w-0 flex items-center gap-0.5 overflow-x-auto [scrollbar-width:none] [&>a:first-child]:ml-auto [&>a:last-child]:mr-auto">
           {visibleItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === '/'}
               className={({ isActive }) =>
-                'flex items-center gap-1.5 rounded-full px-3.5 py-2 text-sm whitespace-nowrap transition-all duration-200 ' +
+                'flex shrink-0 items-center gap-1.5 rounded-full px-3 xl:px-3.5 py-2 text-sm whitespace-nowrap transition-all duration-200 ' +
                 (isActive
                   ? 'bg-gradient-to-r from-stone-800 to-stone-900 text-white shadow-[0_8px_16px_-8px_rgb(51_32_14_/_0.8)]'
                   : 'text-stone-700 hover:bg-amber-100/70')

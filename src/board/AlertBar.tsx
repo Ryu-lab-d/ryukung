@@ -30,7 +30,7 @@ export function AlertBar({
   ]
 
   return (
-    <div className="grid grid-cols-3 gap-2.5 px-4 pt-3">
+    <div className="grid grid-cols-3 gap-2.5 px-4 pt-3 lg:max-w-3xl">
       {tiles.map((t) => (
         <button
           key={t.key}
