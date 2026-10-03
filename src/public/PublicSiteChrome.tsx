@@ -1,6 +1,7 @@
 import { forwardRef, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { productImageUrl } from '../products/ProductCard'
 import { formatBaht } from '../lib/money'
+import { installPointerGlow } from '../lib/pointerGlow'
 
 export type SiteTab = 'menu' | 'about'
 
@@ -8,10 +9,15 @@ export type SiteTab = 'menu' | 'about'
  * ไม่ใช่เว็บไซต์จริง) — ดูรายละเอียดลายที่ .bg-paper-texture ใน src/index.css มีแสงครีม/ทองอ่อนเคลื่อนไหวช้าๆ
  * วนลูปทับอยู่ด้วย (.animate-cream-shine) ให้พื้นหลังทั้งเว็บมีลูกเล่นไม่ใช่แค่ hero สีน้ำตาลเข้มเท่านั้น */
 export function PageTexture() {
+  // การ์ดเอียง+สปอตไลต์ตามเมาส์ (เฉพาะคอม) และแถบความคืบหน้าการเลื่อนหน้า — ติดมากับพื้นหลังจึงมีครบทุกหน้าลูกค้าอัตโนมัติ
+  useEffect(() => installPointerGlow(), [])
   return (
-    <div className="fixed inset-0 -z-10 bg-paper-texture overflow-hidden" aria-hidden="true">
-      <div className="absolute inset-[-20%] opacity-60 bg-cream-shine animate-cream-shine" />
-    </div>
+    <>
+      <div className="scroll-progress" aria-hidden="true" />
+      <div className="fixed inset-0 -z-10 bg-paper-texture overflow-hidden" aria-hidden="true">
+        <div className="absolute inset-[-20%] opacity-60 bg-cream-shine animate-cream-shine" />
+      </div>
+    </>
   )
 }
 

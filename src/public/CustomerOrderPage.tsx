@@ -1291,7 +1291,7 @@ export function CustomerOrderPage() {
                   <Reveal key={p.id} delay={(idx % 3) * 0.08} className="h-full">
                     <div
                       className={
-                        'group card-shine h-full rounded-3xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_22px_36px_-14px_rgb(51_32_14_/_0.45)] ' +
+                        'group glow-card card-shine h-full rounded-3xl border bg-white overflow-hidden transition-all duration-300 md:hover:-translate-y-1.5 md:hover:shadow-[0_22px_36px_-14px_rgb(51_32_14_/_0.45)] ' +
                         (inCart
                           ? 'border-amber-600 ring-2 ring-amber-400/40 shadow-[0_10px_24px_-10px_rgb(193_130_61_/_0.7)]'
                           : 'border-stone-200/70 shadow-[0_2px_10px_-6px_rgb(51_32_14_/_0.18)]') +

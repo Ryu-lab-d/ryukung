@@ -34,7 +34,7 @@ export function OrderCard({ order }: { order: BoardOrder }) {
     <Link
       to={`/orders/${order.id}`}
       className={
-        'relative block overflow-hidden rounded-2xl bg-white border p-3.5 pl-4 space-y-2 shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.5)] hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-14px_rgb(51_32_14_/_0.55)] transition-all duration-200 ' +
+        'glow-card relative block overflow-hidden rounded-2xl bg-white border p-3.5 pl-4 space-y-2 shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.5)] hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-14px_rgb(51_32_14_/_0.55)] transition-all duration-200 ' +
         (order.address_edited_at
           ? 'border-blue-300 ring-2 ring-blue-100'
           : order.payment_claimed_at

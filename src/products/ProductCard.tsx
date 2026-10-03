@@ -18,7 +18,7 @@ export function ProductCard({ product, mode = 'catalog', qtyInCart = 0 }: Produc
   return (
     <div
       className={
-        'relative rounded-2xl border bg-white overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-14px_rgb(51_32_14_/_0.5)] ' +
+        'glow-card relative rounded-2xl border bg-white overflow-hidden transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_14px_26px_-14px_rgb(51_32_14_/_0.5)] ' +
         (qtyInCart > 0
           ? 'border-amber-500 ring-2 ring-amber-300/50 shadow-[0_10px_22px_-12px_rgb(193_130_61_/_0.8)]'
           : 'border-stone-200 shadow-[0_6px_16px_-12px_rgb(51_32_14_/_0.5)]')

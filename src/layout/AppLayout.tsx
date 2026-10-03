@@ -4,6 +4,7 @@ import { NAV_ITEMS } from './navItems'
 import { NavIcon } from './NavIcon'
 import { useAuth, isManagerOrAbove } from '../auth/AuthProvider'
 import { WelcomeOverlay } from './WelcomeOverlay'
+import { installPointerGlow } from '../lib/pointerGlow'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
@@ -16,6 +17,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
     }
     return true
   })
+
+  useEffect(() => installPointerGlow(), [])
 
   // วงคลื่นตอนแตะปุ่ม/ลิงก์ทุกอันในหลังบ้าน — ให้ฟีดแบ็กทันทีว่ากดโดนแล้ว (วงขยายแล้วจางหาย ไม่บังและไม่ต้องห่อปุ่มด้วยอะไร)
   useEffect(() => {
@@ -36,6 +39,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="admin-shell min-h-screen bg-stone-50">
+      <div className="scroll-progress" aria-hidden="true" />
       <WelcomeOverlay />
 
       {/* แถบนำทางด้านบน กึ่งกลางจอ แสดงเฉพาะจอกว้างระดับคอม (เดิมเป็นแถบข้างซ้าย ย้ายมาไว้บนตามที่ร้านขอ) —

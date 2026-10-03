@@ -46,7 +46,7 @@ export function CostRecipesPage() {
                 <Link
                   key={r.id}
                   to={`/costing/${r.id}/edit`}
-                  className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-4 pl-5 space-y-2 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.45)]"
+                  className="glow-card relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-4 pl-5 space-y-2 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.45)]"
                 >
                   <span className="absolute left-0 top-0 bottom-0 w-1.5 bg-gradient-to-b from-amber-400 to-amber-700" aria-hidden="true" />
                   <div className="flex items-start justify-between gap-2">

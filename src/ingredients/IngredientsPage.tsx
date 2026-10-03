@@ -96,7 +96,7 @@ export function IngredientsPage() {
                   key={i.id}
                   to={`/ingredients/${i.id}`}
                   className={
-                    'relative overflow-hidden flex items-center justify-between gap-2 rounded-2xl border bg-white pl-5 pr-3.5 py-3 shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.45)] ' +
+                    'glow-card relative overflow-hidden flex items-center justify-between gap-2 rounded-2xl border bg-white pl-5 pr-3.5 py-3 shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.45)] ' +
                     (low ? 'border-orange-300 bg-orange-50/50' : 'border-stone-200')
                   }
                 >
