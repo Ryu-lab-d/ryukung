@@ -88,11 +88,19 @@ export function IngredientsPage() {
             </p>
           </div>
         ) : (
-          <div className="rounded-2xl border border-stone-200 bg-white divide-y divide-stone-100 overflow-hidden shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+          <div className="space-y-2.5">
             {filtered.map((i) => {
               const low = isLowStock(i)
               return (
-                <Link key={i.id} to={`/ingredients/${i.id}`} className="flex items-center justify-between gap-2 px-3.5 py-3 hover:bg-stone-50">
+                <Link
+                  key={i.id}
+                  to={`/ingredients/${i.id}`}
+                  className={
+                    'relative overflow-hidden flex items-center justify-between gap-2 rounded-2xl border bg-white pl-5 pr-3.5 py-3 shadow-[0_6px_18px_-12px_rgb(51_32_14_/_0.45)] ' +
+                    (low ? 'border-orange-300 bg-orange-50/50' : 'border-stone-200')
+                  }
+                >
+                  <span className={'absolute left-0 top-0 bottom-0 w-1.5 ' + (low ? 'bg-orange-500' : i.is_active ? 'bg-green-500' : 'bg-stone-300')} aria-hidden="true" />
                   <div className="min-w-0">
                     <p className={'font-medium truncate ' + (!i.is_active ? 'text-stone-400' : 'text-stone-900')}>
                       {i.name}

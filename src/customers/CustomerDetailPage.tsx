@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { AmbientGlow } from '../public/PublicSiteChrome'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useCustomers } from './useCustomers'
 import { useAddresses } from './useAddresses'
@@ -66,35 +67,42 @@ export function CustomerDetailPage() {
         ← กลับหน้าลูกค้า
       </Link>
 
-      <div className="flex items-center gap-3 rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
-        <div
-          className={'flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-lg font-semibold ' + avatarStyle(customer.name)}
-        >
-          {initials(customer.name)}
+      <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_16px_34px_-16px_rgb(51_32_14_/_0.7)]">
+        <AmbientGlow />
+        <div className="relative z-10 flex items-center gap-3.5">
+          <div
+            className={'flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-xl font-semibold border-4 border-white/70 shadow-lg ' + avatarStyle(customer.name)}
+          >
+            {initials(customer.name)}
+          </div>
+          <div className="min-w-0 flex-1">
+            <h1 className="text-xl font-semibold truncate">{customer.name}</h1>
+            <p className="text-sm text-white/85 truncate">
+              {customer.phone || 'ไม่มีเบอร์โทร'}
+              {customer.channel && ` · ${customer.channel} (${customer.channel_handle ?? '-'})`}
+            </p>
+          </div>
         </div>
-        <div className="min-w-0 flex-1">
-          <h1 className="text-lg font-semibold text-stone-900 truncate">{customer.name}</h1>
-          <p className="text-sm text-stone-500 truncate">
-            {customer.phone || 'ไม่มีเบอร์โทร'}
-            {customer.channel && ` · ${customer.channel} (${customer.channel_handle ?? '-'})`}
-          </p>
+        <div className="relative z-10 mt-4 grid grid-cols-2 gap-2">
+          {customer.phone ? (
+            <a href={`tel:${customer.phone}`} className="rounded-2xl bg-green-500 text-white text-sm font-semibold py-2.5 text-center shadow-md active:scale-95">📞 โทรหาลูกค้า</a>
+          ) : (
+            <span className="rounded-2xl bg-white/10 text-white/50 text-sm font-semibold py-2.5 text-center">📞 ไม่มีเบอร์</span>
+          )}
+          <Link to={`/customers/${customer.id}/edit`} className="rounded-2xl bg-white text-stone-900 text-sm font-semibold py-2.5 text-center shadow-md active:scale-95">
+            ✏️ แก้ไขข้อมูล
+          </Link>
         </div>
-        <Link
-          to={`/customers/${customer.id}/edit`}
-          className="shrink-0 rounded-full border border-stone-300 bg-white text-stone-600 text-sm font-medium px-3 py-1.5 hover:bg-stone-50 transition-colors"
-        >
-          แก้ไข
-        </Link>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+        <div className="rounded-3xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-4 shadow-sm">
           <p className="text-xs text-stone-500">📦 จำนวนออเดอร์</p>
-          <p className="text-xl font-semibold text-stone-900">{customer.order_count}</p>
+          <p className="text-3xl font-display font-bold text-stone-900 tabular-nums">{customer.order_count}</p>
         </div>
-        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+        <div className="rounded-3xl border border-green-200 bg-gradient-to-br from-green-50 to-white p-4 shadow-sm">
           <p className="text-xs text-stone-500">💰 ยอดซื้อรวม</p>
-          <p className="text-xl font-semibold text-stone-900">{formatBaht(customer.total_spend)}</p>
+          <p className="text-3xl font-display font-bold text-green-700 tabular-nums">{formatBaht(customer.total_spend)}</p>
         </div>
       </div>
 
@@ -104,7 +112,7 @@ export function CustomerDetailPage() {
         </div>
       )}
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-3.5 space-y-2 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+      <section className="rounded-3xl border border-stone-200 bg-white p-4 space-y-2 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.4)]">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-stone-900">📍 ที่อยู่จัดส่ง</h2>
           <Link
@@ -141,7 +149,7 @@ export function CustomerDetailPage() {
         {addresses.length === 0 && <p className="text-sm text-stone-400 py-2">ยังไม่มีที่อยู่</p>}
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-3.5 space-y-1 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
+      <section className="rounded-3xl border border-stone-200 bg-white p-4 space-y-1 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.4)]">
         <h2 className="text-sm font-semibold text-stone-900 mb-1">🧾 ประวัติการซื้อ</h2>
         {reorderError && <p className="text-xs text-red-600 pb-1">{reorderError}</p>}
         {orders.map((o) => (
@@ -169,17 +177,23 @@ export function CustomerDetailPage() {
         {orders.length === 0 && <p className="text-sm text-stone-400">ยังไม่เคยสั่งซื้อ</p>}
       </section>
 
-      <div className="rounded-2xl border border-red-100 bg-red-50/50 p-4">
+      <details className="group rounded-3xl border border-red-200 bg-red-50/40">
+        <summary className="cursor-pointer select-none list-none flex items-center justify-between px-4 py-3.5 text-sm font-semibold text-red-700">
+          <span>⚠️ ลบลูกค้า</span>
+          <span className="text-red-400 transition-transform group-open:rotate-180">▾</span>
+        </summary>
+        <div className="px-4 pb-4">
         {deleteError && <p className="text-sm text-red-600 mb-2">{deleteError}</p>}
         <button
           type="button"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
-          className="w-full rounded-xl bg-red-600 text-white font-medium py-2.5 hover:bg-red-700 transition-colors disabled:opacity-50"
+          className="w-full rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-semibold py-3 disabled:opacity-50 active:scale-95"
         >
           {deleting ? 'กำลังลบ...' : '🗑️ ลบลูกค้าถาวร'}
         </button>
-      </div>
+        </div>
+      </details>
 
       {showDeleteConfirm && (
         <ConfirmDialog

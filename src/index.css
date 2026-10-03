@@ -753,7 +753,7 @@ a:focus-visible {
 }
 
 /* ===== ธีมหลังบ้านรอบ 2: หัวข้อเด่น + แอนิเมชันไล่เข้าทีละรายการ + ปุ่ม/การ์ดมีชีวิต ===== */
-.admin-shell main h1::after {
+.admin-shell main h1:not(.flex):not(.inline-flex)::after {
   content: '';
   display: block;
   width: 2.75rem;
