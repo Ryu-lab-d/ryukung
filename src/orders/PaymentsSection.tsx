@@ -5,6 +5,8 @@ import { formatBaht } from '../lib/money'
 import { SuccessOverlay } from '../lib/SuccessOverlay'
 import { NumericKeypad } from '../lib/NumericKeypad'
 
+const METHOD_ICONS: Record<string, string> = { transfer: '🏦', promptpay: '📱', cash: '💵', cod: '📦', other: '💬' }
+
 const METHOD_LABELS: Record<string, string> = {
   transfer: 'โอนเงิน', promptpay: 'พร้อมเพย์', cash: 'เงินสด', cod: 'เก็บเงินปลายทาง', other: 'อื่นๆ',
 }
@@ -39,10 +41,17 @@ function PaymentModal({
   return (
     <div className="fixed inset-0 bg-black/50 grid place-items-center p-4 z-50 animate-overlay-fade" onClick={onClose}>
       <div
-        className="bg-white rounded-2xl p-5 max-w-sm w-full space-y-3 animate-toast-pop"
+        className="bg-white rounded-3xl max-w-sm w-full max-h-[92vh] overflow-y-auto shadow-2xl animate-toast-pop"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 className="text-lg font-semibold">บันทึกการชำระเงิน</h2>
+        <div className="rounded-t-3xl bg-gradient-to-r from-green-600 to-emerald-700 text-white px-5 py-4 flex items-center gap-3">
+          <span className="w-10 h-10 rounded-2xl bg-white/20 grid place-items-center text-xl">💳</span>
+          <div>
+            <h2 className="text-lg font-semibold leading-tight">บันทึกการชำระเงิน</h2>
+            {balanceDue > 0 && <p className="text-xs text-white/85">ยอดคงเหลือ {formatBaht(balanceDue)} บาท</p>}
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
 
         {paymentClaimedAt && (
           <p className="text-xs text-green-700 bg-green-50 border border-green-200 rounded-lg px-2.5 py-2">
@@ -55,8 +64,8 @@ function PaymentModal({
             type="button"
             onClick={() => onAmountChange(String(balanceDue))}
             className={
-              'w-full rounded-lg font-semibold py-3 text-sm ' +
-              (amount === String(balanceDue) ? 'bg-green-600 text-white' : 'border-2 border-green-600 text-green-700 bg-green-50')
+              'w-full rounded-2xl font-semibold py-3 text-sm transition-all active:scale-95 ' +
+              (amount === String(balanceDue) ? 'bg-green-600 text-white shadow-lg' : 'border-2 border-green-600 text-green-700 bg-green-50')
             }
           >
             ✅ เต็มจำนวน {formatBaht(balanceDue)} บาท (กดครั้งเดียว ไม่ต้องกดตัวเลขเอง)
@@ -71,16 +80,16 @@ function PaymentModal({
             id="payment-method"
             value={method}
             onChange={(e) => onMethodChange(e.target.value)}
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            className="w-full rounded-2xl border border-stone-300 px-3 py-2.5 text-sm"
           >
             {Object.entries(METHOD_LABELS).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
+              <option key={v} value={v}>{METHOD_ICONS[v]} {l}</option>
             ))}
           </select>
         </div>
 
-        <div className="space-y-1">
-          <label className="text-sm text-stone-600">สลิป (ไม่บังคับ)</label>
+        <div className="space-y-1.5 rounded-2xl border-2 border-dashed border-stone-300 bg-stone-50/70 p-3">
+          <label className="text-sm text-stone-600">📎 แนบสลิป (ไม่บังคับ)</label>
           <input
             type="file"
             accept="image/*"
@@ -95,17 +104,18 @@ function PaymentModal({
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         <div className="flex gap-2 pt-1">
-          <button type="button" onClick={onClose} className="flex-1 rounded-lg bg-stone-100 text-stone-700 py-2.5 font-medium">
+          <button type="button" onClick={onClose} className="flex-1 rounded-full bg-stone-100 text-stone-700 py-3 font-medium active:scale-95">
             ยกเลิก
           </button>
           <button
             type="button"
             onClick={onSubmit}
             disabled={busy}
-            className="flex-1 rounded-lg bg-stone-900 text-white py-2.5 font-medium disabled:opacity-50"
+            className="flex-[1.4] rounded-full bg-gradient-to-r from-green-600 to-emerald-700 text-white py-3 font-semibold shadow-[0_10px_20px_-10px_rgb(5_122_85_/_0.8)] active:scale-95 disabled:opacity-50"
           >
             {busy ? 'กำลังบันทึก...' : 'บันทึกการชำระเงิน'}
           </button>
+        </div>
         </div>
       </div>
     </div>
@@ -176,16 +186,36 @@ export function PaymentsSection({
   }
 
   return (
-    <div className="rounded-2xl border border-stone-200 bg-white p-4 space-y-3 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
-      <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
-        <span className="w-7 h-7 rounded-full bg-green-50 grid place-items-center text-sm shrink-0">💳</span>
-        การชำระเงิน
-      </h2>
+    <div className="relative overflow-hidden rounded-3xl border border-stone-200 bg-white p-4 pt-5 space-y-3 shadow-[0_10px_26px_-14px_rgb(51_32_14_/_0.4)]">
+      <div className={'absolute inset-x-0 top-0 h-1.5 ' + (balanceDue <= 0 ? 'bg-gradient-to-r from-green-400 to-emerald-600' : paymentClaimedAt ? 'bg-gradient-to-r from-green-300 via-green-600 to-green-300' : 'bg-gradient-to-r from-red-300 via-red-500 to-red-300')} aria-hidden="true" />
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-sm font-semibold text-stone-700 flex items-center gap-2">
+          <span className="w-8 h-8 rounded-xl bg-green-50 border border-green-100 grid place-items-center text-base shrink-0">💳</span>
+          การชำระเงิน
+        </h2>
+        <span className={'text-xs font-semibold rounded-full px-2.5 py-1 ' + (balanceDue <= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700')}>
+          {balanceDue <= 0 ? '✓ ชำระครบแล้ว' : `ค้าง ${formatBaht(balanceDue)} บาท`}
+        </span>
+      </div>
 
+      <div className="h-2.5 rounded-full bg-stone-100 overflow-hidden" aria-hidden="true">
+        <div
+          className={'h-full rounded-full transition-all duration-700 ' + (balanceDue <= 0 ? 'bg-gradient-to-r from-green-400 to-emerald-600' : 'bg-gradient-to-r from-amber-400 to-amber-600')}
+          style={{ width: `${Math.min(100, Math.max(0, (payments.reduce((s, p) => s + Number(p.amount), 0) / Math.max(1, payments.reduce((s, p) => s + Number(p.amount), 0) + Math.max(0, balanceDue))) * 100))}%` }}
+        />
+      </div>
+
+      {payments.length === 0 && <p className="text-xs text-stone-400">ยังไม่มีการชำระเงินที่บันทึกไว้</p>}
       {payments.map((p) => (
-        <div key={p.id} className="flex justify-between text-sm border-b border-stone-100 py-1">
-          <span>{METHOD_LABELS[p.method]} · {new Date(p.paid_at).toLocaleDateString('th-TH')}</span>
-          <span>{formatBaht(p.amount)}</span>
+        <div key={p.id} className="flex items-center justify-between gap-2 rounded-2xl bg-stone-50 border border-stone-100 px-3 py-2 text-sm">
+          <span className="flex items-center gap-2">
+            <span className="w-8 h-8 rounded-xl bg-white border border-stone-200 grid place-items-center">{METHOD_ICONS[p.method] ?? '💬'}</span>
+            <span>
+              {METHOD_LABELS[p.method]}
+              <span className="block text-[11px] text-stone-400">{new Date(p.paid_at).toLocaleDateString('th-TH')}</span>
+            </span>
+          </span>
+          <span className="font-bold tabular-nums text-green-700">{formatBaht(p.amount)}</span>
         </div>
       ))}
 
@@ -193,8 +223,8 @@ export function PaymentsSection({
         type="button"
         onClick={openModal}
         className={
-          'w-full flex items-center justify-center gap-1.5 rounded-lg font-medium py-2.5 text-sm ' +
-          (paymentClaimedAt ? 'bg-green-600 text-white animate-pulse' : 'bg-stone-900 text-white')
+          'w-full flex items-center justify-center gap-1.5 rounded-full font-semibold py-3 text-sm shadow-[0_12px_24px_-12px_rgb(0_0_0_/_0.6)] transition-all active:scale-95 ' +
+          (paymentClaimedAt ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white animate-pulse' : 'bg-gradient-to-r from-stone-800 to-stone-900 text-white')
         }
       >
         {paymentClaimedAt ? '🔔 ลูกค้าแจ้งชำระแล้ว · บันทึกการชำระเงิน' : '💳 บันทึกการชำระเงิน'}

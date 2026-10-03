@@ -416,7 +416,7 @@ export function OrderDetailPage() {
         <button
           type="button"
           onClick={() => setShowCancel(true)}
-          className="w-full rounded-xl border-2 border-red-300 bg-white text-red-700 font-medium py-2.5"
+          className="w-full rounded-full border-2 border-red-300 bg-white text-red-700 font-semibold py-3 active:scale-95"
         >
           ยกเลิกออเดอร์
         </button>
@@ -428,7 +428,7 @@ export function OrderDetailPage() {
           type="button"
           onClick={() => setShowDeleteConfirm(true)}
           disabled={deleting}
-          className="w-full rounded-xl bg-red-600 text-white font-medium py-2.5 disabled:opacity-50"
+          className="w-full rounded-full bg-gradient-to-r from-red-600 to-rose-700 text-white font-semibold py-3 disabled:opacity-50 active:scale-95"
         >
           {deleting ? 'กำลังลบ...' : '🗑️ ลบออเดอร์ถาวร (ประหยัดพื้นที่)'}
         </button>
