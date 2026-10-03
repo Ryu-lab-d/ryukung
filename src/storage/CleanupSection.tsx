@@ -52,7 +52,7 @@ export function CleanupSection<T extends { id: string }>({
 
   return (
     <section className="space-y-2">
-      <h2 className="text-sm font-semibold text-stone-700">{title} ({items.length})</h2>
+      <h2 className="section-title">{title} ({items.length})</h2>
       {description && <p className="text-xs text-stone-400">{description}</p>}
 
       {loading ? (

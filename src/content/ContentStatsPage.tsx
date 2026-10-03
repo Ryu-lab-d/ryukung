@@ -113,18 +113,18 @@ export function ContentStatsPage() {
         </div>
 
         <div className={cardClass}>
-          <h2 className="text-sm font-semibold text-stone-600">ส่วนใหญ่เราโพสต์อะไร (แยกตามแนวการตัดต่อ)</h2>
+          <h2 className="section-title">ส่วนใหญ่เราโพสต์อะไร (แยกตามแนวการตัดต่อ)</h2>
           <PieChart data={styles} />
         </div>
 
         <div className={cardClass}>
-          <h2 className="text-sm font-semibold text-stone-600">โพสต์เดือนไหนเยอะที่สุด</h2>
+          <h2 className="section-title">โพสต์เดือนไหนเยอะที่สุด</h2>
           {busiestMonth && <p className="text-sm text-stone-700">เดือนที่โพสต์เยอะที่สุดคือ <strong>{busiestMonth.label}</strong> ({busiestMonth.count} คอนเทนต์)</p>}
           <BarChart data={months.map((m) => ({ key: m.monthKey, label: m.label, count: m.count }))} />
         </div>
 
         <div className={cardClass}>
-          <h2 className="text-sm font-semibold text-stone-600">โพสต์ช่องทางไหนเยอะที่สุด</h2>
+          <h2 className="section-title">โพสต์ช่องทางไหนเยอะที่สุด</h2>
           <BarChart data={platforms.map((p) => ({ key: p.platform, label: p.label, icon: p.icon, count: p.count }))} />
         </div>
       </div>

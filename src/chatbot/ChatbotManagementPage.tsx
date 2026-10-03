@@ -92,13 +92,13 @@ export function ChatbotManagementPage() {
       </div>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-stone-700">ทดสอบคุยกับบอท (มุมมองลูกค้า)</h2>
+        <h2 className="section-title">ทดสอบคุยกับบอท (มุมมองลูกค้า)</h2>
         <p className="text-xs text-stone-400">แก้ไขคำถาม/คำตอบด้านล่างแล้วลองพิมพ์คุยที่นี่ได้เลย ยังไม่ต้องกดบันทึกก่อนก็ทดสอบได้</p>
         <ChatBot shopName={settings.shop_name} faqs={faqs} lineUrl={lineUrl || null} mode="embedded" />
       </section>
 
       <section className="space-y-2">
-        <h2 className="text-sm font-semibold text-stone-700">คำถามที่ลูกค้าถามบ่อยแต่บอทตอบไม่ได้</h2>
+        <h2 className="section-title">คำถามที่ลูกค้าถามบ่อยแต่บอทตอบไม่ได้</h2>
         {questionsLoading ? (
           <div className="flex items-center justify-center gap-2.5 py-6 text-stone-400 text-sm">
             <span className="w-4 h-4 rounded-full border-2 border-stone-300 border-t-stone-500 animate-spin" />
@@ -143,7 +143,7 @@ export function ChatbotManagementPage() {
 
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-stone-700">คำถามที่พบบ่อย (น้องริวตอบให้อัตโนมัติ)</h2>
+          <h2 className="section-title">คำถามที่พบบ่อย (น้องริวตอบให้อัตโนมัติ)</h2>
           <button
             type="button"
             onClick={() => addFaq()}
