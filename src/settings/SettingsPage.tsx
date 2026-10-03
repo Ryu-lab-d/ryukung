@@ -5,6 +5,8 @@ import { productImageUrl } from '../products/ProductCard'
 import { StaffManagementSection } from '../staff/StaffManagementSection'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { useAuth, isOwnerOrExecutive } from '../auth/AuthProvider'
+import { AmbientGlow } from '../public/PublicSiteChrome'
+import type { ReactNode } from 'react'
 
 type Draft = Omit<Settings, 'id'>
 
@@ -13,6 +15,23 @@ const DRAFT_KEY = 'settings-form'
 const CARD =
   'rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]'
 const INPUT = 'w-full rounded-xl border border-stone-300 bg-white px-3.5 py-2.5'
+
+/** หมวดพับได้ — แบ่งหน้าตั้งค่าที่ยาวมากเป็นกลุ่มย่อย แตะหัวข้อเพื่อเปิด/ปิด (เนื้อหายังอยู่ใน DOM ตลอด ฟอร์มไม่หาย) */
+function Group({ icon, title, subtitle, defaultOpen = false, children }: { icon: string; title: string; subtitle: string; defaultOpen?: boolean; children: ReactNode }) {
+  return (
+    <details open={defaultOpen} className="group rounded-3xl border border-stone-200 bg-white/80 shadow-[0_10px_26px_-16px_rgb(51_32_14_/_0.45)]">
+      <summary className="cursor-pointer select-none list-none flex items-center gap-3 px-4 py-3.5">
+        <span className="w-11 h-11 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 border border-amber-200 grid place-items-center text-xl shrink-0">{icon}</span>
+        <span className="min-w-0 flex-1">
+          <span className="block font-display font-semibold text-stone-900">{title}</span>
+          <span className="block text-xs text-stone-500 truncate">{subtitle}</span>
+        </span>
+        <span className="text-stone-400 transition-transform duration-200 group-open:rotate-180">▾</span>
+      </summary>
+      <div className="px-3 pb-3 space-y-3">{children}</div>
+    </details>
+  )
+}
 
 export function SettingsPage() {
   const { staffStatus } = useAuth()
@@ -136,54 +155,42 @@ export function SettingsPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
     <div className="p-4 max-w-lg mx-auto space-y-4 pb-8">
-      <div>
-        <h1 className="text-xl font-bold text-stone-900">ตั้งค่า</h1>
-        <p className="text-sm text-stone-500 mt-0.5">ข้อมูลร้าน ใบเสร็จ และเครื่องมือจัดการระบบ</p>
+      <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 shadow-[0_16px_34px_-16px_rgb(51_32_14_/_0.7)]">
+        <AmbientGlow />
+        <div className="relative z-10 flex items-center gap-3">
+          <span className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur grid place-items-center text-2xl">⚙️</span>
+          <div>
+            <h1 className="text-xl font-bold leading-tight">ตั้งค่า</h1>
+            <p className="text-sm text-white/80 mt-0.5">ข้อมูลร้าน ใบเสร็จ และเครื่องมือจัดการระบบ</p>
+          </div>
+        </div>
       </div>
 
       {isOwner && (
         <section className="space-y-2">
           <h2 className="text-sm font-semibold text-stone-700">จัดการร้าน</h2>
-          <Link
-            to="/storage"
-            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">🗑️ จัดการพื้นที่จัดเก็บ</span>
-            <span className="text-stone-400">→</span>
-          </Link>
-          <Link
-            to="/chatbot"
-            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">💬 จัดการแชทบอทน้องริว</span>
-            <span className="text-stone-400">→</span>
-          </Link>
-          <Link
-            to="/withdrawals"
-            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">📦 เบิกของ</span>
-            <span className="text-stone-400">→</span>
-          </Link>
-          <Link
-            to="/expenses"
-            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">💸 รายจ่าย</span>
-            <span className="text-stone-400">→</span>
-          </Link>
-          <Link
-            to="/promo"
-            className="flex items-center justify-between rounded-2xl border border-stone-200 px-3.5 py-3 bg-white shadow-[0_1px_2px_rgb(0_0_0_/_0.04)]"
-          >
-            <span className="flex items-center gap-2 text-sm font-medium">🎨 การ์ดโปรโมทร้าน</span>
-            <span className="text-stone-400">→</span>
-          </Link>
+          <div className="grid grid-cols-2 gap-2.5">
+            {[
+              ['/withdrawals', '📦', 'เบิกของ', 'bg-amber-50 border-amber-200'],
+              ['/expenses', '💸', 'รายจ่าย', 'bg-red-50 border-red-200'],
+              ['/chatbot', '💬', 'แชทบอทน้องริว', 'bg-sky-50 border-sky-200'],
+              ['/promo', '🎨', 'การ์ดโปรโมทร้าน', 'bg-violet-50 border-violet-200'],
+              ['/storage', '🗑️', 'พื้นที่จัดเก็บ', 'bg-stone-100 border-stone-200'],
+            ].map(([to, icon, label, tone]) => (
+              <Link
+                key={to}
+                to={to}
+                className={'flex items-center gap-2.5 rounded-2xl border px-3.5 py-3.5 text-sm font-semibold text-stone-800 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md active:scale-95 ' + tone}
+              >
+                <span className="text-2xl">{icon}</span>
+                {label}
+              </Link>
+            ))}
+          </div>
         </section>
       )}
 
-      <StaffManagementSection />
-
+      <Group icon="🏪" title="ร้านของฉัน" subtitle="ชื่อ โลโก้ พร้อมเพย์ วิธีชำระเงิน ลิงก์เมนูออนไลน์" defaultOpen>
       <section className={CARD + ' space-y-4'}>
         <h2 className="text-sm font-semibold text-stone-700">ข้อมูลร้าน</h2>
         {text('ชื่อร้าน', 'shop_name')}
@@ -215,13 +222,10 @@ export function SettingsPage() {
         </div>
       </section>
 
-      {isOwnerOrExec && (
-        <section className={CARD + ' space-y-3'}>
-          <h2 className="text-sm font-semibold text-stone-700">แจ้งเตือนออเดอร์ใหม่</h2>
-          <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
-          {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
-        </section>
-      )}
+      <section className={CARD + ' space-y-3'}>
+        <h2 className="text-sm font-semibold text-stone-700">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
+        {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
+      </section>
 
       <section className={CARD + ' space-y-2'}>
         <h2 className="text-sm font-semibold text-stone-700">เมนูออนไลน์ให้ลูกค้าสั่งเอง</h2>
@@ -240,10 +244,21 @@ export function SettingsPage() {
         </button>
       </section>
 
-      <section className={CARD + ' space-y-3'}>
-        <h2 className="text-sm font-semibold text-stone-700">วิธีชำระเงิน (โชว์ให้ลูกค้าเห็นในลิงก์สรุปตอนยังไม่จ่าย)</h2>
-        {text('ข้อความวิธีชำระเงิน', 'payment_instructions')}
-      </section>
+      </Group>
+
+      <Group icon="👥" title="ทีมงานและสิทธิ์" subtitle="เชิญ/จัดการพนักงานและบทบาท">
+      <StaffManagementSection />
+      </Group>
+
+      {isOwnerOrExec && (
+      <Group icon="🔔" title="การแจ้งเตือน" subtitle="อีเมลออเดอร์ใหม่ และระบบเตือนภัยพิบัติ">
+      {isOwnerOrExec && (
+        <section className={CARD + ' space-y-3'}>
+          <h2 className="text-sm font-semibold text-stone-700">แจ้งเตือนออเดอร์ใหม่</h2>
+          <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
+          {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
+        </section>
+      )}
 
       {isOwner && (
         <section className={CARD + ' space-y-2'}>
@@ -256,6 +271,11 @@ export function SettingsPage() {
         </section>
       )}
 
+      </Group>
+      )}
+
+      {isOwnerOrExec && (
+      <Group icon="🧾" title="ใบเสร็จและเลขเอกสาร" subtitle="ข้อความท้ายใบเสร็จ เลขออเดอร์ เงื่อนไขออเดอร์">
       {isOwnerOrExec && (
         <section className={CARD + ' space-y-3'}>
           <h2 className="text-sm font-semibold text-stone-700">ค่าเริ่มต้นใบเสร็จ</h2>
@@ -309,16 +329,23 @@ export function SettingsPage() {
         </section>
       )}
 
-      {message && <p className="text-sm text-stone-600">{message}</p>}
+      </Group>
+      )}
 
-      <button
-        type="button"
-        disabled={busy}
-        onClick={handleSave}
-        className="w-full rounded-xl bg-stone-900 text-white px-4 py-2.5 font-medium disabled:opacity-50 shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)]"
-      >
-        {busy ? 'กำลังบันทึก...' : 'บันทึก'}
-      </button>
+      {message && (
+        <p className="text-sm rounded-2xl bg-white border border-stone-200 px-3.5 py-2.5 text-stone-700 shadow-sm">{message}</p>
+      )}
+
+      <div className="sticky bottom-[4.5rem] lg:bottom-4 z-20 -mx-1 rounded-3xl bg-white/85 backdrop-blur border border-stone-200 p-2 shadow-[0_14px_30px_-14px_rgb(51_32_14_/_0.5)]">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={handleSave}
+          className="w-full rounded-full bg-gradient-to-r from-amber-600 to-amber-800 text-white px-4 py-3 font-semibold disabled:opacity-50 active:scale-95"
+        >
+          {busy ? 'กำลังบันทึก...' : 'บันทึก'}
+        </button>
+      </div>
     </div>
     </div>
   )
