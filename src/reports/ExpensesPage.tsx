@@ -7,6 +7,7 @@ import { EXPENSE_CATEGORY_LABEL } from './expenseMeta'
 import { ExpenseFormModal } from './ExpenseFormModal'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { formatBaht } from '../lib/money'
+import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
 
@@ -77,9 +78,10 @@ export function ExpensesPage() {
           </div>
         )}
 
-        <div className="rounded-2xl bg-stone-900 text-white p-4 space-y-0.5 shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
-          <p className="text-xs uppercase tracking-wide text-stone-300">รายจ่ายรวมในช่วงนี้</p>
-          <p className="text-3xl font-bold">{formatBaht(total)}</p>
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-800 via-red-700 to-rose-600 text-white p-5 space-y-0.5 shadow-[0_18px_36px_-16px_rgb(127_29_29_/_0.7)]">
+          <AmbientGlow />
+          <p className="relative z-10 text-xs uppercase tracking-wide text-white/80">รายจ่ายรวมในช่วงนี้</p>
+          <p className="relative z-10 text-4xl font-display font-bold"><CountUp value={total} format={formatBaht} duration={900} /></p>
         </div>
 
         {loading ? (

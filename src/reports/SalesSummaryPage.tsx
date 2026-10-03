@@ -8,6 +8,7 @@ import { useAllProductIngredients } from './useAllProductIngredients'
 import { computeProductProfitability } from './productProfitability'
 import { useIngredients } from '../ingredients/useIngredients'
 import { formatBaht } from '../lib/money'
+import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
 
 const RANGE_LABELS: Record<RangeKey, string> = { today: 'วันนี้', '7d': '7 วัน', '30d': '30 วัน', custom: 'กำหนดเอง' }
 const TREND_DAYS = 14
@@ -84,10 +85,11 @@ export function SalesSummaryPage() {
         ) : (
           <>
             {/* ตัวเลขหลัก — ยอดขายคือสิ่งที่ร้านอยากเห็นก่อนสุดตอนเปิดหน้านี้ */}
-            <div className="rounded-2xl bg-stone-900 text-white p-5 space-y-1 shadow-[0_10px_24px_-8px_rgb(0_0_0_/_0.4)]">
-              <p className="text-xs uppercase tracking-wide text-stone-300">ยอดขาย</p>
-              <p className="text-5xl font-bold [font-variant-numeric:normal]">{formatBaht(sales)}</p>
-              <p className="text-sm text-stone-300">{orders.length} ออเดอร์ · เฉลี่ย {formatBaht(avgOrder)} บาท/ออเดอร์</p>
+            <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-5 space-y-1 shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
+              <AmbientGlow />
+              <p className="relative z-10 text-xs uppercase tracking-wide text-white/80">ยอดขาย</p>
+              <p className="relative z-10 text-5xl font-display font-bold [font-variant-numeric:normal]"><CountUp value={sales} format={formatBaht} duration={1100} /></p>
+              <p className="relative z-10 text-sm text-white/85">{orders.length} ออเดอร์ · เฉลี่ย {formatBaht(avgOrder)} บาท/ออเดอร์</p>
             </div>
 
             {/* กำไรแยกการ์ดต่างหาก ใช้สีเขียว/แดงบอกสถานะ (บวก/ลบ) ให้ต่างจากตัวเลขทั่วไปชัดเจน */}
@@ -102,7 +104,7 @@ export function SalesSummaryPage() {
                   กำไรโดยประมาณ
                 </p>
                 <p className={'text-3xl font-bold ' + (profitIsPositive ? 'text-green-800' : 'text-red-800')}>
-                  {formatBaht(profit)}
+                  <CountUp value={profit} format={formatBaht} duration={1000} />
                 </p>
               </div>
               <span

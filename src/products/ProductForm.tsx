@@ -333,11 +333,11 @@ export function ProductForm() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="flex items-center gap-2">
+        <div className="sticky bottom-[4.5rem] lg:bottom-4 z-20 flex items-center gap-2 rounded-3xl bg-white/85 backdrop-blur border border-stone-200 p-2 shadow-[0_14px_30px_-14px_rgb(51_32_14_/_0.5)]">
           <button
             type="submit"
             disabled={busy}
-            className="rounded-xl bg-stone-900 text-white px-4 py-2.5 font-medium shadow-[0_6px_16px_-4px_rgb(0_0_0_/_0.3)] disabled:opacity-50 disabled:shadow-none"
+            className="flex-1 rounded-full bg-gradient-to-r from-amber-600 to-amber-800 text-white px-4 py-3 font-semibold shadow-[0_10px_20px_-10px_rgb(146_82_12_/_0.8)] active:scale-95 disabled:opacity-50 disabled:shadow-none"
           >
             {busy ? 'กำลังบันทึก...' : 'บันทึก'}
           </button>

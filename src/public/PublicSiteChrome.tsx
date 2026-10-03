@@ -472,10 +472,11 @@ export function burstSparkles(sourceEl: HTMLElement, count = 12) {
 
 /** ตัวเลขนับขึ้นจาก 0 → ค่าจริงแบบนุ่มๆ (ease-out) ใช้กับยอดเงินให้ดูมีชีวิต — เปลี่ยนค่าใหม่ก็นับต่อจากค่าเดิม */
 export function CountUp({ value, format = (n: number) => String(n), duration = 800 }: { value: number; format?: (n: number) => string; duration?: number }) {
-  const [shown, setShown] = useState(0)
-  const fromRef = useRef(0)
+  const instant = import.meta.env.MODE === 'test'
+  const [shown, setShown] = useState(instant ? value : 0)
+  const fromRef = useRef(instant ? value : 0)
   useEffect(() => {
-    if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    if (instant || typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       setShown(value)
       return
     }
@@ -492,7 +493,7 @@ export function CountUp({ value, format = (n: number) => String(n), duration = 8
     }
     raf = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(raf)
-  }, [value, duration])
+  }, [value, duration, instant])
   return <>{format(shown)}</>
 }
 

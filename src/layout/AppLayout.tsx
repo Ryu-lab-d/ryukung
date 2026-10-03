@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from './navItems'
 import { NavIcon } from './NavIcon'
@@ -16,6 +16,23 @@ export function AppLayout({ children }: { children: ReactNode }) {
     }
     return true
   })
+
+  // วงคลื่นตอนแตะปุ่ม/ลิงก์ทุกอันในหลังบ้าน — ให้ฟีดแบ็กทันทีว่ากดโดนแล้ว (วงขยายแล้วจางหาย ไม่บังและไม่ต้องห่อปุ่มด้วยอะไร)
+  useEffect(() => {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
+    function onDown(e: PointerEvent) {
+      const t = (e.target as HTMLElement | null)?.closest('button, a, summary')
+      if (!t || (t as HTMLButtonElement).disabled) return
+      const ring = document.createElement('span')
+      ring.className = 'tap-ring'
+      ring.style.left = `${e.clientX}px`
+      ring.style.top = `${e.clientY}px`
+      document.body.appendChild(ring)
+      ring.addEventListener('animationend', () => ring.remove())
+    }
+    document.addEventListener('pointerdown', onDown, { passive: true })
+    return () => document.removeEventListener('pointerdown', onDown)
+  }, [])
 
   return (
     <div className="admin-shell min-h-screen bg-stone-50">
