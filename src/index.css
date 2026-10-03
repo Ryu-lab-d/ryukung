@@ -999,3 +999,59 @@ a:focus-visible {
 @keyframes cal-cell-in { from { opacity: 0; transform: scale(0.6); } to { opacity: 1; transform: none; } }
 .cal-cell { animation: cal-cell-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
 @media (prefers-reduced-motion: reduce) { .cal-cell { animation: none; } }
+
+
+/* =====================================================================
+   ประกายทอง (สีของหน้าเว็บคงเดิมเป็นน้ำตาล — ทองอยู่ที่แอนิเมชันเท่านั้น)
+   ===================================================================== */
+@keyframes gold-glint {
+  0%, 100% { opacity: 0; transform: translateY(6px) scale(0.3) rotate(0deg); }
+  25% { opacity: 1; transform: translateY(-2px) scale(1.25) rotate(45deg); }
+  60% { opacity: 0.85; transform: translateY(-10px) scale(0.9) rotate(100deg); }
+  85% { opacity: 0; transform: translateY(-18px) scale(0.4) rotate(150deg); }
+}
+.gold-glint {
+  color: #ffd966;
+  text-shadow: 0 0 6px #ffc83a, 0 0 14px rgb(255 200 58 / 0.8);
+  animation: gold-glint 3.6s ease-in-out infinite;
+}
+
+/* แสงทองกวาดผ่านปุ่มหลักเป็นระยะ (เดิมขาว → ทองอ่อน) */
+.admin-shell main :is(button.bg-stone-900:not(:disabled), a.bg-stone-900, button.bg-gradient-to-r:not(:disabled))::after {
+  background: linear-gradient(90deg, transparent, rgb(255 214 110 / 0.55), transparent);
+}
+
+/* หัวข้อหลังบ้าน: ตัวหนังสือสีน้ำตาลเดิม มีแถบแสงทองวิ่งผ่านเป็นระยะ */
+@keyframes h1-gold-sweep { 0%, 55% { background-position: 160% 0; } 100% { background-position: -60% 0; } }
+.admin-shell main h1 {
+  background-image: linear-gradient(105deg, #33200e 40%, #b8770a 46%, #ffd24d 50%, #b8770a 54%, #33200e 60%);
+  background-size: 260% 100%;
+  background-position: 160% 0;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: admin-h1-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) backwards, h1-gold-sweep 5.5s ease-in-out 1s infinite;
+}
+.admin-shell main .text-white h1, .admin-shell main h1.text-white { background: none; color: inherit; animation: admin-h1-in 0.5s ease backwards; }
+
+/* ขีดใต้หัวข้อมีประกายวิ่ง */
+@keyframes underline-glint { 0%, 50% { background-position: -120% 0; } 100% { background-position: 220% 0; } }
+.admin-shell main h1:not(.flex):not(.inline-flex)::after {
+  background: linear-gradient(90deg, var(--color-amber-500) 0%, var(--color-amber-800) 100%);
+  position: relative;
+}
+
+/* ไอคอนเมนูของหน้าปัจจุบันเรืองทองเป็นจังหวะ */
+@keyframes nav-gold-pulse {
+  0%, 100% { filter: drop-shadow(0 0 0 rgb(255 200 58 / 0)); }
+  50% { filter: drop-shadow(0 0 6px rgb(255 200 58 / 0.95)); }
+}
+.admin-shell nav a.font-semibold svg { animation: nav-bounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), nav-gold-pulse 2.4s ease-in-out 0.6s infinite; }
+
+/* การ์ดที่ชี้เมาส์: สปอตไลต์เป็นทองอ่อน (มีอยู่แล้ว) + ขอบเรืองทองบางๆ */
+.glow-card:hover { box-shadow: 0 0 0 1px rgb(255 200 58 / 0.55), 0 18px 34px -16px rgb(217 138 0 / 0.55); }
+
+@media (prefers-reduced-motion: reduce) {
+  .gold-glint { animation: none; opacity: 0; }
+  .admin-shell main h1 { animation: none; background: none; color: inherit; }
+}

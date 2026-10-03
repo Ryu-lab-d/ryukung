@@ -84,10 +84,29 @@ export function FloatingTreats() {
   )
 }
 
+/** ฝุ่นทองระยิบระยับ: ดาว ✦ สีทองกะพริบและลอยขึ้นช้าๆ ในการ์ดสีแบรนด์ทุกใบ (เป็นส่วนหนึ่งของ AmbientGlow) */
+const GLITTER: [string, string, string, string][] = [
+  // [left, top, size, delay]
+  ['8%', '22%', '12', '0'], ['18%', '68%', '9', '1.1'], ['31%', '14%', '10', '2.2'], ['44%', '78%', '13', '0.6'],
+  ['57%', '30%', '9', '1.7'], ['69%', '70%', '12', '2.8'], ['80%', '18%', '10', '0.9'], ['92%', '56%', '13', '2.4'],
+]
+export function GoldGlitter() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {GLITTER.map(([left, top, size, delay], i) => (
+        <span key={i} className="gold-glint absolute select-none" style={{ left, top, fontSize: `${size}px`, animationDelay: `${delay}s` }}>
+          ✦
+        </span>
+      ))}
+    </div>
+  )
+}
+
 export function AmbientGlow() {
   return (
     <>
       <FloatingTreats />
+      <GoldGlitter />
       <div
         className="pointer-events-none absolute inset-[-25%] opacity-40 animate-ambient-shine"
         style={{ background: 'radial-gradient(circle at 30% 30%, rgb(255 205 130 / 0.6), transparent 50%)' }}
@@ -436,10 +455,13 @@ export function flyToCart(sourceEl: HTMLElement, targetEl: HTMLElement, emoji = 
 
 /** ประกายแตกกระจายจากจุดที่กดเพิ่มสินค้า (ดาว ✦ + เม็ดสีทอง) — เล่นด้วย Web Animations แล้วลบตัวเอง ไม่ค้างใน DOM */
 export function burstSparkles(sourceEl: HTMLElement, count = 12) {
-  if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
   const rect = sourceEl.getBoundingClientRect()
-  const cx = rect.left + rect.width / 2
-  const cy = rect.top + rect.height / 2
+  burstSparklesAt(rect.left + rect.width / 2, rect.top + rect.height / 2, count)
+}
+
+/** ประกายทองแตกกระจายจากพิกัดหน้าจอที่ระบุ (ใช้กับการแตะปุ่มหลักทั่วระบบ) */
+export function burstSparklesAt(cx: number, cy: number, count = 12) {
+  if (typeof window === 'undefined' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return
   const colors = ['#fbbf24', '#f59e0b', '#fde68a', '#ffffff', '#d97706']
   for (let i = 0; i < count; i++) {
     const el = document.createElement('span')

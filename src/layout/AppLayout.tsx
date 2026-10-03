@@ -5,6 +5,7 @@ import { NavIcon } from './NavIcon'
 import { useAuth, isManagerOrAbove } from '../auth/AuthProvider'
 import { WelcomeOverlay } from './WelcomeOverlay'
 import { installPointerGlow } from '../lib/pointerGlow'
+import { burstSparklesAt } from '../public/PublicSiteChrome'
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const { signOut, staffStatus } = useAuth()
@@ -32,6 +33,10 @@ export function AppLayout({ children }: { children: ReactNode }) {
       ring.style.top = `${e.clientY}px`
       document.body.appendChild(ring)
       ring.addEventListener('animationend', () => ring.remove())
+      // ปุ่มหลัก (พื้นเข้ม/ไล่สี) แตกประกายทองด้วย — ปุ่มรองได้แค่วงคลื่น
+      if (t.matches('button.bg-stone-900, a.bg-stone-900, button[class*="bg-gradient"], a[class*="bg-gradient"]')) {
+        burstSparklesAt(e.clientX, e.clientY, 9)
+      }
     }
     document.addEventListener('pointerdown', onDown, { passive: true })
     return () => document.removeEventListener('pointerdown', onDown)
