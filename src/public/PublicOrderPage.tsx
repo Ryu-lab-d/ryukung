@@ -297,16 +297,21 @@ function StatusTimeline({
         <div className="flex flex-col items-center">
           <div
             className={
-              'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 text-white ' +
+              'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 text-white shadow ' +
               payment.color +
               (payment.pulsing ? ' animate-node-ping ring-4 ring-amber-200' : '')
             }
           >
             {payment.icon}
           </div>
-          <div className={'w-0.5 flex-1 min-h-8 animate-line-grow ' + (payment.done ? 'bg-stone-900' : 'bg-stone-200')} />
+          <div className={'w-1 rounded-full flex-1 min-h-6 animate-line-grow ' + (payment.done ? 'bg-green-500' : 'bg-stone-200')} />
         </div>
-        <div className="pb-8 -mt-0.5">
+        <div
+          className={
+            'flex-1 rounded-2xl px-3.5 py-2 mb-2 border ' +
+            (payment.done ? 'bg-green-50/60 border-green-100' : payment.pulsing ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')
+          }
+        >
           <p className="font-semibold text-stone-900">{payment.label}</p>
           <p className="text-xs text-stone-500 mt-0.5">การชำระเงิน</p>
         </div>
@@ -320,9 +325,9 @@ function StatusTimeline({
             <div className="flex flex-col items-center">
               <div
                 className={
-                  'w-7 h-7 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
+                  'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
                   (isDone
-                    ? 'bg-stone-900 text-white animate-qty-pop'
+                    ? 'bg-gradient-to-br from-green-500 to-emerald-700 text-white shadow animate-qty-pop'
                     : isCurrent
                       ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
                       : 'bg-white text-stone-400 border-2 border-stone-200')
@@ -333,14 +338,24 @@ function StatusTimeline({
               </div>
               {i < WORK_STAGES.length - 1 && (
                 <div
-                  className={'w-0.5 flex-1 min-h-8 transition-colors duration-500 animate-line-grow ' + (isDone ? 'bg-stone-900' : 'bg-stone-200')}
+                  className={'w-1 rounded-full flex-1 min-h-6 transition-colors duration-500 animate-line-grow ' + (isDone ? 'bg-green-500' : 'bg-stone-200')}
                   style={{ animationDelay: `${(i + 1) * 0.09 + 0.15}s` }}
                 />
               )}
             </div>
-            <div className={'pb-8 -mt-0.5 ' + (isCurrent ? 'text-stone-900' : isDone ? 'text-stone-600' : 'text-stone-400')}>
+            <div
+              className={
+                'flex-1 rounded-2xl px-3.5 py-2 mb-2 border ' +
+                (isCurrent
+                  ? 'bg-gradient-to-r from-amber-50 to-white border-amber-300 shadow-sm text-stone-900'
+                  : isDone
+                    ? 'bg-green-50/60 border-green-100 text-stone-600'
+                    : 'bg-stone-50/60 border-stone-100 text-stone-400')
+              }
+            >
               <p className={isCurrent ? 'font-semibold' : 'font-medium'}>{stage.label}</p>
-              {isCurrent && <p className="text-xs text-stone-500 mt-0.5">สถานะตอนนี้</p>}
+              {isCurrent && <p className="text-xs text-amber-700 mt-0.5">⏳ สถานะตอนนี้</p>}
+              {isDone && <p className="text-xs text-green-700 mt-0.5">เสร็จแล้ว</p>}
             </div>
           </div>
         )
@@ -918,8 +933,12 @@ function OrderSummaryCard({ order }: { order: PublicOrderView }) {
 
         <div className="border-t-2 border-dashed border-stone-200 pt-3 space-y-1.5 text-sm">
           <div className="flex justify-between"><span>รวมสินค้า</span><span>{formatBaht(order.items_total)}</span></div>
-          <div className="flex justify-between"><span>ส่วนลด</span><span>-{formatBaht(order.discount_amount)}</span></div>
-          <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
+          {Number(order.discount_amount) > 0 && (
+            <div className="flex justify-between text-green-700"><span>ส่วนลด</span><span>-{formatBaht(order.discount_amount)}</span></div>
+          )}
+          {Number(order.shipping_fee) > 0 && (
+            <div className="flex justify-between"><span>ค่าส่ง</span><span>{formatBaht(order.shipping_fee)}</span></div>
+          )}
           <div className="flex justify-between items-end font-bold text-lg pt-1"><span>ยอดรวม</span><span className="tabular-nums">{formatBaht(order.grand_total)}</span></div>
         </div>
       </div>
@@ -1315,7 +1334,22 @@ export function PublicOrderPage() {
             <div className="flex justify-between"><span className="text-stone-500">วันที่ต้องได้ของ</span><span className="font-semibold text-stone-900">{order.needed_date ? formatOrderDate(order.needed_date) : '-'}</span></div>
             {order.fulfillment_type === 'pickup' ? (
               <>
-                <div className="flex justify-between"><span className="text-stone-500">จุดนัดรับ</span><span>{order.pickup_place ?? '-'}</span></div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-stone-500 shrink-0">จุดนัดรับ</span>
+                  <span className="text-right">
+                    <span className="font-semibold text-stone-900">{order.pickup_place ?? '-'}</span>
+                    {order.pickup_place && (
+                      <a
+                        href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(order.pickup_place)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 ml-auto flex w-fit items-center gap-1 rounded-full bg-sky-50 border border-sky-200 text-sky-700 text-xs font-medium px-2.5 py-1 active:scale-95"
+                      >
+                        🗺️ เปิดแผนที่
+                      </a>
+                    )}
+                  </span>
+                </div>
                 <div className="flex justify-between"><span className="text-stone-500">เวลานัดรับ</span><span>{order.pickup_time ?? '-'}</span></div>
               </>
             ) : (
