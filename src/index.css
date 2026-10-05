@@ -1095,3 +1095,48 @@ a:focus-visible {
   border-radius: 0 999px 999px 0;
   background: linear-gradient(180deg, #ffd24d, #d98a00);
 }
+
+/* =====================================================================
+   หลังบ้าน: ชั้นความลึก/พื้นผิว — พื้นลายจุดกระดาษคราฟท์, ผิวการ์ดไล่สีครีมนุ่ม, แท็บกระจก, แถบเลื่อนสีทอง
+   ===================================================================== */
+.admin-shell {
+  background-image:
+    radial-gradient(rgb(139 90 43 / 0.09) 1px, transparent 1.5px),
+    linear-gradient(180deg, #fffaf0 0%, #fbf1e4 46%, #f6e6cf 100%);
+  background-size: 22px 22px, 100% 100%;
+  background-attachment: fixed;
+}
+/* ผิวการ์ดขาว: ไล่จากขาวสะอาดลงครีมอ่อน + ขอบสว่างด้านบน ให้ดูเป็นวัตถุมีมิติ */
+.admin-shell main :is(.rounded-2xl, .rounded-3xl).bg-white {
+  background-image: linear-gradient(180deg, #ffffff 0%, #fffaf2 100%);
+}
+/* แท็บ/ตัวเลือกช่วงเวลา แบบกระจกฝ้า */
+.admin-shell main .inline-flex.rounded-full.bg-stone-100 {
+  background: rgb(255 255 255 / 0.65);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(232 192 138 / 0.7);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.9), 0 8px 18px -12px rgb(51 32 14 / 0.45);
+}
+/* ชิปกรอง (ทั้งหมด/หมวดหมู่) */
+.admin-shell main button.rounded-full.bg-white.border {
+  background-image: linear-gradient(180deg, #fff, #fff6e6);
+  box-shadow: 0 6px 14px -10px rgb(51 32 14 / 0.5);
+}
+/* แถบเลื่อนบางสีทอง + สีที่เลือกข้อความ + โฟกัสคีย์บอร์ด */
+.admin-shell, .admin-shell * { scrollbar-width: thin; scrollbar-color: #d9a15d transparent; }
+.admin-shell *::-webkit-scrollbar { width: 8px; height: 8px; }
+.admin-shell *::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #f5c04a, #c1823d); border-radius: 999px; }
+::selection { background: #ffd98a; color: #33200e; }
+.admin-shell :is(a, button, summary):focus-visible {
+  outline: 3px solid rgb(245 158 11 / 0.65);
+  outline-offset: 2px;
+}
+/* แถวรายการในกล่อง divide-y: ตัวคั่นเป็นเส้นไล่จางแทนเส้นทึบ */
+.admin-shell main .divide-y > * + * { border-top-color: rgb(217 161 93 / 0.28); }
+/* หัวการ์ดย่อย (h2 text-sm ในการ์ด) ไอคอนวงกลมนำหน้าเรืองนิดๆ */
+.admin-shell main h2 > span.rounded-full, .admin-shell main h2 > span.rounded-xl {
+  box-shadow: 0 6px 12px -6px rgb(217 138 0 / 0.55), inset 0 1px 0 rgb(255 255 255 / 0.8);
+}
+@media print {
+  .admin-shell { background: #fff; }
+}
