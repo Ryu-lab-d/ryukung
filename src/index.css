@@ -1222,3 +1222,7 @@ a:focus-visible {
   .scan-check-wrap, .scan-progress { animation: none; }
   .scan-progress { width: 100%; }
 }
+
+/* เฉลยข้อที่ถูกในเกมทดสอบ: เด้งเบาๆ โดยไม่เปลี่ยนการจัดวางของปุ่ม (animate-qty-pop ตั้ง display:inline-block ทำให้ข้อความหลุดบรรทัด) */
+@keyframes quiz-correct-pop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.quiz-correct-pop { animation: quiz-correct-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 22px -12px rgb(22 163 74 / 0.7); }

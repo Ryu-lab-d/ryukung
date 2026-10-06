@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { getPublicMenu, submitCustomerOrder, notifyCustomerOrder, type PublicMenu } from '../lib/publicMenuApi'
 import { productImageUrl } from '../products/ProductCard'
 import { formatBaht } from '../lib/money'
@@ -1239,6 +1239,19 @@ export function CustomerOrderPage() {
       {tab === 'menu' ? (
         <div key="menu" className="animate-form-in">
         <HowItWorks />
+        <Reveal className="max-w-5xl mx-auto px-4 mt-6">
+          <Link
+            to="/test"
+            className="glow-card group relative overflow-hidden flex items-center gap-4 rounded-3xl border border-amber-300 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-4 shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)] transition-all duration-300 hover:-translate-y-0.5"
+          >
+            <span className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-700 grid place-items-center text-3xl shadow-lg animate-float-slow" aria-hidden="true">🧠</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display font-bold text-stone-900">ทดสอบความรู้เบเกอรี่ของคุณ</span>
+              <span className="block text-sm text-stone-500">60 ข้อ 6 ระดับ ตั้งแต่ “พอได้” ถึง “เทพเจ้า” — คุณอยู่ระดับไหน?</span>
+            </span>
+            <span className="shrink-0 rounded-full bg-stone-900 text-white text-sm font-bold px-4 py-2 group-hover:scale-105 transition-transform">เล่นเลย →</span>
+          </Link>
+        </Reveal>
         <div className="max-w-5xl mx-auto px-4 mt-8 space-y-6">
           <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
             <div className="text-center">

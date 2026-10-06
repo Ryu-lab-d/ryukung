@@ -22,6 +22,7 @@ import { InvoicePage } from './receipts/InvoicePage'
 import { InvoiceListPage } from './receipts/InvoiceListPage'
 import { InvoiceViewPage } from './receipts/InvoiceViewPage'
 import { InvoicePublicPage } from './receipts/InvoicePublicPage'
+import { BakeryQuizPage } from './public/BakeryQuizPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { CustomerOrderPage } from './public/CustomerOrderPage'
@@ -155,6 +156,7 @@ export default function App() {
         <Routes>
           <Route path="/o/:token" element={<PublicOrderPage />} />
           <Route path="/inv/:token" element={<InvoicePublicPage />} />
+          <Route path="/test" element={<BakeryQuizPage />} />
           <Route path="/menu" element={<CustomerOrderPage />} />
           <Route path="/flood" element={<FloodPage />} />
           <Route path="/about" element={<Navigate to="/menu?tab=about" replace />} />

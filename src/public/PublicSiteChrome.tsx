@@ -499,6 +499,11 @@ export function burstSparklesAt(cx: number, cy: number, count = 12) {
       'pointer-events:none',
     ].join(';')
     document.body.appendChild(el)
+    if (typeof el.animate !== 'function') {
+      // เบราว์เซอร์ที่ไม่รองรับ Web Animations: ไม่เล่นเอฟเฟกต์ ลบทิ้งทันที
+      el.remove()
+      continue
+    }
     const angle = (Math.PI * 2 * i) / count + Math.random() * 0.5
     const dist = 38 + Math.random() * 46
     const anim = el.animate(
