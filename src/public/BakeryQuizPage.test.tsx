@@ -45,7 +45,7 @@ describe('หน้าทดสอบความรู้เบเกอรี�
     for (let i = 0; i < 10; i++) {
       const prompt = screen.getByText(/ข้อ \d+\/10/)
       expect(prompt).toBeInTheDocument()
-      const questionText = (document.querySelector('p.text-lg.font-display') as HTMLElement).textContent!
+      const questionText = (document.querySelector('p.text-xl.font-display') as HTMLElement).textContent!
       const q = QUIZ_LEVELS[0].questions.find((x) => x.q === questionText)!
       await user.click(optionButton(q.a))
       await user.click(screen.getByRole('button', { name: /ข้อต่อไป|ดูผลคะแนน/ }))
@@ -60,7 +60,7 @@ describe('หน้าทดสอบความรู้เบเกอรี�
     renderPage()
     await user.click(screen.getByRole('button', { name: 'เริ่ม' }))
     for (let i = 0; i < 10; i++) {
-      const questionText = (document.querySelector('p.text-lg.font-display') as HTMLElement).textContent!
+      const questionText = (document.querySelector('p.text-xl.font-display') as HTMLElement).textContent!
       const q = QUIZ_LEVELS[0].questions.find((x) => x.q === questionText)!
       await user.click(optionButton(q.wrong[0]))
       await user.click(screen.getByRole('button', { name: /ข้อต่อไป|ดูผลคะแนน/ }))
@@ -76,7 +76,7 @@ describe('หน้าทดสอบความรู้เบเกอรี�
       const startBtns = screen.getAllByRole('button', { name: /^(เริ่ม|เล่นอีก)$/ })
       await user.click(startBtns[startBtns.length - 1])
       for (let i = 0; i < 10; i++) {
-        const questionText = (document.querySelector('p.text-lg.font-display') as HTMLElement).textContent!
+        const questionText = (document.querySelector('p.text-xl.font-display') as HTMLElement).textContent!
         const q = QUIZ_LEVELS[lv].questions.find((x) => x.q === questionText)!
         await user.click(optionButton(q.a))
         await user.click(screen.getByRole('button', { name: /ข้อต่อไป|ดูผลคะแนน/ }))

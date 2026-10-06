@@ -7,7 +7,7 @@ import { playAddSound, playPaymentSound } from '../lib/uiSound'
 import { productImageUrl } from '../products/ProductCard'
 import { AmbientGlow, ConfettiRain, CountUp, PageTexture, Reveal, SquiggleUnderline, burstSparkles } from './PublicSiteChrome'
 import { PASS_SCORE, QUIZ_LEVELS, TOTAL_QUESTIONS, rankFor, type QuizQuestion } from './quizData'
-import { answerKey, buildCritique } from './quizCritique'
+import { TOPICS, answerKey, buildCritique, topicOf } from './quizCritique'
 import { QuizCertificate, type CertificateData } from './QuizCertificate'
 
 const STORAGE_KEY = 'bakery-quiz-progress'
@@ -61,6 +61,44 @@ function prepare(questions: QuizQuestion[], levelIdx: number): Prepared[] {
 
 const LETTERS = ['ก', 'ข', 'ค', 'ง']
 
+/** วงแหวนความคืบหน้า (SVG) — เส้นวิ่งเต็มตามค่าเมื่อโผล่ขึ้นมา ใส่เนื้อหาไว้กลางวงได้ */
+function Ring({ value, max, size = 132, stroke = 10, children }: { value: number; max: number; size?: number; stroke?: number; children: React.ReactNode }) {
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setReady(true), 80)
+    return () => clearTimeout(t)
+  }, [])
+  const r = (size - stroke) / 2
+  const c = 2 * Math.PI * r
+  const target = c * (1 - Math.min(1, value / Math.max(1, max)))
+  return (
+    <div className="relative mx-auto" style={{ width: size, height: size }}>
+      <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
+        <defs>
+          <linearGradient id="quiz-ring-grad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#fde68a" />
+            <stop offset="100%" stopColor="#f59e0b" />
+          </linearGradient>
+        </defs>
+        <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth={stroke} />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={r}
+          fill="none"
+          stroke="url(#quiz-ring-grad)"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={c}
+          strokeDashoffset={ready ? target : c}
+          style={{ transition: 'stroke-dashoffset 1.2s cubic-bezier(0.22, 1, 0.36, 1)', filter: 'drop-shadow(0 0 6px rgba(253,224,71,0.8))' }}
+        />
+      </svg>
+      <div className="absolute inset-0 grid place-items-center">{children}</div>
+    </div>
+  )
+}
+
 /**
  * หน้า /test — เกมทดสอบความรู้เบเกอรี่ 6 ด่าน (พอได้ → โอเค → ปานกลาง → เก่ง → เก่งมาก → เทพเจ้า) ด่านละ 10 ข้อ
  * ผ่านด่านด้วยคะแนนอย่างน้อย PASS_SCORE ข้อ เพื่อปลดล็อกด่านถัดไป จำความคืบหน้าไว้ในเครื่อง ไม่ต้องล็อกอินและไม่ใช้ฐานข้อมูล
@@ -77,6 +115,7 @@ export function BakeryQuizPage() {
   const [qi, setQi] = useState(0)
   const [picked, setPicked] = useState<number | null>(null)
   const [score, setScore] = useState(0)
+  const [streak, setStreak] = useState(0)
   const [shop, setShop] = useState<{ name: string; logo: string | null } | null>(null)
   const [shareMsg, setShareMsg] = useState<string | null>(null)
   const topRef = useRef<HTMLDivElement>(null)
@@ -100,6 +139,7 @@ export function BakeryQuizPage() {
     setQi(0)
     setPicked(null)
     setScore(0)
+    setStreak(0)
     setShareMsg(null)
     setScreen('playing')
     window.scrollTo({ top: 0 })
@@ -109,7 +149,12 @@ export function BakeryQuizPage() {
     if (picked !== null || !current) return
     setPicked(i)
     setRunAnswers((r) => ({ ...r, [current.key]: i === current.correct }))
+    if (i !== current.correct) {
+      setStreak(0)
+      navigator.vibrate?.(60)
+    }
     if (i === current.correct) {
+      setStreak((s) => s + 1)
       setScore((s) => s + 1)
       playAddSound()
       if (el) burstSparkles(el, 10)
@@ -208,7 +253,6 @@ export function BakeryQuizPage() {
     if (blob) await saveImage(blob, `certificate-${fullName.replace(/\s+/g, '-')}.png`, 'เกียรติบัตร')
   }
 
-  const progressPct = useMemo(() => (screen === 'playing' ? ((qi + (picked !== null ? 1 : 0)) / qs.length) * 100 : 0), [screen, qi, picked, qs.length])
 
   return (
     <div className="min-h-screen pb-16 font-warm bg-stone-50">
@@ -230,9 +274,17 @@ export function BakeryQuizPage() {
             <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)] animate-form-in">
               <AmbientGlow />
               <div className="relative z-10 space-y-2">
-                {shop?.logo && <img src={shop.logo} alt="" className="mx-auto w-14 h-14 rounded-full object-cover border-2 border-white/60" />}
-                <p className="text-5xl animate-icon-pop" aria-hidden="true">{rank.icon}</p>
-                <h1 className="text-2xl font-display font-bold leading-tight">ทดสอบความรู้เบเกอรี่</h1>
+                <Ring value={progress.passed} max={QUIZ_LEVELS.length}>
+                  <div className="text-center">
+                    {shop?.logo ? (
+                      <img src={shop.logo} alt="" className="mx-auto w-14 h-14 rounded-full object-cover border-2 border-white/70" />
+                    ) : (
+                      <p className="text-5xl animate-icon-pop" aria-hidden="true">{rank.icon}</p>
+                    )}
+                    <p className="text-[11px] font-bold text-white/90 mt-0.5">ผ่าน {Math.min(progress.passed, QUIZ_LEVELS.length)}/{QUIZ_LEVELS.length} ด่าน</p>
+                  </div>
+                </Ring>
+                <h1 className="text-3xl font-display font-bold leading-tight">ทดสอบความรู้เบเกอรี่</h1>
                 <SquiggleUnderline className="w-20 h-2.5 mx-auto text-white/40" />
                 <p className="text-sm text-white/85">
                   {TOTAL_QUESTIONS} ข้อ · 6 ระดับ จาก “พอได้” ไปถึง “เทพเจ้า” — ผ่านแต่ละด่านให้ได้อย่างน้อย {PASS_SCORE}/10 ข้อ
@@ -256,8 +308,10 @@ export function BakeryQuizPage() {
                 </span>
               </button>
             )}
-            <div className="space-y-3">
+            <div className="relative space-y-3">
+              <span className="pointer-events-none absolute left-[2.1rem] top-8 bottom-8 w-1 rounded-full bg-gradient-to-b from-green-400 via-amber-400 to-stone-300" aria-hidden="true" />
               {QUIZ_LEVELS.map((lv, i) => {
+                const isNext = i === progress.passed && i < QUIZ_LEVELS.length
                 const unlocked = i <= progress.passed
                 const done = i < progress.passed
                 const best = progress.best[i]
@@ -268,7 +322,8 @@ export function BakeryQuizPage() {
                         'relative overflow-hidden flex items-center gap-3.5 rounded-3xl border p-4 transition-all duration-300 ' +
                         (unlocked
                           ? 'bg-white border-amber-200 shadow-[0_12px_28px_-16px_rgb(51_32_14_/_0.5)]'
-                          : 'bg-stone-100/80 border-stone-200 opacity-75')
+                          : 'bg-stone-100 border-stone-200 text-stone-500') +
+                        (isNext ? ' quiz-next-glow border-amber-400' : '')
                       }
                     >
                       <span className={'absolute left-0 top-0 bottom-0 w-1.5 ' + (done ? 'bg-green-500' : unlocked ? 'bg-gradient-to-b from-amber-400 to-amber-700' : 'bg-stone-300')} aria-hidden="true" />
@@ -276,7 +331,10 @@ export function BakeryQuizPage() {
                         {unlocked ? lv.icon : '🔒'}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-[11px] font-bold tracking-widest text-stone-400">ด่านที่ {i + 1}</p>
+                        <p className="text-[11px] font-bold tracking-widest text-stone-400">
+                          ด่านที่ {i + 1}
+                          {isNext && <span className="ml-2 rounded-full bg-amber-500 text-white px-2 py-0.5 text-[10px] tracking-normal animate-pulse">ด่านถัดไป</span>}
+                        </p>
                         <p className="font-display font-bold text-lg text-stone-900 leading-tight">{lv.name}</p>
                         <p className="text-xs text-stone-500">{lv.tagline}</p>
                         {best !== undefined && <p className="text-xs mt-0.5 font-semibold text-amber-800">คะแนนดีที่สุด {best}/10{done ? ' · ผ่านแล้ว ✓' : ''}</p>}
@@ -322,13 +380,40 @@ export function BakeryQuizPage() {
                   ข้อ {qi + 1}/{qs.length} · ถูก {score}
                 </span>
               </div>
-              <div className="mt-2.5 h-2.5 rounded-full bg-stone-100 overflow-hidden">
-                <div className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-700 transition-all duration-500" style={{ width: `${progressPct}%` }} />
+              <div className="mt-3 flex items-center gap-1.5" aria-hidden="true">
+                {qs.map((q, i) => {
+                  const done = runAnswers[q.key]
+                  return (
+                    <span
+                      key={q.key}
+                      className={
+                        'h-2.5 flex-1 rounded-full transition-all duration-500 ' +
+                        (done === true ? 'bg-gradient-to-r from-green-400 to-emerald-600' : done === false ? 'bg-gradient-to-r from-orange-400 to-red-500' : i === qi ? 'bg-amber-400 animate-pulse' : 'bg-stone-200')
+                      }
+                    />
+                  )
+                })}
               </div>
+              {streak >= 2 && (
+                <p key={streak} className="mt-2 inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-orange-400 to-red-500 text-white text-xs font-bold px-3 py-1 shadow-md animate-qty-pop">
+                  🔥 ตอบถูกติดกัน {streak} ข้อ!
+                </p>
+              )}
             </div>
 
-            <div className="rounded-3xl bg-white border border-stone-200 p-5 shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)]">
-              <p className="text-lg font-display font-semibold text-stone-900 leading-snug">{current.q}</p>
+            <div className="relative overflow-hidden rounded-3xl bg-white border border-stone-200 p-5 pt-6 shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)]">
+              <span className="absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-amber-300 via-amber-600 to-amber-300" aria-hidden="true" />
+              {(() => {
+                const [li, qiOrig] = current.key.split('-').map(Number)
+                const tp = TOPICS[topicOf(li, qiOrig)]
+                return (
+                  <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
+                    <span>{tp.icon}</span>
+                    {tp.name}
+                  </p>
+                )
+              })()}
+              <p className="text-xl font-display font-semibold text-stone-900 leading-snug">{current.q}</p>
             </div>
 
             <div className="space-y-2.5" role="group" aria-label="ตัวเลือกคำตอบ">
@@ -511,12 +596,31 @@ export function BakeryQuizPage() {
               <AmbientGlow />
               {passedThisRun && <ConfettiRain pieces={36} />}
               <div className="relative z-10 space-y-2">
-                <p className="text-6xl animate-icon-pop" aria-hidden="true">{passedThisRun ? level.icon : '💪'}</p>
                 <p className="text-sm text-white/80">ด่านที่ {levelIdx + 1} · {level.name}</p>
-                <p className="text-6xl font-display font-bold tabular-nums leading-none">
-                  <CountUp value={score} format={(n) => String(Math.round(n))} duration={900} />
-                  <span className="text-2xl text-white/70">/{qs.length}</span>
-                </p>
+                <Ring value={score} max={qs.length} size={150} stroke={12}>
+                  <div className="text-center">
+                    <p className="text-3xl leading-none" aria-hidden="true">{passedThisRun ? level.icon : '💪'}</p>
+                    <p className="text-5xl font-display font-bold tabular-nums leading-none mt-1">
+                      <CountUp value={score} format={(n) => String(Math.round(n))} duration={900} />
+                      <span className="text-xl text-white/70">/{qs.length}</span>
+                    </p>
+                  </div>
+                </Ring>
+                <div className="flex justify-center gap-2 text-4xl" aria-label={`ได้ ${score >= 10 ? 3 : score >= 9 ? 2 : score >= PASS_SCORE ? 1 : 0} ดาว`}>
+                  {[1, 2, 3].map((n) => {
+                    const earned = (score >= 10 ? 3 : score >= 9 ? 2 : score >= PASS_SCORE ? 1 : 0) >= n
+                    return (
+                      <span
+                        key={n}
+                        className={earned ? 'quiz-star' : 'opacity-30 grayscale'}
+                        style={earned ? { animationDelay: `${0.5 + n * 0.25}s` } : undefined}
+                        aria-hidden="true"
+                      >
+                        ⭐
+                      </span>
+                    )
+                  })}
+                </div>
                 <h2 className="text-xl font-display font-bold">
                   {passedThisRun ? (levelIdx + 1 === QUIZ_LEVELS.length ? '👑 คุณคือเทพเจ้าเบเกอรี่!' : 'ผ่านด่านแล้ว!') : 'เกือบแล้ว ลองอีกครั้งนะ'}
                 </h2>

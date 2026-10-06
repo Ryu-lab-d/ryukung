@@ -1226,3 +1226,20 @@ a:focus-visible {
 /* เฉลยข้อที่ถูกในเกมทดสอบ: เด้งเบาๆ โดยไม่เปลี่ยนการจัดวางของปุ่ม (animate-qty-pop ตั้ง display:inline-block ทำให้ข้อความหลุดบรรทัด) */
 @keyframes quiz-correct-pop { 0% { transform: scale(1); } 40% { transform: scale(1.04); } 100% { transform: scale(1); } }
 .quiz-correct-pop { animation: quiz-correct-pop 0.45s cubic-bezier(0.34, 1.56, 0.64, 1); box-shadow: 0 10px 22px -12px rgb(22 163 74 / 0.7); }
+
+
+/* ===== หน้าวัดความรู้ (/test) ===== */
+@keyframes quiz-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(245 158 11 / 0.55), 0 12px 28px -16px rgb(51 32 14 / 0.5); }
+  50% { box-shadow: 0 0 0 8px rgb(245 158 11 / 0), 0 12px 28px -16px rgb(51 32 14 / 0.5); }
+}
+.quiz-next-glow { animation: quiz-glow 2s ease-in-out infinite; }
+@keyframes quiz-star-pop {
+  0% { transform: scale(0) rotate(-120deg); opacity: 0; }
+  60% { transform: scale(1.35) rotate(15deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.quiz-star { display: inline-block; animation: quiz-star-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; filter: drop-shadow(0 0 8px rgb(253 224 71 / 0.9)); }
+@media (prefers-reduced-motion: reduce) {
+  .quiz-next-glow, .quiz-star { animation: none; }
+}
