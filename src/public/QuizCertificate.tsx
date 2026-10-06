@@ -6,8 +6,6 @@ const H = 794
 
 export type CertificateData = {
   name: string
-  rankName: string
-  rankIcon: string
   correct: number
   total: number
   pct: number
@@ -16,6 +14,10 @@ export type CertificateData = {
   issuedAt: Date
   certNo: string
 }
+
+/** ฟอนต์เกียรติบัตร: ชื่อ/หัวข้อใช้ Charmonman (ลายมือไทยสง่า) เนื้อความใช้ Pridi (ตัวมีหัวแบบทางการ) — โหลดจาก index.html */
+const FONT_SCRIPT = '"Charmonman", "Mitr", serif'
+const FONT_BODY = '"Pridi", "Sarabun", serif'
 
 const dateTH = (d: Date) => d.toLocaleDateString('th-TH', { day: 'numeric', month: 'long', year: 'numeric' })
 
@@ -54,10 +56,11 @@ export const QuizCertificate = forwardRef<HTMLDivElement, { data: CertificateDat
           <div
             ref={ref}
             id="cert-print-area"
-            className="relative overflow-hidden text-center font-warm"
+            className="relative overflow-hidden text-center"
             style={{
               width: W,
               height: H,
+              fontFamily: FONT_BODY,
               color: '#3a2412',
               background: 'radial-gradient(ellipse at 50% 40%, #fffdf6 0%, #fbeed2 70%, #f3dcb0 100%)',
               boxShadow: '0 14px 40px -12px rgba(51,32,14,0.5)',
@@ -87,46 +90,47 @@ export const QuizCertificate = forwardRef<HTMLDivElement, { data: CertificateDat
               </div>
             )}
 
-            <div className="relative flex h-full flex-col items-center px-24 pt-14 pb-12">
+            <div className="relative flex h-full flex-col items-center px-24 pt-11 pb-11">
               <div className="flex items-center gap-3">
                 {data.logoUrl && (
                   <img src={data.logoUrl} alt="" crossOrigin="anonymous" className="h-14 w-14 rounded-full object-cover border-[3px]" style={{ borderColor: '#b8860b' }} />
                 )}
-                <p className="font-display text-[22px] font-bold tracking-[0.12em]">{data.shopName}</p>
+                <p className="text-[22px] font-semibold tracking-[0.14em]" style={{ fontFamily: FONT_BODY }}>{data.shopName}</p>
               </div>
 
-              <h1 className="font-display mt-3 text-[66px] font-bold leading-none" style={{ color: '#4a2e15', letterSpacing: '0.06em' }}>
+              <h1 className="mt-5 text-[78px] font-bold leading-[1.5]" style={{ fontFamily: FONT_SCRIPT, color: '#4a2e15', textShadow: '2px 3px 0 rgba(184,134,11,0.25)' }}>
                 เกียรติบัตร
               </h1>
-              <p className="mt-1 text-[15px] font-bold tracking-[0.5em] pl-[0.5em]" style={{ color: '#b8860b' }}>
+              <p className="-mt-1 text-[14px] font-semibold tracking-[0.55em] pl-[0.55em]" style={{ color: '#b8860b' }}>
                 CERTIFICATE OF ACHIEVEMENT
               </p>
 
-              <p className="mt-6 text-[17px]">ขอมอบเกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า</p>
+              <p className="mt-4 text-[18px] font-light">ขอมอบเกียรติบัตรฉบับนี้ให้ไว้เพื่อแสดงว่า</p>
 
-              <p className="font-display mt-2 text-[56px] font-bold leading-tight" style={{ color: '#2b1604' }}>
+              <p className="mt-1 text-[62px] font-bold leading-[1.55]" style={{ fontFamily: FONT_SCRIPT, color: '#2b1604' }}>
                 {data.name}
               </p>
               <div className="mt-1 h-[3px] w-[520px]" style={{ background: 'linear-gradient(90deg, transparent, #b8860b, transparent)' }} aria-hidden="true" />
 
-              <p className="mt-4 text-[18px] leading-relaxed">
+              <p className="mt-1 text-[19px] font-light leading-[1.7]">
                 ได้ผ่านการทดสอบความรู้ด้านเบเกอรี่ครบทั้ง 6 ระดับ
                 <br />
-                ตอบถูก <b>{data.correct}</b> จาก <b>{data.total}</b> ข้อ ({data.pct}%) และได้รับสถานะ
+                ตอบถูก <b className="font-semibold">{data.correct}</b> จาก <b className="font-semibold">{data.total}</b> ข้อ ({data.pct}%)
               </p>
 
-              <div
-                className="mt-3 inline-flex items-center gap-3 rounded-full px-9 py-2.5 shadow-lg"
-                style={{ background: 'linear-gradient(135deg, #4a2e15, #7a4423)', color: '#ffe08a' }}
-              >
-                <span className="text-[34px] leading-none">{data.rankIcon}</span>
-                <span className="font-display text-[32px] font-bold tracking-wide">ระดับ {data.rankName}</span>
+              <div className="mt-2 flex items-center gap-4" style={{ color: '#b8860b' }} aria-hidden="true">
+                <span className="h-px w-24" style={{ background: 'linear-gradient(90deg, transparent, #b8860b)' }} />
+                <span className="text-[26px] tracking-[0.35em] pl-[0.35em]">★★★★★★</span>
+                <span className="h-px w-24" style={{ background: 'linear-gradient(270deg, transparent, #b8860b)' }} />
               </div>
+              <p className="mt-1 text-[21px] font-medium" style={{ color: '#4a2e15' }}>
+                ผ่านครบทุกระดับ · ผู้มีความรู้ด้านเบเกอรี่ยอดเยี่ยม
+              </p>
 
               <div className="mt-auto flex w-full items-end justify-between text-[15px]">
                 <div className="w-[300px] text-left leading-relaxed">
                   <p>
-                    ให้ไว้ ณ วันที่ <b>{dateTH(data.issuedAt)}</b>
+                    ให้ไว้ ณ วันที่ <b className="font-semibold">{dateTH(data.issuedAt)}</b>
                   </p>
                   <p className="text-[12px]" style={{ color: '#8a6a3a' }}>
                     เลขที่ {data.certNo}

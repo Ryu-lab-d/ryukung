@@ -193,8 +193,6 @@ export function BakeryQuizPage() {
 
   const certData: CertificateData = {
     name: fullName,
-    rankName: rankFor(6).name,
-    rankIcon: rankFor(6).icon,
     correct: critique.correct,
     total: critique.total || TOTAL_QUESTIONS,
     pct: critique.pct,
@@ -215,7 +213,7 @@ export function BakeryQuizPage() {
   return (
     <div className="min-h-screen pb-16 font-warm bg-stone-50">
       <PageTexture />
-      <div ref={topRef} className="max-w-xl mx-auto px-4 pt-4 space-y-4">
+      <div ref={topRef} className={(screen === 'certificate' ? 'max-w-4xl' : 'max-w-xl') + ' mx-auto px-4 pt-4 space-y-4'}>
         <div className="flex items-center justify-between">
           <Link to="/menu" className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm">
             ← กลับหน้าเมนู
