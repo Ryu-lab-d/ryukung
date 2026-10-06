@@ -13,6 +13,7 @@ import { Barcode128 } from './Barcode128'
 import { ShopStamp } from './ShopStamp'
 
 const SHEET_WIDTH = 794 // A4 กว้างที่ 96dpi
+const SHEET_HEIGHT = 1123 // A4 สูงที่ 96dpi
 
 const FULFILLMENT: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ไปส่งเอง',
@@ -29,9 +30,10 @@ const timeTH = (d: Date | string) =>
   new Date(d).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) + ' น.'
 
 /**
- * เอกสาร Invoice / ใบสรุปคำสั่งซื้อแบบทางการ ขนาด A4 ขาว-ดำล้วน — โลโก้ ร้าน บาร์โค้ดเลขออเดอร์ (+ QR ติดตามสถานะ)
- * วันที่ออกเอกสาร/วันที่สั่ง/วันที่ต้องได้รับของ/เวลานัด ข้อมูลลูกค้าและการรับของครบ รายการสินค้า สรุปยอดพร้อมตัวอักษรไทย
- * ประวัติการชำระเงิน ช่องลงนาม และตราประทับร้าน — สร้างสดจากข้อมูลออเดอร์ ณ ตอนเปิด ไม่ได้บันทึกเป็นเอกสารแยกในฐานข้อมูล
+ * เอกสาร Invoice / ใบสรุปคำสั่งซื้อแบบทางการ ขนาด A4 หนึ่งหน้า ขาว-ดำล้วน — กรอบคู่ ลายน้ำชื่อร้าน โลโก้ บาร์โค้ดเลขออเดอร์
+ * (+ QR ติดตามสถานะ พร้อมข้อความเตือนในวงเล็บว่าหลังจัดส่งสำเร็จติดตามไม่ได้) วันที่ออกเอกสาร/สั่งซื้อ/ต้องได้รับของ/เวลานัด
+ * ข้อมูลลูกค้าและการรับของครบ รายการสินค้า สรุปยอดพร้อมตัวอักษรไทย ประวัติชำระเงิน ช่องลงนาม และตราประทับร้าน —
+ * สร้างสดจากข้อมูลออเดอร์ ณ ตอนเปิด ไม่ได้บันทึกเป็นเอกสารแยกในฐานข้อมูล
  */
 export function InvoicePage() {
   const { id } = useParams()
@@ -40,6 +42,7 @@ export function InvoicePage() {
   const sheetRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
+  const [sheetH, setSheetH] = useState(SHEET_HEIGHT)
   const [qr, setQr] = useState<string | null>(null)
   const [issuedAt] = useState(() => new Date())
 
@@ -60,6 +63,11 @@ export function InvoicePage() {
     window.addEventListener('resize', fit)
     return () => window.removeEventListener('resize', fit)
   }, [loading])
+
+  // กระดาษยืดตามเนื้อหาได้ (ออเดอร์สินค้าเยอะ) — วัดความสูงจริงไว้ให้กรอบย่อบนจอเว้นที่พอดี ไม่ตัดท้ายเอกสาร
+  useLayoutEffect(() => {
+    if (sheetRef.current) setSheetH(Math.max(SHEET_HEIGHT, sheetRef.current.offsetHeight))
+  }, [items.length, payments.length, order, settings, qr])
 
   async function handleSavePng() {
     if (!sheetRef.current) return
@@ -86,8 +94,16 @@ export function InvoicePage() {
   const isPickup = order.fulfillment_type === 'pickup'
   const stampStatus = balance <= 0 ? 'PAID' : paid > 0 ? 'PARTIAL' : 'ISSUED'
 
-  const cell = 'border border-black px-2.5 py-1.5'
-  const label = 'text-[11px] font-semibold tracking-wide'
+  const cell = 'border border-black px-2 py-1'
+  const label = 'text-[10px] font-bold tracking-[0.12em] uppercase'
+  const bar = 'bg-black text-white text-[11px] font-extrabold tracking-wider px-2.5 py-1'
+
+  const keyDates: [string, string, string][] = [
+    ['วันที่สั่งซื้อ', dateTH(order.created_at, false), timeTH(order.created_at)],
+    ['วันที่ต้องได้รับสินค้า', dateTH(order.needed_date, false), ''],
+    [isPickup ? 'เวลานัดรับ' : 'การส่ง', isPickup ? order.pickup_time || 'ไม่ระบุ' : 'ตามขนส่ง', ''],
+    ['วันที่ออกเอกสาร', dateTH(issuedAt, false), timeTH(issuedAt)],
+  ]
 
   return (
     <div className="invoice-page bg-stone-50 min-h-screen">
@@ -110,190 +126,209 @@ export function InvoicePage() {
       </div>
 
       {/* กรอบย่อขนาดบนจอ — ตัวกระดาษจริงอยู่ข้างใน ขนาด 794px เสมอ */}
-      <div className="px-2 pb-10 overflow-hidden">
-        <div ref={frameRef} className="invoice-frame mx-auto" style={{ width: SHEET_WIDTH * scale, height: 1123 * scale }}>
+      <div className="invoice-wrap px-2 pb-10 overflow-hidden">
+        <div ref={frameRef} className="invoice-frame mx-auto" style={{ width: SHEET_WIDTH * scale, height: sheetH * scale }}>
           <div style={{ width: SHEET_WIDTH, transform: `scale(${scale})`, transformOrigin: 'top left' }}>
             <div
               ref={sheetRef}
               id="invoice-print-area"
-              className="relative bg-white text-black font-warm shadow-[0_10px_40px_-12px_rgb(0_0_0_/_0.35)]"
-              style={{ width: SHEET_WIDTH, minHeight: 1123, padding: '40px 44px', fontSize: 13, lineHeight: 1.45, filter: 'grayscale(1)' }}
+              className="relative overflow-hidden bg-white text-black font-warm shadow-[0_10px_40px_-12px_rgb(0_0_0_/_0.35)]"
+              style={{ width: SHEET_WIDTH, minHeight: SHEET_HEIGHT, padding: '34px 40px', fontSize: 12.5, lineHeight: 1.4, filter: 'grayscale(1)' }}
             >
-              {/* หัวเอกสาร */}
-              <div className="flex items-start justify-between gap-6">
-                <div className="flex items-start gap-3.5 min-w-0">
-                  {settings.logo_path && (
-                    <img
-                      src={productImageUrl(settings.logo_path)}
-                      alt=""
-                      crossOrigin="anonymous"
-                      className="h-[72px] w-[72px] shrink-0 rounded-full object-cover border-2 border-black"
-                      style={{ filter: 'grayscale(1) contrast(1.35)' }}
-                    />
-                  )}
-                  <div className="min-w-0">
-                    <p className="text-[22px] font-extrabold leading-tight">{settings.shop_name}</p>
-                    {settings.address && <p className="text-[12px] mt-0.5 whitespace-pre-line">{settings.address}</p>}
-                    {settings.phone && <p className="text-[12px]">โทร. {settings.phone}</p>}
-                  </div>
-                </div>
-                <div className="text-right shrink-0">
-                  <p className="text-[26px] font-extrabold leading-none tracking-wide">ใบสรุปคำสั่งซื้อ</p>
-                  <p className="text-[15px] font-bold tracking-[0.35em] mt-1">INVOICE</p>
-                  <p className="text-[11px] mt-2">เลขที่เอกสาร <span className="font-mono font-bold">INV-{orderNo}</span></p>
-                  <p className="text-[11px]">วันที่ออกเอกสาร {dateTH(issuedAt)} {timeTH(issuedAt)}</p>
-                </div>
+              {/* กรอบคู่รอบกระดาษ + ลายน้ำชื่อร้าน */}
+              <div className="pointer-events-none absolute inset-[10px] border-[3px] border-black" aria-hidden="true" />
+              <div className="pointer-events-none absolute inset-[17px] border border-black" aria-hidden="true" />
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 whitespace-nowrap font-extrabold select-none"
+                style={{ transform: 'translate(-50%, -50%) rotate(-28deg)', fontSize: 92, letterSpacing: 6, color: 'rgba(0,0,0,0.045)' }}
+                aria-hidden="true"
+              >
+                {settings.shop_name.toUpperCase()}
               </div>
 
-              <div className="border-t-[3px] border-black mt-4" />
-              <div className="border-t border-black mt-[3px]" />
-
-              {/* บาร์โค้ด + QR ติดตามออเดอร์ */}
-              <div className="flex items-center justify-between gap-6 mt-4 border border-black px-4 py-3">
-                <div>
-                  <p className={label}>เลขที่ออเดอร์ / ORDER NO. (สแกนบาร์โค้ดเพื่อค้นหาออเดอร์)</p>
-                  <div className="mt-1.5"><Barcode128 value={orderNo} /></div>
-                </div>
-                {qr && (
-                  <div className="flex items-center gap-3 shrink-0">
-                    <div className="text-right text-[11px] leading-snug">
-                      <p className="font-bold">สแกนเพื่อติดตามสถานะออเดอร์</p>
-                      <p>SCAN TO TRACK YOUR ORDER</p>
+              <div className="relative">
+                {/* หัวเอกสาร */}
+                <div className="flex items-stretch justify-between gap-5">
+                  <div className="flex items-center gap-3.5 min-w-0">
+                    {settings.logo_path && (
+                      <img
+                        src={productImageUrl(settings.logo_path)}
+                        alt=""
+                        crossOrigin="anonymous"
+                        className="h-[78px] w-[78px] shrink-0 rounded-full object-cover border-[3px] border-black"
+                        style={{ filter: 'grayscale(1) contrast(1.35)' }}
+                      />
+                    )}
+                    <div className="min-w-0">
+                      <p className="text-[24px] font-extrabold leading-tight tracking-wide">{settings.shop_name}</p>
+                      {settings.address && <p className="text-[11.5px] mt-0.5 whitespace-pre-line leading-snug">{settings.address}</p>}
+                      {settings.phone && <p className="text-[11.5px]">โทร. {settings.phone}</p>}
                     </div>
-                    <img src={qr} alt="QR ติดตามออเดอร์" className="h-[84px] w-[84px] border border-black p-[3px]" />
                   </div>
-                )}
-              </div>
-
-              {/* วันที่สำคัญ */}
-              <table className="w-full border-collapse mt-4 text-[12px]">
-                <tbody>
-                  <tr>
-                    <td className={cell + ' w-1/4'}><p className={label}>วันที่สั่งซื้อ</p><p className="font-bold">{dateTH(order.created_at)}</p><p>{timeTH(order.created_at)}</p></td>
-                    <td className={cell + ' w-1/4'}><p className={label}>วันที่ต้องได้รับสินค้า</p><p className="font-bold">{dateTH(order.needed_date)}</p></td>
-                    <td className={cell + ' w-1/4'}><p className={label}>{isPickup ? 'เวลานัดรับ' : 'ช่วงเวลา'}</p><p className="font-bold">{isPickup ? (order.pickup_time || 'ไม่ระบุ') : 'ตามขนส่ง'}</p></td>
-                    <td className={cell + ' w-1/4'}><p className={label}>วันที่ออกเอกสาร</p><p className="font-bold">{dateTH(issuedAt)}</p><p>{timeTH(issuedAt)}</p></td>
-                  </tr>
-                </tbody>
-              </table>
-
-              {/* ลูกค้า + การรับสินค้า */}
-              <div className="grid grid-cols-2 mt-4 text-[12px]">
-                <div className="border border-black px-3 py-2.5">
-                  <p className="text-[12px] font-extrabold border-b border-black pb-1 mb-1.5">ข้อมูลผู้สั่งซื้อ / CUSTOMER</p>
-                  <p><b>ชื่อ:</b> {order.customers?.name ?? '-'}</p>
-                  <p><b>โทร:</b> {order.customers?.phone ?? '-'}</p>
-                  <p><b>อีเมล:</b> {order.customers?.email ?? '-'}</p>
+                  <div className="shrink-0 w-[250px] border-2 border-black">
+                    <div className="bg-black text-white text-center py-1.5">
+                      <p className="text-[26px] font-extrabold leading-none tracking-[0.4em] pl-[0.4em]">INVOICE</p>
+                      <p className="text-[12px] mt-0.5 tracking-wider">ใบสรุปคำสั่งซื้อ</p>
+                    </div>
+                    <div className="px-2.5 py-1.5 text-[11px] leading-snug">
+                      <p className="flex justify-between"><span>เลขที่เอกสาร</span><b className="font-mono">INV-{orderNo}</b></p>
+                      <p className="flex justify-between"><span>วันที่ออกเอกสาร</span><b>{dateTH(issuedAt, false)}</b></p>
+                      <p className="flex justify-between"><span>เวลา</span><b>{timeTH(issuedAt)}</b></p>
+                    </div>
+                  </div>
                 </div>
-                <div className="border border-black border-l-0 px-3 py-2.5">
-                  <p className="text-[12px] font-extrabold border-b border-black pb-1 mb-1.5">การรับสินค้า / DELIVERY</p>
-                  <p><b>วิธีรับ:</b> {FULFILLMENT[order.fulfillment_type] ?? order.fulfillment_type}</p>
-                  {isPickup ? (
-                    <p><b>สถานที่นัดรับ:</b> {order.pickup_place || '-'}</p>
-                  ) : (
-                    <>
-                      <p><b>ผู้รับ:</b> {order.ship_recipient_name ?? '-'} {order.ship_recipient_phone ? `(${order.ship_recipient_phone})` : ''}</p>
-                      <p><b>ที่อยู่จัดส่ง:</b> {order.ship_address_text || '-'}</p>
-                      {order.tracking_no && <p><b>เลขพัสดุ:</b> {order.tracking_no}{order.carrier ? ` (${order.carrier})` : ''}</p>}
-                    </>
-                  )}
-                  <p><b>สถานะงาน:</b> {order.work_status === 'cancelled' ? 'ยกเลิกแล้ว' : stageLabel(order.fulfillment_type, order.work_status)}</p>
-                </div>
-              </div>
 
-              {/* รายการสินค้า */}
-              <table className="w-full border-collapse mt-4 text-[12.5px]">
-                <thead>
-                  <tr className="bg-black text-white">
-                    <th className="border border-black px-2 py-1.5 w-12 text-center">ลำดับ</th>
-                    <th className="border border-black px-2 py-1.5 text-left">รายการสินค้า</th>
-                    <th className="border border-black px-2 py-1.5 w-20 text-center">จำนวน</th>
-                    <th className="border border-black px-2 py-1.5 w-28 text-right">ราคา/หน่วย</th>
-                    <th className="border border-black px-2 py-1.5 w-28 text-right">จำนวนเงิน</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.map((it: any, i: number) => (
-                    <tr key={it.id}>
-                      <td className="border border-black px-2 py-1.5 text-center">{i + 1}</td>
-                      <td className="border border-black px-2 py-1.5">{it.product_name}{it.note ? <span className="text-[11px]"> ({it.note})</span> : null}</td>
-                      <td className="border border-black px-2 py-1.5 text-center tabular-nums">{it.qty}</td>
-                      <td className="border border-black px-2 py-1.5 text-right tabular-nums">{formatBaht(it.unit_price)}</td>
-                      <td className="border border-black px-2 py-1.5 text-right tabular-nums">{formatBaht(it.line_total)}</td>
-                    </tr>
+                {/* บาร์โค้ด + QR ติดตามออเดอร์ */}
+                <div className="relative mt-4 border-2 border-black px-4 pt-4 pb-2">
+                  <span className="absolute -top-[11px] left-4 bg-black text-white text-[10.5px] font-extrabold tracking-[0.15em] px-2.5 py-[2px]">
+                    TRACKING · ติดตามออเดอร์
+                  </span>
+                  <div className="flex items-center justify-between gap-6">
+                    <div>
+                      <p className={label}>เลขที่ออเดอร์ / ORDER NO.</p>
+                      <div className="mt-1"><Barcode128 value={orderNo} height={46} /></div>
+                    </div>
+                    {qr && (
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right text-[10.5px] leading-snug">
+                          <p className="font-bold text-[11.5px]">สแกนเพื่อติดตามสถานะออเดอร์</p>
+                          <p className="tracking-wider">SCAN TO TRACK YOUR ORDER</p>
+                        </div>
+                        <img src={qr} alt="QR ติดตามออเดอร์" className="h-[78px] w-[78px] border-2 border-black p-[3px]" />
+                      </div>
+                    )}
+                  </div>
+                  <p className="mt-1.5 border-t border-dashed border-black pt-1 text-center text-[10.5px] font-semibold">
+                    ( หลังออเดอร์ขึ้นสถานะ &quot;จัดส่งสำเร็จ&quot; จะไม่สามารถทำการติดตามในหน้านี้ได้ )
+                  </p>
+                </div>
+
+                {/* วันที่สำคัญ */}
+                <div className="grid grid-cols-4 mt-4 border-2 border-black text-[12px]">
+                  {keyDates.map(([t, v, sub], i) => (
+                    <div key={t} className={'px-2.5 py-1.5 ' + (i > 0 ? 'border-l border-black' : '')}>
+                      <p className={label}>{t}</p>
+                      <p className="text-[14px] font-extrabold leading-tight mt-0.5">{v}</p>
+                      <p className="text-[10.5px] leading-tight min-h-[13px]">{sub}</p>
+                    </div>
                   ))}
-                  {Array.from({ length: Math.max(0, 5 - items.length) }).map((_, i) => (
-                    <tr key={'e' + i}>
-                      <td className="border border-black px-2 py-3">&nbsp;</td><td className="border border-black" /><td className="border border-black" /><td className="border border-black" /><td className="border border-black" />
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-
-              {/* สรุปยอด */}
-              <div className="grid grid-cols-[1fr_260px] mt-0 text-[12.5px]">
-                <div className="border border-black border-t-0 px-3 py-2.5">
-                  <p className={label}>จำนวนเงินตัวอักษร / AMOUNT IN WORDS</p>
-                  <p className="font-bold text-[14px] mt-0.5">({thaiBahtText(grand)})</p>
-                  <p className="mt-2"><b>สถานะการชำระเงิน:</b> {PAYMENT[order.payment_status] ?? order.payment_status}</p>
                 </div>
-                <table className="border-collapse w-full">
+
+                {/* ลูกค้า + การรับสินค้า */}
+                <div className="grid grid-cols-2 mt-4 gap-4 text-[12px]">
+                  <div className="border-2 border-black">
+                    <p className={bar}>ผู้สั่งซื้อ / CUSTOMER</p>
+                    <div className="px-2.5 py-1.5 space-y-px">
+                      <p><b>ชื่อ:</b> {order.customers?.name ?? '-'}</p>
+                      <p><b>โทร:</b> {order.customers?.phone ?? '-'}</p>
+                      <p><b>อีเมล:</b> {order.customers?.email ?? '-'}</p>
+                    </div>
+                  </div>
+                  <div className="border-2 border-black">
+                    <p className={bar}>การรับสินค้า / DELIVERY</p>
+                    <div className="px-2.5 py-1.5 space-y-px">
+                      <p><b>วิธีรับ:</b> {FULFILLMENT[order.fulfillment_type] ?? order.fulfillment_type}</p>
+                      {isPickup ? (
+                        <p><b>สถานที่นัดรับ:</b> {order.pickup_place || '-'}</p>
+                      ) : (
+                        <>
+                          <p><b>ผู้รับ:</b> {order.ship_recipient_name ?? '-'} {order.ship_recipient_phone ? `(${order.ship_recipient_phone})` : ''}</p>
+                          <p className="line-clamp-2"><b>ที่อยู่:</b> {order.ship_address_text || '-'}</p>
+                          {order.tracking_no && <p><b>เลขพัสดุ:</b> {order.tracking_no}{order.carrier ? ` (${order.carrier})` : ''}</p>}
+                        </>
+                      )}
+                      <p><b>สถานะงาน:</b> {order.work_status === 'cancelled' ? 'ยกเลิกแล้ว' : stageLabel(order.fulfillment_type, order.work_status)}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* รายการสินค้า */}
+                <table className="w-full border-collapse mt-4 text-[12px] border-2 border-black">
+                  <thead>
+                    <tr className="bg-black text-white">
+                      <th className="px-2 py-1 w-11 text-center">ลำดับ</th>
+                      <th className="px-2 py-1 text-left">รายการสินค้า / DESCRIPTION</th>
+                      <th className="px-2 py-1 w-16 text-center">จำนวน</th>
+                      <th className="px-2 py-1 w-24 text-right">ราคา/หน่วย</th>
+                      <th className="px-2 py-1 w-28 text-right">จำนวนเงิน</th>
+                    </tr>
+                  </thead>
                   <tbody>
-                    <tr><td className={cell + ' border-t-0'}>รวมสินค้า</td><td className={cell + ' border-t-0 text-right tabular-nums'}>{formatBaht(order.items_total)}</td></tr>
-                    <tr><td className={cell}>ส่วนลด</td><td className={cell + ' text-right tabular-nums'}>{Number(order.discount_amount ?? 0) > 0 ? '-' : ''}{formatBaht(order.discount_amount ?? 0)}</td></tr>
-                    <tr><td className={cell}>ค่าจัดส่ง</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(order.shipping_fee ?? 0)}</td></tr>
-                    <tr className="font-extrabold text-[14px] bg-black text-white"><td className={cell}>ยอดรวมสุทธิ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(grand)}</td></tr>
-                    <tr><td className={cell}>ชำระแล้ว</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(paid)}</td></tr>
-                    <tr className="font-bold"><td className={cell}>คงเหลือ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(Math.max(0, balance))}</td></tr>
+                    {items.map((it: any, i: number) => (
+                      <tr key={it.id} style={{ background: i % 2 ? '#efefef' : '#fff' }}>
+                        <td className="border-t border-black px-2 py-1 text-center">{i + 1}</td>
+                        <td className="border-t border-l border-black px-2 py-1">{it.product_name}{it.note ? <span className="text-[10.5px]"> ({it.note})</span> : null}</td>
+                        <td className="border-t border-l border-black px-2 py-1 text-center tabular-nums">{it.qty}</td>
+                        <td className="border-t border-l border-black px-2 py-1 text-right tabular-nums">{formatBaht(it.unit_price)}</td>
+                        <td className="border-t border-l border-black px-2 py-1 text-right tabular-nums font-semibold">{formatBaht(it.line_total)}</td>
+                      </tr>
+                    ))}
+                    {Array.from({ length: Math.max(0, 4 - items.length) }).map((_, i) => (
+                      <tr key={'e' + i} style={{ background: (items.length + i) % 2 ? '#efefef' : '#fff' }}>
+                        <td className="border-t border-black px-2 py-[7px]">&nbsp;</td>
+                        <td className="border-t border-l border-black" />
+                        <td className="border-t border-l border-black" />
+                        <td className="border-t border-l border-black" />
+                        <td className="border-t border-l border-black" />
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
-              </div>
 
-              {/* ประวัติชำระเงิน */}
-              {payments.length > 0 && (
-                <div className="mt-4 text-[11.5px]">
-                  <p className="font-extrabold mb-1">ประวัติการชำระเงิน / PAYMENT HISTORY</p>
-                  <table className="w-full border-collapse">
+                {/* สรุปยอด */}
+                <div className="grid grid-cols-[1fr_250px] gap-4 mt-4 text-[12px]">
+                  <div className="border-2 border-black flex flex-col">
+                    <p className={bar}>จำนวนเงินตัวอักษร / AMOUNT IN WORDS</p>
+                    <p className="font-extrabold text-[14px] px-2.5 pt-2">({thaiBahtText(grand)})</p>
+                    <p className="px-2.5 pt-1.5"><b>สถานะการชำระเงิน:</b> {PAYMENT[order.payment_status] ?? order.payment_status}</p>
+                    {payments.length > 0 && (
+                      <div className="px-2.5 pb-1.5 pt-1 text-[10.5px] leading-snug mt-auto">
+                        {payments.map((p: any) => (
+                          <p key={p.id}>• {dateTH(p.paid_at, false)} {timeTH(p.paid_at)} · {METHOD[p.method] ?? p.method} · {formatBaht(p.amount)} บาท</p>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <table className="border-collapse w-full border-2 border-black">
                     <tbody>
-                      {payments.map((p: any) => (
-                        <tr key={p.id}>
-                          <td className="border border-black px-2 py-1 w-40">{dateTH(p.paid_at, false)} {timeTH(p.paid_at)}</td>
-                          <td className="border border-black px-2 py-1">{METHOD[p.method] ?? p.method}</td>
-                          <td className="border border-black px-2 py-1 w-28 text-right tabular-nums">{formatBaht(p.amount)}</td>
-                        </tr>
-                      ))}
+                      <tr><td className={cell}>รวมสินค้า</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(order.items_total)}</td></tr>
+                      <tr><td className={cell}>ส่วนลด</td><td className={cell + ' text-right tabular-nums'}>{Number(order.discount_amount ?? 0) > 0 ? '-' : ''}{formatBaht(order.discount_amount ?? 0)}</td></tr>
+                      <tr><td className={cell}>ค่าจัดส่ง</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(order.shipping_fee ?? 0)}</td></tr>
+                      <tr className="font-extrabold text-[14px] bg-black text-white"><td className={cell}>ยอดรวมสุทธิ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(grand)}</td></tr>
+                      <tr><td className={cell}>ชำระแล้ว</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(paid)}</td></tr>
+                      <tr className="font-bold"><td className={cell}>คงเหลือ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(Math.max(0, balance))}</td></tr>
                     </tbody>
                   </table>
                 </div>
-              )}
 
-              {(order.note || settings.receipt_footer) && (
-                <div className="mt-4 text-[11.5px] border border-black px-3 py-2">
-                  {order.note && <p><b>หมายเหตุออเดอร์:</b> {order.note}</p>}
-                  {settings.receipt_footer && <p className="whitespace-pre-line"><b>หมายเหตุจากร้าน:</b> {settings.receipt_footer}</p>}
-                </div>
-              )}
-
-              {/* ลงนาม + ตราประทับ */}
-              <div className="relative mt-24 grid grid-cols-2 gap-10 text-center text-[12px]">
-                <div>
-                  <div className="h-16" />
-                  <div className="border-t border-black pt-1">ผู้รับสินค้า / RECEIVED BY</div>
-                  <p className="text-[11px] mt-0.5">วันที่ ____ / ____ / ________</p>
-                </div>
-                <div className="relative">
-                  <div className="absolute -top-[5.5rem] left-1/2 -translate-x-1/2 pointer-events-none">
-                    <ShopStamp shopName={settings.shop_name} statusText={stampStatus} dateText={dateTH(issuedAt, false)} size={150} />
+                {(order.note || settings.receipt_footer) && (
+                  <div className="mt-3 text-[11px] border border-black px-2.5 py-1.5 leading-snug">
+                    {order.note && <p><b>หมายเหตุออเดอร์:</b> {order.note}</p>}
+                    {settings.receipt_footer && <p className="whitespace-pre-line"><b>หมายเหตุจากร้าน:</b> {settings.receipt_footer}</p>}
                   </div>
-                  <div className="h-16" />
-                  <div className="border-t border-black pt-1">ผู้ออกเอกสาร / AUTHORIZED BY</div>
-                  <p className="text-[11px] mt-0.5">{settings.shop_name}</p>
-                </div>
-              </div>
+                )}
 
-              <p className="mt-6 text-center text-[10px] tracking-wide border-t border-black pt-2">
-                เอกสารนี้ออกโดยระบบของร้าน {settings.shop_name} · ตรวจสอบสถานะล่าสุดได้ด้วยการสแกน QR หรือบาร์โค้ดด้านบน
-              </p>
+                {/* ลงนาม + ตราประทับ */}
+                <div className="relative mt-[7.5rem] grid grid-cols-2 gap-14 text-center text-[11.5px] px-4">
+                  <div>
+                    <div className="h-8" />
+                    <div className="border-t border-dotted border-black pt-1 font-semibold">ผู้รับสินค้า / RECEIVED BY</div>
+                    <p className="text-[10.5px] mt-0.5">วันที่ ____ / ____ / ________</p>
+                  </div>
+                  <div className="relative">
+                    <div className="absolute -top-[6.3rem] left-1/2 -translate-x-1/2 pointer-events-none">
+                      <ShopStamp shopName={settings.shop_name} statusText={stampStatus} dateText={dateTH(issuedAt, false)} size={128} />
+                    </div>
+                    <div className="h-8" />
+                    <div className="border-t border-dotted border-black pt-1 font-semibold">ผู้ออกเอกสาร / AUTHORIZED BY</div>
+                    <p className="text-[10.5px] mt-0.5">{settings.shop_name}</p>
+                  </div>
+                </div>
+
+                <p className="mt-4 text-center text-[10px] tracking-wide border-t-2 border-black pt-1.5">
+                  ★ ขอบคุณที่อุดหนุน {settings.shop_name} ★ · เอกสารนี้ออกโดยระบบของร้าน ตรวจสอบสถานะล่าสุดได้ด้วยการสแกน QR หรือบาร์โค้ด
+                </p>
+              </div>
             </div>
           </div>
         </div>

@@ -45,3 +45,38 @@
     display: none !important;
   }
 }
+
+/* Invoice: ตอนพิมพ์ซ่อนทุกอย่างที่ไม่ใช่กระดาษจริงแบบ display:none (ไม่ใช่แค่ล่องหน) กันเหลือพื้นที่ว่างจนล้นไปหน้าที่ 2 */
+@media print {
+  .scroll-progress,
+  .admin-shell > header,
+  .admin-shell > nav {
+    display: none !important;
+  }
+  .admin-shell::before,
+  .admin-shell::after {
+    display: none !important;
+  }
+  .admin-shell,
+  .invoice-page {
+    background: #fff !important;
+    min-height: 0 !important;
+  }
+  .admin-shell main {
+    padding: 0 !important;
+    animation: none !important;
+  }
+  .invoice-wrap {
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+  #invoice-print-area {
+    position: static !important;
+    width: 210mm !important;
+    height: auto !important;
+    min-height: 295mm !important;
+    margin: 0 !important;
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+}
