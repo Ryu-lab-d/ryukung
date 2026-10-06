@@ -19,6 +19,8 @@ import { OrderFormPage } from './orders/OrderFormPage'
 import { OrderDetailPage } from './orders/OrderDetailPage'
 import { ReceiptPage } from './receipts/ReceiptPage'
 import { InvoicePage } from './receipts/InvoicePage'
+import { InvoiceListPage } from './receipts/InvoiceListPage'
+import { InvoiceViewPage } from './receipts/InvoiceViewPage'
 import { SalesSummaryPage } from './reports/SalesSummaryPage'
 import { PublicOrderPage } from './public/PublicOrderPage'
 import { CustomerOrderPage } from './public/CustomerOrderPage'
@@ -108,6 +110,8 @@ function AuthenticatedApp() {
             <Route path="/orders/:id/edit" element={<RequirePage page="orders"><OrderFormPage /></RequirePage>} />
             <Route path="/orders/:id/receipt" element={<RequirePage page="orders"><ReceiptPage /></RequirePage>} />
             <Route path="/orders/:id/invoice" element={<RequirePage page="orders"><InvoicePage /></RequirePage>} />
+            <Route path="/invoices" element={<RequirePage page="orders"><InvoiceListPage /></RequirePage>} />
+            <Route path="/invoices/:id" element={<RequirePage page="orders"><InvoiceViewPage /></RequirePage>} />
             <Route path="/products" element={<RequirePage page="products"><ProductsPage /></RequirePage>} />
             <Route path="/products/new" element={<RequirePage page="products"><ProductForm /></RequirePage>} />
             <Route path="/products/:id" element={<RequirePage page="products"><ProductForm /></RequirePage>} />

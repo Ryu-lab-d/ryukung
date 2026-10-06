@@ -955,11 +955,11 @@ a:focus-visible {
   0%, 62% { transform: translateX(-130%) skewX(-18deg); }
   100% { transform: translateX(260%) skewX(-18deg); }
 }
-.admin-shell main :is(button.bg-stone-900:not(:disabled), a.bg-stone-900, button.bg-gradient-to-r:not(:disabled)) {
+.admin-shell main :is(button.bg-stone-900:not(:disabled), a.bg-stone-900, button.bg-gradient-to-r:not(:disabled)):not(.absolute):not(.fixed) {
   position: relative;
   overflow: hidden;
 }
-.admin-shell main :is(button.bg-stone-900:not(:disabled), a.bg-stone-900, button.bg-gradient-to-r:not(:disabled))::after {
+.admin-shell main :is(button.bg-stone-900:not(:disabled), a.bg-stone-900, button.bg-gradient-to-r:not(:disabled)):not(.absolute):not(.fixed)::after {
   content: '';
   position: absolute;
   inset: 0;
@@ -1139,4 +1139,46 @@ a:focus-visible {
 }
 @media print {
   .admin-shell { background: #fff; }
+}
+
+
+/* ===== ขั้นตอนที่สำเร็จในหน้าติดตามออเดอร์: เครื่องหมายถูกวาดเอง + วงคลื่น + เส้นเชื่อมไหล + การ์ดมีแสงกวาด ===== */
+@keyframes check-node-pop {
+  0% { transform: scale(0); opacity: 0; }
+  55% { transform: scale(1.25); opacity: 1; }
+  78% { transform: scale(0.93); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.check-node { animation: check-node-pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+@keyframes check-path-draw { from { stroke-dashoffset: 30; } to { stroke-dashoffset: 0; } }
+.check-path { stroke-dasharray: 30; stroke-dashoffset: 30; animation: check-path-draw 0.45s ease-out forwards; }
+@keyframes check-ring-burst {
+  0% { transform: scale(0.8); opacity: 0.7; box-shadow: 0 0 0 0 rgb(52 211 153 / 0.7); }
+  100% { transform: scale(2.3); opacity: 0; box-shadow: 0 0 0 0 rgb(52 211 153 / 0); }
+}
+.check-ring { border: 2px solid rgb(52 211 153 / 0.8); animation: check-ring-burst 0.9s ease-out backwards; }
+/* เส้นเชื่อมขั้นที่ผ่านแล้ว: เขียวไล่สี มีแสงไหลลงเบาๆ */
+@keyframes line-flow-move { to { background-position: 0 -200%; } }
+.line-flow {
+  background-image: linear-gradient(180deg, #22c55e 0%, #16a34a 35%, #86efac 50%, #16a34a 65%, #22c55e 100%);
+  background-size: 100% 200%;
+  animation: line-flow-move 2.6s linear infinite;
+}
+/* การ์ดขั้นที่สำเร็จ: แสงขาวกวาดผ่านหนึ่งครั้งตอนโผล่ */
+@keyframes done-sheen-sweep { from { transform: translateX(-120%) skewX(-18deg); } to { transform: translateX(320%) skewX(-18deg); } }
+.done-sheen { position: relative; overflow: hidden; }
+.done-sheen::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.7), transparent);
+  animation: done-sheen-sweep 1.1s ease-out 0.5s 1 both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .check-node, .check-ring, .line-flow, .done-sheen::after { animation: none; }
+  .check-path { animation: none; stroke-dashoffset: 0; }
+  .check-ring { display: none; }
+  .line-flow { background: #22c55e; }
 }

@@ -39,6 +39,7 @@ export function OrderBoardPage() {
           title="ออเดอร์"
           subtitle={<>{activeCount} ออเดอร์กำลังดำเนินการ<span className="hidden lg:inline"> — ลากการ์ดเพื่อเปลี่ยนสถานะ</span></>}
         >
+          <Link to="/invoices">📄 Invoice</Link>
           <Link to="/orders/new" className="hidden lg:inline-flex">+ สร้างออเดอร์</Link>
         </PageHero>
       </div>

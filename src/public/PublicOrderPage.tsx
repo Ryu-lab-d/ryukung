@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from 'react'
 import { useParams } from 'react-router-dom'
 import * as htmlToImage from 'html-to-image'
 import { saveImage } from '../lib/saveImage'
@@ -260,6 +260,53 @@ function LiveStatusCard({ order }: { order: PublicOrderView }) {
   )
 }
 
+/**
+ * ขั้นที่สำเร็จแล้ว: วงกลมเขียวไล่สีเด้งสปริง เครื่องหมายถูกวาดเส้นตามมือทีละขีด มีวงคลื่นแผ่ออกและประกายทองรอบวง
+ * (แทนตัวอักษร ✓ เปล่าๆ) — delay ให้ไล่ทีละขั้นตามลำดับในไทม์ไลน์ ปิดอนิเมชันเองเมื่อผู้ใช้ตั้งลดการเคลื่อนไหว
+ */
+function CheckNode({ delay = 0, gold = false }: { delay?: number; gold?: boolean }) {
+  const gid = useId().replace(/:/g, '')
+  return (
+    <span className="check-node relative grid place-items-center w-8 h-8 shrink-0" style={{ animationDelay: `${delay}s` }} aria-label="เสร็จแล้ว" role="img">
+      <span className="check-ring absolute inset-0 rounded-full" style={{ animationDelay: `${delay + 0.25}s` }} aria-hidden="true" />
+      <svg viewBox="0 0 32 32" className="relative w-8 h-8 drop-shadow-[0_3px_6px_rgba(5,122,85,0.55)]" aria-hidden="true">
+        <defs>
+          <linearGradient id={gid} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={gold ? '#34d399' : '#4ade80'} />
+            <stop offset="100%" stopColor={gold ? '#047857' : '#059669'} />
+          </linearGradient>
+        </defs>
+        <circle cx="16" cy="16" r="15" fill={`url(#${gid})`} />
+        <circle cx="16" cy="16" r="15" fill="none" stroke="rgba(255,255,255,0.55)" strokeWidth="1" />
+        <path
+          d="M9.5 16.8 L14 21.2 L22.8 11.2"
+          fill="none"
+          stroke="#fff"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="check-path"
+          style={{ animationDelay: `${delay + 0.22}s` }}
+        />
+      </svg>
+      {[
+        ['-6px', '-4px', '0.35s'],
+        ['30px', '2px', '0.6s'],
+        ['26px', '30px', '0.85s'],
+      ].map(([l, t, d], i) => (
+        <span
+          key={i}
+          className="gold-glint absolute text-[9px] pointer-events-none"
+          style={{ left: l, top: t, animationDelay: `${delay + parseFloat(d)}s`, animationIterationCount: 2 }}
+          aria-hidden="true"
+        >
+          ✦
+        </span>
+      ))}
+    </span>
+  )
+}
+
 const PAYMENT_STAGE: Record<string, { label: string; icon: string; color: string; done: boolean; pulsing?: boolean }> = {
   unpaid: { label: 'ยังไม่ชำระเงิน', icon: '!', color: 'bg-red-500', done: false },
   partial: { label: 'มัดจำแล้ว', icon: '½', color: 'bg-amber-500', done: false },
@@ -295,21 +342,25 @@ function StatusTimeline({
     <div>
       <div className="flex gap-3 animate-timeline-in">
         <div className="flex flex-col items-center">
-          <div
-            className={
-              'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 text-white shadow ' +
-              payment.color +
-              (payment.pulsing ? ' animate-node-ping ring-4 ring-amber-200' : '')
-            }
-          >
-            {payment.icon}
-          </div>
-          <div className={'w-1 rounded-full flex-1 min-h-6 animate-line-grow ' + (payment.done ? 'bg-green-500' : 'bg-stone-200')} />
+          {payment.done ? (
+            <CheckNode delay={0.1} />
+          ) : (
+            <div
+              className={
+                'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 text-white shadow ' +
+                payment.color +
+                (payment.pulsing ? ' animate-node-ping ring-4 ring-amber-200' : '')
+              }
+            >
+              {payment.icon}
+            </div>
+          )}
+          <div className={'w-1 rounded-full flex-1 min-h-6 animate-line-grow ' + (payment.done ? 'line-flow' : 'bg-stone-200')} />
         </div>
         <div
           className={
             'flex-1 rounded-2xl px-3.5 py-2 mb-2 border ' +
-            (payment.done ? 'bg-green-50/60 border-green-100' : payment.pulsing ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')
+            (payment.done ? 'done-sheen bg-green-50/60 border-green-100' : payment.pulsing ? 'bg-amber-50 border-amber-200' : 'bg-red-50 border-red-200')
           }
         >
           <p className="font-semibold text-stone-900">{payment.label}</p>
@@ -318,27 +369,29 @@ function StatusTimeline({
       </div>
 
       {WORK_STAGES.map((stage, i) => {
-        const isDone = i < currentIndex
-        const isCurrent = i === currentIndex
+        const finalDone = i === currentIndex && stage.key === 'delivered' && !pending
+        const isDone = i < currentIndex || finalDone
+        const isCurrent = i === currentIndex && !finalDone
         return (
           <div key={stage.key} className="flex gap-3 animate-timeline-in" style={{ animationDelay: `${(i + 1) * 0.09}s` }}>
             <div className="flex flex-col items-center">
-              <div
-                className={
-                  'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
-                  (isDone
-                    ? 'bg-gradient-to-br from-green-500 to-emerald-700 text-white shadow animate-qty-pop'
-                    : isCurrent
+              {isDone ? (
+                <CheckNode delay={(i + 1) * 0.12 + 0.2} gold={finalDone} />
+              ) : (
+                <div
+                  className={
+                    'w-8 h-8 rounded-full grid place-items-center text-sm shrink-0 transition-all duration-500 ' +
+                    (isCurrent
                       ? 'bg-brand-shader text-white ring-4 ring-amber-200 animate-node-ping'
                       : 'bg-white text-stone-400 border-2 border-stone-200')
-                }
-                style={isDone ? { animationDelay: `${(i + 1) * 0.09 + 0.25}s`, animationFillMode: 'backwards' } : undefined}
-              >
-                {isDone ? '✓' : i + 1}
-              </div>
+                  }
+                >
+                  {i + 1}
+                </div>
+              )}
               {i < WORK_STAGES.length - 1 && (
                 <div
-                  className={'w-1 rounded-full flex-1 min-h-6 transition-colors duration-500 animate-line-grow ' + (isDone ? 'bg-green-500' : 'bg-stone-200')}
+                  className={'w-1 rounded-full flex-1 min-h-6 transition-colors duration-500 animate-line-grow ' + (isDone && !finalDone ? 'line-flow' : 'bg-stone-200')}
                   style={{ animationDelay: `${(i + 1) * 0.09 + 0.15}s` }}
                 />
               )}
@@ -349,7 +402,7 @@ function StatusTimeline({
                 (isCurrent
                   ? 'bg-gradient-to-r from-amber-50 to-white border-amber-300 shadow-sm text-stone-900'
                   : isDone
-                    ? 'bg-green-50/60 border-green-100 text-stone-600'
+                    ? 'done-sheen bg-green-50/60 border-green-100 text-stone-600'
                     : 'bg-stone-50/60 border-stone-100 text-stone-400')
               }
             >
