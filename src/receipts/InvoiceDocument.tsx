@@ -159,7 +159,26 @@ export function InvoiceDocument({
                 {d.shop.name.toUpperCase()}
               </div>
 
-              <div className="relative">
+              {/* แถบลายเฉียงบนสุด + มุมประดับ 4 มุม */}
+              <div
+                className="pointer-events-none absolute left-[17px] right-[17px] top-[17px] h-[10px]"
+                style={{ backgroundImage: 'repeating-linear-gradient(-45deg, #000 0 2px, #fff 2px 6px)' }}
+                aria-hidden="true"
+              />
+              {[
+                'left-[23px] top-[33px]',
+                'right-[23px] top-[33px] rotate-90',
+                'left-[23px] bottom-[23px] -rotate-90',
+                'right-[23px] bottom-[23px] rotate-180',
+              ].map((pos) => (
+                <svg key={pos} className={'pointer-events-none absolute ' + pos} width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
+                  <path d="M1 25 V1 H25" fill="none" stroke="#000" strokeWidth="2.2" />
+                  <path d="M6 25 V6 H25" fill="none" stroke="#000" strokeWidth="0.8" />
+                  <rect x="-3" y="-3" width="6" height="6" transform="translate(3 3) rotate(45)" fill="#000" />
+                </svg>
+              ))}
+
+              <div className="relative pt-3">
                 {/* หัวเอกสาร */}
                 <div className="flex items-stretch justify-between gap-5">
                   <div className="flex items-center gap-3.5 min-w-0">
@@ -173,14 +192,14 @@ export function InvoiceDocument({
                       />
                     )}
                     <div className="min-w-0">
-                      <p className="text-[24px] font-extrabold leading-tight tracking-wide">{d.shop.name}</p>
+                      <p className="font-display text-[26px] font-bold leading-tight tracking-wide">{d.shop.name}</p>
                       {d.shop.address && <p className="text-[11.5px] mt-0.5 whitespace-pre-line leading-snug">{d.shop.address}</p>}
                       {d.shop.phone && <p className="text-[11.5px]">โทร. {d.shop.phone}</p>}
                     </div>
                   </div>
                   <div className="shrink-0 w-[250px] border-2 border-black">
                     <div className="bg-black text-white text-center py-1.5">
-                      <p className="text-[26px] font-extrabold leading-none tracking-[0.4em] pl-[0.4em]">INVOICE</p>
+                      <p className="font-display text-[27px] font-bold leading-none tracking-[0.4em] pl-[0.4em]">INVOICE</p>
                       <p className="text-[12px] mt-0.5 tracking-wider">ใบสรุปคำสั่งซื้อ</p>
                     </div>
                     <div className="px-2.5 py-1.5 text-[11px] leading-snug">
@@ -192,7 +211,7 @@ export function InvoiceDocument({
                 </div>
 
                 {/* บาร์โค้ด + QR ติดตามออเดอร์ */}
-                <div className="relative mt-4 border-2 border-black px-4 pt-4 pb-2">
+                <div className="relative mt-3.5 border-2 border-black px-4 pt-4 pb-2">
                   <span className="absolute -top-[11px] left-4 bg-black text-white text-[10.5px] font-extrabold tracking-[0.15em] px-2.5 py-[2px]">
                     TRACKING · ติดตามออเดอร์
                   </span>
@@ -217,7 +236,7 @@ export function InvoiceDocument({
                 </div>
 
                 {/* วันที่สำคัญ */}
-                <div className="grid grid-cols-4 mt-4 border-2 border-black text-[12px]">
+                <div className="grid grid-cols-4 mt-3 border-2 border-black text-[12px]">
                   {keyDates.map(([t, v, sub], i) => (
                     <div key={t} className={'px-2.5 py-1.5 ' + (i > 0 ? 'border-l border-black' : '')}>
                       <p className={label}>{t}</p>
@@ -228,9 +247,9 @@ export function InvoiceDocument({
                 </div>
 
                 {/* ลูกค้า + การรับสินค้า */}
-                <div className="grid grid-cols-2 mt-4 gap-4 text-[12px]">
+                <div className="grid grid-cols-2 mt-3 gap-4 text-[12px]">
                   <div className="border-2 border-black">
-                    <p className={bar}>ผู้สั่งซื้อ / CUSTOMER</p>
+                    <p className={bar}>01 · ผู้สั่งซื้อ / CUSTOMER</p>
                     <div className="px-2.5 py-1.5 space-y-px">
                       <p><b>ชื่อ:</b> {d.customer.name ?? '-'}</p>
                       <p><b>โทร:</b> {d.customer.phone ?? '-'}</p>
@@ -238,7 +257,7 @@ export function InvoiceDocument({
                     </div>
                   </div>
                   <div className="border-2 border-black">
-                    <p className={bar}>การรับสินค้า / DELIVERY</p>
+                    <p className={bar}>02 · การรับสินค้า / DELIVERY</p>
                     <div className="px-2.5 py-1.5 space-y-px">
                       <p><b>วิธีรับ:</b> {FULFILLMENT[d.order.fulfillment_type] ?? d.order.fulfillment_type}</p>
                       {isPickup ? (
@@ -256,11 +275,11 @@ export function InvoiceDocument({
                 </div>
 
                 {/* รายการสินค้า */}
-                <table className="w-full border-collapse mt-4 text-[12px] border-2 border-black">
+                <table className="w-full border-collapse mt-3 text-[12px] border-2 border-black">
                   <thead>
                     <tr className="bg-black text-white">
                       <th className="px-2 py-1 w-11 text-center">ลำดับ</th>
-                      <th className="px-2 py-1 text-left">รายการสินค้า / DESCRIPTION</th>
+                      <th className="px-2 py-1 text-left">03 · รายการสินค้า / DESCRIPTION</th>
                       <th className="px-2 py-1 w-16 text-center">จำนวน</th>
                       <th className="px-2 py-1 w-24 text-right">ราคา/หน่วย</th>
                       <th className="px-2 py-1 w-28 text-right">จำนวนเงิน</th>
@@ -268,30 +287,30 @@ export function InvoiceDocument({
                   </thead>
                   <tbody>
                     {d.items.map((it, i: number) => (
-                      <tr key={i} style={{ background: i % 2 ? '#efefef' : '#fff' }}>
-                        <td className="border-t border-black px-2 py-1 text-center">{i + 1}</td>
-                        <td className="border-t border-l border-black px-2 py-1">{it.product_name}{it.note ? <span className="text-[10.5px]"> ({it.note})</span> : null}</td>
-                        <td className="border-t border-l border-black px-2 py-1 text-center tabular-nums">{it.qty}</td>
-                        <td className="border-t border-l border-black px-2 py-1 text-right tabular-nums">{formatBaht(it.unit_price)}</td>
-                        <td className="border-t border-l border-black px-2 py-1 text-right tabular-nums font-semibold">{formatBaht(it.line_total)}</td>
+                      <tr key={i} style={{ background: i % 2 ? '#f4f4f4' : '#fff' }}>
+                        <td className="border-t border-neutral-500 px-2 py-1 text-center">{i + 1}</td>
+                        <td className="border-t border-l border-neutral-500 px-2 py-1">{it.product_name}{it.note ? <span className="text-[10.5px]"> ({it.note})</span> : null}</td>
+                        <td className="border-t border-l border-neutral-500 px-2 py-1 text-center tabular-nums">{it.qty}</td>
+                        <td className="border-t border-l border-neutral-500 px-2 py-1 text-right tabular-nums">{formatBaht(it.unit_price)}</td>
+                        <td className="border-t border-l border-neutral-500 px-2 py-1 text-right tabular-nums font-semibold">{formatBaht(it.line_total)}</td>
                       </tr>
                     ))}
-                    {Array.from({ length: Math.max(0, 4 - d.items.length) }).map((_, i) => (
-                      <tr key={'e' + i} style={{ background: (d.items.length + i) % 2 ? '#efefef' : '#fff' }}>
-                        <td className="border-t border-black px-2 py-[7px]">&nbsp;</td>
-                        <td className="border-t border-l border-black" />
-                        <td className="border-t border-l border-black" />
-                        <td className="border-t border-l border-black" />
-                        <td className="border-t border-l border-black" />
+                    {Array.from({ length: Math.max(0, 2 - d.items.length) }).map((_, i) => (
+                      <tr key={'e' + i} style={{ background: (d.items.length + i) % 2 ? '#f4f4f4' : '#fff' }}>
+                        <td className="border-t border-neutral-500 px-2 py-[7px]">&nbsp;</td>
+                        <td className="border-t border-l border-neutral-500" />
+                        <td className="border-t border-l border-neutral-500" />
+                        <td className="border-t border-l border-neutral-500" />
+                        <td className="border-t border-l border-neutral-500" />
                       </tr>
                     ))}
                   </tbody>
                 </table>
 
                 {/* สรุปยอด */}
-                <div className="grid grid-cols-[1fr_250px] gap-4 mt-4 text-[12px]">
+                <div className="grid grid-cols-[1fr_250px] gap-4 mt-3 text-[12px]">
                   <div className="border-2 border-black flex flex-col">
-                    <p className={bar}>จำนวนเงินตัวอักษร / AMOUNT IN WORDS</p>
+                    <p className={bar}>04 · จำนวนเงินตัวอักษร / AMOUNT IN WORDS</p>
                     <p className="font-extrabold text-[14px] px-2.5 pt-2">({thaiBahtText(grand)})</p>
                     <p className="px-2.5 pt-1.5"><b>สถานะการชำระเงิน:</b> {PAYMENT[d.order.payment_status] ?? d.order.payment_status}</p>
                     {d.payments.length > 0 && (
@@ -307,7 +326,7 @@ export function InvoiceDocument({
                       <tr><td className={cell}>รวมสินค้า</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(d.totals.items_total)}</td></tr>
                       <tr><td className={cell}>ส่วนลด</td><td className={cell + ' text-right tabular-nums'}>{Number(d.totals.discount_amount ?? 0) > 0 ? '-' : ''}{formatBaht(d.totals.discount_amount ?? 0)}</td></tr>
                       <tr><td className={cell}>ค่าจัดส่ง</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(d.totals.shipping_fee ?? 0)}</td></tr>
-                      <tr className="font-extrabold text-[14px] bg-black text-white"><td className={cell}>ยอดรวมสุทธิ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(grand)}</td></tr>
+                      <tr className="font-display font-bold text-[16px] bg-black text-white"><td className={cell + ' py-1.5'}>ยอดรวมสุทธิ</td><td className={cell + ' py-1.5 text-right tabular-nums'}>{formatBaht(grand)}</td></tr>
                       <tr><td className={cell}>ชำระแล้ว</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(paid)}</td></tr>
                       <tr className="font-bold"><td className={cell}>คงเหลือ</td><td className={cell + ' text-right tabular-nums'}>{formatBaht(Math.max(0, balance))}</td></tr>
                     </tbody>
@@ -322,7 +341,7 @@ export function InvoiceDocument({
                 )}
 
                 {/* ลงนาม + ตราประทับ */}
-                <div className="relative mt-[7.5rem] grid grid-cols-2 gap-14 text-center text-[11.5px] px-4">
+                <div className="relative mt-[6.2rem] grid grid-cols-2 gap-14 text-center text-[11.5px] px-4">
                   <div>
                     <div className="h-8" />
                     <div className="border-t border-dotted border-black pt-1 font-semibold">ผู้รับสินค้า / RECEIVED BY</div>
@@ -338,9 +357,28 @@ export function InvoiceDocument({
                   </div>
                 </div>
 
-                <p className="mt-4 text-center text-[10px] tracking-wide border-t-2 border-black pt-1.5">
-                  ★ ขอบคุณที่อุดหนุน {d.shop.name} ★ · เอกสารนี้ออกโดยระบบของร้าน ตรวจสอบสถานะล่าสุดได้ด้วยการสแกน QR หรือบาร์โค้ด
-                </p>
+                <div className="mt-3">
+                  <div className="flex items-center gap-2 text-[10px] font-bold tracking-[0.2em]">
+                    <span className="text-[14px]">✂</span>
+                    <div className="flex-1 border-t-2 border-dashed border-black" />
+                    <span>ตัดตามรอยปะ · ส่วนสำหรับร้านเก็บ / SHOP COPY</span>
+                    <div className="flex-1 border-t-2 border-dashed border-black" />
+                  </div>
+                  <div className="mt-1.5 flex items-center justify-between gap-4 border-2 border-black px-3 py-1.5">
+                    <div className="min-w-0">
+                      <p className="font-display text-[15px] font-bold leading-tight">{orderNo}</p>
+                      <p className="text-[10.5px] leading-tight truncate">{d.customer.name ?? '-'} · {formatBaht(grand)} บาท · {PAYMENT[d.order.payment_status] ?? ''}</p>
+                    </div>
+                    <Barcode128 value={orderNo} height={26} compact />
+                    <div className="text-right text-[10.5px] leading-snug shrink-0">
+                      <p>ออกเมื่อ {dateTH(issuedAt, false)}</p>
+                      <p>ผู้รับ ______________</p>
+                    </div>
+                  </div>
+                  <p className="mt-1 text-center text-[9.5px] tracking-wide">
+                    ★ ขอบคุณที่อุดหนุน {d.shop.name} ★ ตรวจสอบสถานะได้ด้วยการสแกน QR หรือบาร์โค้ด
+                  </p>
+                </div>
               </div>
             </div>
           </div>
