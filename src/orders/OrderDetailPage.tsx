@@ -235,7 +235,7 @@ export function OrderDetailPage() {
             {order.fulfillment_type !== 'pickup' && order.ship_address_text && <p className="line-clamp-2">📍 {order.ship_address_text}</p>}
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-5 gap-1.5">
             {order.customers?.phone ? (
               <a href={`tel:${order.customers.phone}`} className="rounded-2xl bg-green-500 text-white text-xs font-semibold py-2.5 text-center shadow-md">
                 <span className="block text-lg leading-none mb-0.5">📞</span>โทร
@@ -250,6 +250,9 @@ export function OrderDetailPage() {
             </Link>
             <Link to={`/orders/${order.id}/receipt`} className="rounded-2xl bg-white text-stone-900 text-xs font-semibold py-2.5 text-center shadow-md">
               <span className="block text-lg leading-none mb-0.5">🧾</span>ใบเสร็จ
+            </Link>
+            <Link to={`/orders/${order.id}/invoice`} className="rounded-2xl bg-white text-stone-900 text-xs font-semibold py-2.5 text-center shadow-md">
+              <span className="block text-lg leading-none mb-0.5">📄</span>Invoice
             </Link>
             <button
               type="button"
