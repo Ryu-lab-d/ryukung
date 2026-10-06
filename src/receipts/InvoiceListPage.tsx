@@ -2,9 +2,40 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageHero } from '../layout/PageHero'
 import { formatBaht } from '../lib/money'
+import { playScanBeep } from '../lib/uiSound'
+import { Barcode128 } from './Barcode128'
 import { INVOICE_RETENTION_DAYS, listInvoices, normalizeOrderCode, purgeExpiredInvoices, type InvoiceRow } from './invoiceApi'
 
 type Row = Omit<InvoiceRow, 'snapshot'>
+
+// หน้าตาของเลขออเดอร์ที่ "ครบแล้ว" (เช่น RYB-001296) — ใช้ตัดสินว่าเครื่องสแกนยิงเสร็จแล้วแม้ไม่ส่ง Enter มา
+const ORDER_CODE_RE = /^[A-Z]{2,6}-\d{4,}$/
+
+/** หน้าจอ "สแกนสำเร็จ": เส้นเลเซอร์วิ่งผ่านบาร์โค้ดของใบที่เจอ เครื่องหมายถูกวาดเอง แล้วเปิด Invoice ต่อให้เอง */
+function ScanOverlay({ row }: { row: Row }) {
+  return (
+    <div className="fixed inset-0 z-[150] grid place-items-center bg-black/75 backdrop-blur-sm p-4 animate-overlay-fade" role="status" aria-live="polite">
+      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white p-6 text-center shadow-2xl animate-toast-pop">
+        <div className="relative mx-auto w-fit px-1">
+          <Barcode128 value={row.order_no} height={64} />
+          <span className="scan-laser" aria-hidden="true" />
+        </div>
+        <div className="scan-check-wrap mx-auto mt-4 w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 grid place-items-center shadow-[0_10px_24px_-8px_rgb(5_150_105_/_0.7)]">
+          <svg viewBox="0 0 32 32" className="w-10 h-10" aria-hidden="true">
+            <path d="M8 16.5 L14 22 L24 10.5" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" className="check-path" style={{ animationDelay: '0.55s' }} />
+          </svg>
+        </div>
+        <p className="mt-3 text-lg font-display font-bold text-stone-900">สแกนสำเร็จ</p>
+        <p className="font-mono text-xl font-bold tracking-wide text-stone-900">{row.order_no}</p>
+        <p className="text-sm text-stone-500">{row.customer_name ?? 'ไม่มีชื่อลูกค้า'} · {formatBaht(row.grand_total)} บาท</p>
+        <div className="mt-4 h-2 rounded-full bg-stone-200 overflow-hidden">
+          <div className="scan-progress h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-700" />
+        </div>
+        <p className="mt-1.5 text-xs text-stone-400">กำลังเปิด Invoice...</p>
+      </div>
+    </div>
+  )
+}
 
 const PAYMENT: Record<string, { label: string; cls: string }> = {
   unpaid: { label: 'ยังไม่จ่าย', cls: 'bg-red-100 text-red-700' },
@@ -26,7 +57,21 @@ export function InvoiceListPage() {
   const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState<string | null>(null)
+  const [launching, setLaunching] = useState<Row | null>(null)
+  const launchingRef = useRef(false)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  // เจอใบที่ตรงแล้ว: เล่นเสียง+อนิเมชันสแกนสำเร็จ แล้วเปิดเอกสารต่อให้เอง (ครั้งเดียว กันสแกนซ้ำระหว่างรอ)
+  const launch = useCallback(
+    (row: Row) => {
+      if (launchingRef.current) return
+      launchingRef.current = true
+      playScanBeep()
+      setLaunching(row)
+      setTimeout(() => navigate(`/invoices/${row.id}`), 1300)
+    },
+    [navigate]
+  )
 
   const load = useCallback(async (q: string) => {
     const { invoices } = await listInvoices(q)
@@ -45,10 +90,21 @@ export function InvoiceListPage() {
     const t = setTimeout(() => {
       // เคลียร์ข้อความ "ไม่พบ" เฉพาะตอนผู้ใช้เริ่มพิมพ์ใหม่ (ช่องว่างที่เกิดจากการสแกนไม่พบ ต้องคงข้อความไว้ให้เห็น)
       if (search) setNotFound(null)
-      void load(search)
-    }, 200)
+      void load(search).then((found) => {
+        const code = normalizeOrderCode(search)
+        if (!code || launchingRef.current) return
+        // เลขครบรูปแบบแล้ว (เครื่องสแกนยิงเสร็จ แม้ไม่ส่ง Enter): เจอ → เปิดเลย / ไม่เจอ → แจ้งแล้วเคลียร์ช่องรอสแกนใบถัดไป
+        const exact = found.find((r) => r.order_no.toUpperCase() === code)
+        if (exact) launch(exact)
+        else if (found.length === 0 && ORDER_CODE_RE.test(code)) {
+          setNotFound(code)
+          setSearch('')
+          inputRef.current?.focus()
+        }
+      })
+    }, 350)
     return () => clearTimeout(t)
-  }, [search, load])
+  }, [search, load, launch])
 
   async function handleScan(e: FormEvent) {
     e.preventDefault()
@@ -58,7 +114,7 @@ export function InvoiceListPage() {
     const exact = found.filter((r) => r.order_no.toLowerCase() === q.toLowerCase())
     const target = exact.length === 1 ? exact[0] : found.length === 1 ? found[0] : null
     if (target) {
-      navigate(`/invoices/${target.id}`)
+      launch(target)
       return
     }
     if (found.length === 0) {
@@ -70,6 +126,7 @@ export function InvoiceListPage() {
 
   return (
     <div className="bg-stone-50 min-h-screen">
+      {launching && <ScanOverlay row={launching} />}
       <div className="p-4 space-y-4 max-w-2xl mx-auto pb-10">
         <PageHero icon="📄" title="Invoice" subtitle={`เก็บย้อนหลัง ${INVOICE_RETENTION_DAYS} วัน แล้วลบอัตโนมัติ`} chips={[`${rows.length} ใบ`]} />
 
@@ -94,7 +151,7 @@ export function InvoiceListPage() {
               เปิด
             </button>
           </div>
-          <p className="text-[11px] text-stone-500 px-1">เครื่องสแกนบาร์โค้ดจะพิมพ์เลขออเดอร์ใส่ช่องนี้แล้วกด Enter ให้เอง — เจอใบเดียวจะเปิดเอกสารทันที</p>
+          <p className="text-[11px] text-stone-500 px-1">ยิงบาร์โค้ดใส่ช่องนี้ได้เลย ไม่ต้องกดอะไรเพิ่ม — เจอแล้วระบบเล่นอนิเมชัน "สแกนสำเร็จ" และเปิด Invoice ให้เอง (พิมพ์เลขออเดอร์เองก็ได้)</p>
           {notFound && (
             <p className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-xl px-3 py-2 animate-form-in">
               ไม่พบ Invoice ของออเดอร์ "{notFound}" ในช่วง {INVOICE_RETENTION_DAYS} วัน — ถ้าเป็นออเดอร์ที่ยังไม่เคยออก Invoice ให้เปิดจากปุ่ม "Invoice" ในหน้ารายละเอียดออเดอร์

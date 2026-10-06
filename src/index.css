@@ -1192,3 +1192,33 @@ a:focus-visible {
 }
 .animate-heart-beat { animation: heart-beat 1.6s ease-in-out infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-heart-beat { animation: none; } }
+
+
+/* ===== อนิเมชันสแกนบาร์โค้ดสำเร็จ (หน้า Invoice) ===== */
+@keyframes scan-laser-move {
+  from { top: -4px; opacity: 1; }
+  to { top: calc(100% - 2px); opacity: 1; }
+}
+.scan-laser {
+  position: absolute;
+  left: -8px;
+  right: -8px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, #ef4444 20%, #ff6b6b 50%, #ef4444 80%, transparent);
+  box-shadow: 0 0 14px 4px rgb(239 68 68 / 0.75);
+  animation: scan-laser-move 0.45s ease-in-out 2 alternate;
+}
+@keyframes scan-check-in {
+  0% { transform: scale(0); }
+  60% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+.scan-check-wrap { animation: scan-check-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s backwards; }
+@keyframes scan-progress-fill { from { width: 0; } to { width: 100%; } }
+.scan-progress { animation: scan-progress-fill 1.2s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) {
+  .scan-laser { display: none; }
+  .scan-check-wrap, .scan-progress { animation: none; }
+  .scan-progress { width: 100%; }
+}

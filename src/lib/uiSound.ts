@@ -59,3 +59,27 @@ export function playPaymentSound(): void {
     // เหมือน playAddSound — เงียบไปเฉยๆ ไม่ทำให้แอปพัง
   }
 }
+
+
+/** เสียง "ติ๊ด-ติ๊ด" ตอนสแกนบาร์โค้ดสำเร็จ (เสียงสูงสองจังหวะแบบเครื่องสแกนในร้านค้า) */
+export function playScanBeep(): void {
+  try {
+    const ctx = getAudioContext()
+    if (!ctx) return
+    ;[0, 0.11].forEach((offset) => {
+      const osc = ctx.createOscillator()
+      const gain = ctx.createGain()
+      osc.type = 'square'
+      osc.frequency.setValueAtTime(1760, ctx.currentTime + offset)
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset)
+      gain.gain.exponentialRampToValueAtTime(0.12, ctx.currentTime + offset + 0.01)
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.08)
+      osc.connect(gain)
+      gain.connect(ctx.destination)
+      osc.start(ctx.currentTime + offset)
+      osc.stop(ctx.currentTime + offset + 0.09)
+    })
+  } catch {
+    // เสียงเป็นแค่ส่วนเสริม ถ้าเล่นไม่ได้ก็ข้ามไป
+  }
+}
