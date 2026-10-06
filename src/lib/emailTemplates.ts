@@ -186,3 +186,61 @@ export function customEmail(params: {
     ),
   }
 }
+
+
+/** อีเมลแจ้งลูกค้าอัตโนมัติเมื่อสถานะงานเปลี่ยน (กำลังทำ/พร้อมรับ-ส่ง/กำลังจัดส่ง/ส่งมอบแล้ว) */
+export function orderStatusEmail(params: {
+  shopName: string
+  logoUrl?: string | null
+  orderNo: string
+  customerName: string
+  emoji: string
+  headline: string
+  message: string
+  publicUrl: string
+}) {
+  const { shopName, logoUrl, orderNo, customerName, emoji, headline, message, publicUrl } = params
+  return {
+    subject: `${emoji} ${headline} ออเดอร์ ${orderNo} — ${shopName}`,
+    html: shell(
+      shopName,
+      `<p>ถึงคุณ${customerName}</p>
+       <p style="font-size:18px;font-weight:700;color:#3d2b1f;margin:8px 0;">${emoji} ${headline}</p>
+       <p>${message}</p>
+       ${infoBox([{ label: 'เลขที่ออเดอร์', value: orderNo }])}
+       ${ctaButton(publicUrl, 'ติดตามสถานะออเดอร์')}
+       ${customerFooterNote()}`,
+      logoUrl
+    ),
+  }
+}
+
+/** อีเมลส่งลิงก์ Invoice (เอกสารทางการ) ให้ลูกค้าเปิดดู/พิมพ์เอง — ลิงก์ใช้ได้ 30 วันนับจากวันที่ออกเอกสาร */
+export function invoiceLinkEmail(params: {
+  shopName: string
+  logoUrl?: string | null
+  orderNo: string
+  invoiceNo: string
+  customerName: string
+  grandTotal: number
+  invoiceUrl: string
+}) {
+  const { shopName, logoUrl, orderNo, invoiceNo, customerName, grandTotal, invoiceUrl } = params
+  return {
+    subject: `📄 Invoice ${invoiceNo} ออเดอร์ ${orderNo} — ${shopName}`,
+    html: shell(
+      shopName,
+      `<p>ถึงคุณ${customerName}</p>
+       <p>ทางร้านส่ง Invoice ของออเดอร์นี้มาให้ค่ะ เปิดดู พิมพ์ หรือบันทึกเป็น PDF ได้จากปุ่มด้านล่าง</p>
+       ${infoBox([
+         { label: 'เลขที่ Invoice', value: invoiceNo },
+         { label: 'เลขที่ออเดอร์', value: orderNo },
+         { label: 'ยอดรวม', value: `${formatBaht(grandTotal)} บาท` },
+       ])}
+       ${ctaButton(invoiceUrl, 'เปิด Invoice')}
+       <p style="font-size:12px;color:#a1927d;">ลิงก์นี้เปิดดูได้ 30 วันนับจากวันที่ออกเอกสาร</p>
+       ${customerFooterNote()}`,
+      logoUrl
+    ),
+  }
+}

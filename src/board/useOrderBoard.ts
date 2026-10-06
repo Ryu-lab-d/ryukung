@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
+import { notifyStatusChanged } from '../lib/autoNotify'
 
 export type BoardOrder = {
   id: string
@@ -66,7 +67,10 @@ export function useOrderBoard() {
   const changeStatus = useCallback(
     async (orderId: string, workStatus: string) => {
       const { error } = await supabase.from('orders').update({ work_status: workStatus }).eq('id', orderId)
-      if (!error) await load()
+      if (!error) {
+        void notifyStatusChanged(orderId, workStatus)
+        await load()
+      }
       return { error: error ? { message: error.message } : null }
     },
     [load]

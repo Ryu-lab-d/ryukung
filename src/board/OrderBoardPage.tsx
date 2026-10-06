@@ -6,6 +6,7 @@ import { BoardDesktop } from './BoardDesktop'
 import { BoardMobile, type MobileQuickFilter } from './BoardMobile'
 import { LowStockAlertCard } from '../ingredients/LowStockAlertCard'
 import { PageHero } from '../layout/PageHero'
+import { OrderScanBar } from './OrderScanBar'
 
 export function OrderBoardPage() {
   const { orders, loading, changeStatus, reload } = useOrderBoard()
@@ -42,6 +43,9 @@ export function OrderBoardPage() {
           <Link to="/invoices">📄 Invoice</Link>
           <Link to="/orders/new" className="hidden lg:inline-flex">+ สร้างออเดอร์</Link>
         </PageHero>
+      </div>
+      <div className="px-4 pt-3 lg:max-w-3xl">
+        <OrderScanBar onChangeStatus={changeStatus} />
       </div>
       <AlertBar
         orders={orders}

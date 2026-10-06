@@ -8,6 +8,7 @@ import { useAllProductIngredients } from './useAllProductIngredients'
 import { computeProductProfitability } from './productProfitability'
 import { useIngredients } from '../ingredients/useIngredients'
 import { formatBaht } from '../lib/money'
+import { downloadCsv } from '../lib/csv'
 import { AmbientGlow, CountUp } from '../public/PublicSiteChrome'
 import { PageHero } from '../layout/PageHero'
 
@@ -39,7 +40,28 @@ export function SalesSummaryPage() {
   return (
     <div className="bg-stone-50 min-h-screen">
       <div className="p-4 space-y-4 max-w-2xl mx-auto pb-8">
-        <PageHero icon="📊" title="สรุปยอด" subtitle="ภาพรวมยอดขาย กำไร และสินค้าขายดี" />
+        <PageHero icon="📊" title="สรุปยอด" subtitle="ภาพรวมยอดขาย กำไร และสินค้าขายดี">
+          <button
+            type="button"
+            disabled={loading || orders.length === 0}
+            onClick={() =>
+              downloadCsv(
+                `sales-${from}_${to}.csv`,
+                ['เลขที่ออเดอร์', 'วันที่', 'รายการสินค้า', 'ยอดรวม', 'ต้นทุนโดยประมาณ', 'กำไรโดยประมาณ'],
+                orders.map((o) => [
+                  o.order_no ?? '',
+                  new Date(o.created_at).toLocaleDateString('th-TH'),
+                  (o.order_items ?? []).map((it) => `${it.product_name} x${it.qty}`).join(' | '),
+                  o.grand_total,
+                  o.items_cost_total,
+                  Number(o.grand_total) - Number(o.items_cost_total),
+                ])
+              )
+            }
+          >
+            ⬇️ ส่งออก CSV
+          </button>
+        </PageHero>
 
         {/* ตัวเลือกช่วงเวลาแบบแท็บกลุ่มเดียว ให้เห็นชัดว่าอันไหนถูกเลือกอยู่ */}
         <div className="inline-flex rounded-full bg-stone-100 p-1 gap-1">

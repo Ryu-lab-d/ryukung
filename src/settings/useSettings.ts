@@ -22,6 +22,8 @@ export type Settings = {
   faqs: { keywords: string[]; answer: string }[]
   owner_notification_email: string | null
   disaster_mode_enabled: boolean
+  tax_id: string | null
+  auto_notify_customer: boolean
 }
 
 export function useSettings() {

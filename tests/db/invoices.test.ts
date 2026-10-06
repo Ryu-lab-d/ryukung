@@ -80,3 +80,34 @@ describe('Invoice หลังบ้าน', () => {
     expect(purge.error).not.toBeNull()
   })
 })
+
+describe('Invoice: เลขต่อเนื่อง + ลิงก์สาธารณะ', () => {
+  it('next_invoice_no ออกเลข INV-xxxxx เพิ่มขึ้นเรื่อยๆ และคนนอกเรียกไม่ได้', async () => {
+    const db = await signedInClient()
+    const a = await db.rpc('next_invoice_no')
+    const b = await db.rpc('next_invoice_no')
+    expect(a.data).toMatch(/^INV-\d{5,}$/)
+    expect(Number(String(b.data).slice(4))).toBeGreaterThan(Number(String(a.data).slice(4)))
+    expect((await anonClient().rpc('next_invoice_no')).error).not.toBeNull()
+  })
+
+  it('get_public_invoice: ใช้โทเคนเปิดดูได้ แต่เกิน 30 วัน/โทเคนสั้น/โทเคนผิด ไม่คืนอะไร', async () => {
+    const admin = adminClient()
+    const token = 'test-token-' + Math.random().toString(36).slice(2) + 'abcdefghijkl'
+    const row = await admin
+      .from('invoices')
+      .insert({ order_no: 'PUB-TEST-1', invoice_no: 'INV-PUBTEST', snapshot: { order: { public_token: token }, shop: { name: 'X' } } })
+      .select()
+      .single()
+    created.invoices.push(row.data!.id)
+    const anon = anonClient()
+    const ok = await anon.rpc('get_public_invoice', { p_token: token })
+    expect(ok.error).toBeNull()
+    expect(ok.data.invoice_no).toBe('INV-PUBTEST')
+    expect((await anon.rpc('get_public_invoice', { p_token: 'short' })).data).toBeNull()
+    expect((await anon.rpc('get_public_invoice', { p_token: token + 'x' })).data).toBeNull()
+
+    await admin.from('invoices').update({ issued_at: new Date(Date.now() - 31 * 86400000).toISOString() }).eq('id', row.data!.id)
+    expect((await anon.rpc('get_public_invoice', { p_token: token })).data).toBeNull()
+  })
+})

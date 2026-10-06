@@ -104,7 +104,7 @@ export function SettingsPage() {
 
   function text(
     label: string,
-    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer' | 'payment_instructions' | 'owner_notification_email'
+    key: 'shop_name' | 'phone' | 'address' | 'promptpay' | 'receipt_footer' | 'payment_instructions' | 'owner_notification_email' | 'tax_id'
   ) {
     return (
       <div className="space-y-1">
@@ -138,6 +138,7 @@ export function SettingsPage() {
       | 'receipt_show_promptpay'
       | 'require_full_customer_info'
       | 'disaster_mode_enabled'
+      | 'auto_notify_customer'
   ) {
     return (
       <label className="flex items-center gap-2 text-sm">
@@ -257,6 +258,7 @@ export function SettingsPage() {
           <h2 className="text-sm font-semibold text-stone-700">แจ้งเตือนออเดอร์ใหม่</h2>
           <p className="text-xs text-stone-400">พอมีลูกค้ายืนยันออเดอร์ใหม่ ระบบจะส่งอีเมลแจ้งมาที่อีเมลนี้ทันที (ปล่อยว่างไว้ได้ถ้าไม่ต้องการ)</p>
           {text('อีเมลรับแจ้งเตือน', 'owner_notification_email')}
+          {checkbox('แจ้งลูกค้าทางอีเมลอัตโนมัติ (เมื่อสถานะเปลี่ยน / รับเงินแล้ว)', 'auto_notify_customer')}
         </section>
       )}
 
@@ -280,6 +282,7 @@ export function SettingsPage() {
         <section className={CARD + ' space-y-3'}>
           <h2 className="text-sm font-semibold text-stone-700">ค่าเริ่มต้นใบเสร็จ</h2>
           {text('ข้อความท้ายใบเสร็จ', 'receipt_footer')}
+          {text('เลขประจำตัวผู้เสียภาษี (แสดงบน Invoice ถ้ากรอก)', 'tax_id')}
           {checkbox('ใบเสร็จแสดงโลโก้', 'receipt_show_logo')}
           {checkbox('ใบเสร็จแสดงที่อยู่', 'receipt_show_address')}
           {checkbox('ใบเสร็จแสดงเบอร์โทร', 'receipt_show_phone')}

@@ -3,39 +3,14 @@ import { Link, useNavigate } from 'react-router-dom'
 import { PageHero } from '../layout/PageHero'
 import { formatBaht } from '../lib/money'
 import { playScanBeep } from '../lib/uiSound'
-import { Barcode128 } from './Barcode128'
+import { ScanOverlay } from '../lib/ScanOverlay'
+import { downloadCsv } from '../lib/csv'
 import { INVOICE_RETENTION_DAYS, listInvoices, normalizeOrderCode, purgeExpiredInvoices, type InvoiceRow } from './invoiceApi'
 
 type Row = Omit<InvoiceRow, 'snapshot'>
 
 // หน้าตาของเลขออเดอร์ที่ "ครบแล้ว" (เช่น RYB-001296) — ใช้ตัดสินว่าเครื่องสแกนยิงเสร็จแล้วแม้ไม่ส่ง Enter มา
 const ORDER_CODE_RE = /^[A-Z]{2,6}-\d{4,}$/
-
-/** หน้าจอ "สแกนสำเร็จ": เส้นเลเซอร์วิ่งผ่านบาร์โค้ดของใบที่เจอ เครื่องหมายถูกวาดเอง แล้วเปิด Invoice ต่อให้เอง */
-function ScanOverlay({ row }: { row: Row }) {
-  return (
-    <div className="fixed inset-0 z-[150] grid place-items-center bg-black/75 backdrop-blur-sm p-4 animate-overlay-fade" role="status" aria-live="polite">
-      <div className="relative w-full max-w-sm overflow-hidden rounded-3xl bg-white p-6 text-center shadow-2xl animate-toast-pop">
-        <div className="relative mx-auto w-fit px-1">
-          <Barcode128 value={row.order_no} height={64} />
-          <span className="scan-laser" aria-hidden="true" />
-        </div>
-        <div className="scan-check-wrap mx-auto mt-4 w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 grid place-items-center shadow-[0_10px_24px_-8px_rgb(5_150_105_/_0.7)]">
-          <svg viewBox="0 0 32 32" className="w-10 h-10" aria-hidden="true">
-            <path d="M8 16.5 L14 22 L24 10.5" fill="none" stroke="#fff" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" className="check-path" style={{ animationDelay: '0.55s' }} />
-          </svg>
-        </div>
-        <p className="mt-3 text-lg font-display font-bold text-stone-900">สแกนสำเร็จ</p>
-        <p className="font-mono text-xl font-bold tracking-wide text-stone-900">{row.order_no}</p>
-        <p className="text-sm text-stone-500">{row.customer_name ?? 'ไม่มีชื่อลูกค้า'} · {formatBaht(row.grand_total)} บาท</p>
-        <div className="mt-4 h-2 rounded-full bg-stone-200 overflow-hidden">
-          <div className="scan-progress h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-700" />
-        </div>
-        <p className="mt-1.5 text-xs text-stone-400">กำลังเปิด Invoice...</p>
-      </div>
-    </div>
-  )
-}
 
 const PAYMENT: Record<string, { label: string; cls: string }> = {
   unpaid: { label: 'ยังไม่จ่าย', cls: 'bg-red-100 text-red-700' },
@@ -126,9 +101,32 @@ export function InvoiceListPage() {
 
   return (
     <div className="bg-stone-50 min-h-screen">
-      {launching && <ScanOverlay row={launching} />}
+      {launching && (
+        <ScanOverlay
+          orderNo={launching.order_no}
+          line1={`${launching.customer_name ?? 'ไม่มีชื่อลูกค้า'} · ${formatBaht(launching.grand_total)} บาท`}
+          caption="กำลังเปิด Invoice..."
+        />
+      )}
       <div className="p-4 space-y-4 max-w-2xl mx-auto pb-10">
         <PageHero icon="📄" title="Invoice" subtitle={`เก็บย้อนหลัง ${INVOICE_RETENTION_DAYS} วัน แล้วลบอัตโนมัติ`} chips={[`${rows.length} ใบ`]} />
+
+        <div className="flex justify-end">
+          <button
+            type="button"
+            disabled={rows.length === 0}
+            onClick={() =>
+              downloadCsv(
+                `invoices-${new Date().toISOString().slice(0, 10)}.csv`,
+                ['เลขที่ Invoice', 'เลขที่ออเดอร์', 'ลูกค้า', 'ยอดรวม', 'สถานะชำระเงิน', 'วันที่ออกเอกสาร'],
+                rows.map((r) => [r.invoice_no, r.order_no, r.customer_name ?? '', r.grand_total, PAYMENT[r.payment_status ?? '']?.label ?? r.payment_status ?? '', new Date(r.issued_at).toLocaleString('th-TH')])
+              )
+            }
+            className="rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-semibold px-4 py-2 shadow-sm disabled:opacity-50"
+          >
+            ⬇️ ส่งออก CSV ({rows.length} ใบ)
+          </button>
+        </div>
 
         <form onSubmit={(e) => void handleScan(e)} className="space-y-1.5">
           <div className="relative">

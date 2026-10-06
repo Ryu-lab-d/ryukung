@@ -28,6 +28,8 @@ const baseSettings: Settings = {
   faqs: [],
   owner_notification_email: null,
   disaster_mode_enabled: true,
+  tax_id: null,
+  auto_notify_customer: true,
 }
 
 const createPOSSale = vi.fn()

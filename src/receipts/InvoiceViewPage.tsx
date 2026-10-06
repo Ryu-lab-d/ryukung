@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ConfirmDialog } from '../lib/ConfirmDialog'
 import { InvoiceDocument } from './InvoiceDocument'
-import { deleteInvoice, getInvoice, type InvoiceRow } from './invoiceApi'
+import { deleteInvoice, emailInvoiceToCustomer, getInvoice, invoiceShareUrl, type InvoiceRow } from './invoiceApi'
 
 /** เปิดดู Invoice ย้อนหลังจากรายการ (/invoices) — วาดจาก snapshot ที่บันทึกไว้ ใช้ได้แม้ออเดอร์ต้นทางถูกลบไปแล้ว */
 export function InvoiceViewPage() {
@@ -49,6 +49,13 @@ export function InvoiceViewPage() {
         backTo="/invoices"
         backLabel="← กลับรายการ Invoice"
         onDelete={() => setConfirmDelete(true)}
+        onSendEmail={() => emailInvoiceToCustomer(invoice)}
+          onCopyLink={async () => {
+          const url = invoiceShareUrl(invoice.snapshot)
+          if (!url) return 'ออเดอร์นี้ไม่มีลิงก์สาธารณะ'
+          await navigator.clipboard.writeText(url)
+          return 'คัดลอกลิงก์ Invoice แล้ว — ส่งให้ลูกค้าทางไลน์ได้เลย (เปิดได้ 30 วัน)'
+        }}
       />
       {confirmDelete && (
         <ConfirmDialog

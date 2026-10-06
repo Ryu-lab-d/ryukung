@@ -1,8 +1,11 @@
 import { supabase } from '../lib/supabase'
+import { sendCustomerEmail } from '../lib/customerEmail'
+import { invoiceLinkEmail } from '../lib/emailTemplates'
+import { productImageUrl } from '../products/ProductCard'
 
 /** ข้อมูลทั้งหมดที่ใช้วาดเอกสาร Invoice — บันทึกเป็น snapshot ตอนออกเอกสาร ออเดอร์ถูกลบไปแล้วก็ยังเปิดดูย้อนหลังได้ */
 export type InvoiceSnapshot = {
-  shop: { name: string; logo_path: string | null; address: string | null; phone: string | null; footer: string | null }
+  shop: { name: string; logo_path: string | null; address: string | null; phone: string | null; footer: string | null; tax_id?: string | null }
   order: {
     order_no: string
     created_at: string
@@ -53,6 +56,7 @@ export function buildInvoiceSnapshot(order: Loose, items: Loose[], payments: Loo
       address: settings.address ?? null,
       phone: settings.phone ?? null,
       footer: settings.receipt_footer ?? null,
+      tax_id: settings.tax_id ?? null,
     },
     order: {
       order_no: order.order_no ?? '-',
@@ -93,7 +97,6 @@ export function buildInvoiceSnapshot(order: Loose, items: Loose[], payments: Loo
 function summaryColumns(snapshot: InvoiceSnapshot) {
   return {
     order_no: snapshot.order.order_no,
-    invoice_no: 'INV-' + snapshot.order.order_no,
     customer_name: snapshot.customer.name,
     grand_total: snapshot.totals.grand_total,
     payment_status: snapshot.order.payment_status,
@@ -108,9 +111,12 @@ export async function fetchInvoiceByOrder(orderId: string) {
 
 /** ออก Invoice ใหม่ — วันที่ออกเอกสารถูกตั้งตอนนี้และคงที่ตลอด 30 วัน (หนึ่งออเดอร์หนึ่งใบ) */
 export async function issueInvoice(orderId: string, snapshot: InvoiceSnapshot) {
+  // เลขที่ Invoice รันต่อเนื่อง INV-00001... จากฐานข้อมูล (ไม่ซ้ำแม้ออกพร้อมกันหลายเครื่อง)
+  const no = await supabase.rpc('next_invoice_no')
+  if (no.error || !no.data) return { invoice: null, error: { message: no.error?.message ?? 'ขอเลขที่ Invoice ไม่สำเร็จ' } }
   const { data, error } = await supabase
     .from('invoices')
-    .insert({ order_id: orderId, snapshot, ...summaryColumns(snapshot) })
+    .insert({ order_id: orderId, snapshot, invoice_no: no.data as string, ...summaryColumns(snapshot) })
     .select()
     .single()
   return { invoice: (data as InvoiceRow | null) ?? null, error: error ? { message: error.message } : null }
@@ -161,4 +167,35 @@ export async function listInvoices(search: string) {
   if (q) query = query.ilike('order_no', `%${q}%`)
   const { data, error } = await query
   return { invoices: (data ?? []) as Omit<InvoiceRow, 'snapshot'>[], error: error ? { message: error.message } : null }
+}
+
+
+/** ลิงก์ Invoice สาธารณะของใบนี้ (ลูกค้าเปิดดู/พิมพ์เองได้ ภายใน 30 วันนับจากวันที่ออก) — ใช้โทเคนเดียวกับลิงก์ติดตามออเดอร์ */
+export function invoiceShareUrl(snapshot: InvoiceSnapshot): string | null {
+  return snapshot.order.public_token ? `${window.location.origin}/inv/${snapshot.order.public_token}` : null
+}
+
+/** ส่งลิงก์ Invoice ให้ลูกค้าทางอีเมล — คืนข้อความผลลัพธ์ให้แสดงเป็นแจ้งเตือน */
+export async function emailInvoiceToCustomer(invoice: InvoiceRow): Promise<string> {
+  const s = invoice.snapshot
+  const url = invoiceShareUrl(s)
+  if (!s.customer.email) return 'ลูกค้าคนนี้ไม่มีอีเมล ส่งไม่ได้'
+  if (!url) return 'ออเดอร์นี้ไม่มีลิงก์สาธารณะ ส่งไม่ได้'
+  const { subject, html } = invoiceLinkEmail({
+    shopName: s.shop.name,
+    logoUrl: s.shop.logo_path ? productImageUrl(s.shop.logo_path) : null,
+    orderNo: s.order.order_no,
+    invoiceNo: invoice.invoice_no,
+    customerName: s.customer.name ?? 'ลูกค้า',
+    grandTotal: s.totals.grand_total,
+    invoiceUrl: url,
+  })
+  const { error } = await sendCustomerEmail(s.customer.email, subject, html)
+  return error ? 'ส่งอีเมลไม่สำเร็จ: ' + error : `ส่ง Invoice ไปที่ ${s.customer.email} แล้ว`
+}
+
+/** ดึง Invoice ด้วยโทเคนสาธารณะ (ไม่ต้องล็อกอิน) — ไม่พบ/ครบ 30 วัน = null */
+export async function fetchPublicInvoice(token: string) {
+  const { data } = await supabase.rpc('get_public_invoice', { p_token: token })
+  return (data as { invoice_no: string; issued_at: string; snapshot: InvoiceSnapshot } | null) ?? null
 }

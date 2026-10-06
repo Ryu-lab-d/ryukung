@@ -22,6 +22,7 @@ import { productImageUrl } from '../products/ProductCard'
 import { ComposeEmailModal } from './ComposeEmailModal'
 import { AmbientGlow } from '../public/PublicSiteChrome'
 import { NextActionCard } from './NextActionCard'
+import { notifyStatusChanged } from '../lib/autoNotify'
 import { daysFromToday } from '../lib/dates'
 
 const FULFILLMENT_LABELS: Record<string, string> = {
@@ -69,6 +70,7 @@ export function OrderDetailPage() {
     const { error } = await changeWorkStatus(order.id, newStatus)
     if (error) { setStatusError(error.message); return }
     await reload()
+    void notifyStatusChanged(order.id, newStatus)
     setStatusChange({ status: newStatus, label: stageLabel(order.fulfillment_type, newStatus) })
   }
 
@@ -92,7 +94,7 @@ export function OrderDetailPage() {
       await supabase.from('orders').update({ payment_claimed_at: null }).eq('id', order.id)
     }
     await reload()
-    if (order.customers?.email && settings) {
+    if (order.customers?.email && settings && settings.auto_notify_customer !== false) {
       const newBalanceDue = balanceDue - amount
       const { subject, html } = paymentReceivedEmail({
         shopName: settings.shop_name,

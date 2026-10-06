@@ -5,6 +5,8 @@ import { useSettings } from '../settings/useSettings'
 import { InvoiceDocument } from './InvoiceDocument'
 import {
   buildInvoiceSnapshot,
+  emailInvoiceToCustomer,
+  invoiceShareUrl,
   fetchInvoiceByOrder,
   issueInvoice,
   refreshInvoice,
@@ -79,6 +81,13 @@ export function InvoicePage() {
       backTo={`/orders/${id}`}
       backLabel="← กลับหน้าออเดอร์นี้"
       onRefresh={handleRefresh}
+      onSendEmail={() => emailInvoiceToCustomer(invoice)}
+      onCopyLink={async () => {
+        const url = invoiceShareUrl(invoice.snapshot)
+        if (!url) return 'ออเดอร์นี้ไม่มีลิงก์สาธารณะ'
+        await navigator.clipboard.writeText(url)
+        return 'คัดลอกลิงก์ Invoice แล้ว — ส่งให้ลูกค้าทางไลน์ได้เลย (เปิดได้ 30 วัน)'
+      }}
     />
   )
 }

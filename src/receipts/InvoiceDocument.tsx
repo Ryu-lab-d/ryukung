@@ -40,15 +40,28 @@ export function InvoiceDocument({
   backLabel,
   onRefresh,
   onDelete,
+  onSendEmail,
+  onCopyLink,
+  publicView = false,
 }: {
   snapshot: InvoiceSnapshot
   invoiceNo: string
   issuedAt: string
-  backTo: string
-  backLabel: string
+  backTo?: string
+  backLabel?: string
   onRefresh?: () => void | Promise<void>
   onDelete?: () => void | Promise<void>
+  /** ส่งลิงก์ Invoice ให้ลูกค้าทางอีเมล — คืนข้อความผลลัพธ์ */
+  onSendEmail?: () => Promise<string>
+  onCopyLink?: () => Promise<string>
+  /** มุมมองของลูกค้า (หน้าสาธารณะ): ไม่มีปุ่มจัดการและไม่โชว์ข้อความอายุเอกสารของร้าน */
+  publicView?: boolean
 }) {
+  const [notice, setNotice] = useState<string | null>(null)
+  async function run(fn: () => Promise<string>) {
+    setNotice(null)
+    setNotice(await fn())
+  }
   const sheetRef = useRef<HTMLDivElement>(null)
   const frameRef = useRef<HTMLDivElement>(null)
   const [scale, setScale] = useState(1)
@@ -108,12 +121,14 @@ export function InvoiceDocument({
   return (
     <div className="invoice-page bg-stone-50 min-h-screen">
       <div className="p-4 space-y-4 max-w-5xl mx-auto pb-10 no-print">
+        {backTo && (
         <Link
           to={backTo}
           className="inline-flex items-center gap-1 rounded-full bg-white border border-stone-300 text-stone-700 text-sm font-medium px-3.5 py-1.5 shadow-sm"
         >
           {backLabel}
         </Link>
+        )}
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" onClick={() => window.print()} className="rounded-full bg-stone-900 text-white px-5 py-2.5 text-sm font-semibold">
             🖨️ พิมพ์ / บันทึกเป็น PDF
@@ -121,6 +136,16 @@ export function InvoiceDocument({
           <button type="button" onClick={() => void handleSavePng()} className="rounded-full bg-white border border-stone-300 text-stone-700 px-5 py-2.5 text-sm font-semibold">
             🖼️ บันทึกเป็นรูป
           </button>
+          {onSendEmail && (
+            <button type="button" onClick={() => void run(onSendEmail)} className="rounded-full bg-white border border-stone-300 text-stone-700 px-5 py-2.5 text-sm font-semibold">
+              ✉️ ส่งอีเมลให้ลูกค้า
+            </button>
+          )}
+          {onCopyLink && (
+            <button type="button" onClick={() => void run(onCopyLink)} className="rounded-full bg-white border border-stone-300 text-stone-700 px-5 py-2.5 text-sm font-semibold">
+              🔗 คัดลอกลิงก์ให้ลูกค้า
+            </button>
+          )}
           {onRefresh && (
             <button type="button" onClick={() => void onRefresh()} className="rounded-full bg-white border border-stone-300 text-stone-700 px-5 py-2.5 text-sm font-semibold">
               🔄 อัปเดตข้อมูลจากออเดอร์ล่าสุด
@@ -133,9 +158,12 @@ export function InvoiceDocument({
           )}
           <p className="text-xs text-stone-500">เอกสารขาว-ดำ ขนาด A4 · ตอนพิมพ์เลือก "ขนาดจริง / 100%" และปิดหัวท้ายกระดาษของเบราว์เซอร์</p>
         </div>
+        {notice && <p className="text-sm font-semibold text-green-700 bg-green-50 border border-green-200 rounded-xl px-3 py-2 animate-form-in">{notice}</p>}
+        {!publicView && (
         <p className="text-xs text-stone-500">
           ออกเอกสารเมื่อ {dateTH(issuedAt)} {timeTH(issuedAt)} · ระบบเก็บ Invoice นี้ไว้ {INVOICE_RETENTION_DAYS} วัน (เหลืออีก {daysLeft} วัน) แล้วลบอัตโนมัติ
         </p>
+        )}
       </div>
 
       {/* กรอบย่อขนาดบนจอ — ตัวกระดาษจริงอยู่ข้างใน ขนาด 794px เสมอ */}
@@ -195,6 +223,7 @@ export function InvoiceDocument({
                       <p className="font-display text-[26px] font-bold leading-tight tracking-wide">{d.shop.name}</p>
                       {d.shop.address && <p className="text-[11.5px] mt-0.5 whitespace-pre-line leading-snug">{d.shop.address}</p>}
                       {d.shop.phone && <p className="text-[11.5px]">โทร. {d.shop.phone}</p>}
+                      {d.shop.tax_id && <p className="text-[11.5px]">เลขประจำตัวผู้เสียภาษี {d.shop.tax_id}</p>}
                     </div>
                   </div>
                   <div className="shrink-0 w-[250px] border-2 border-black">

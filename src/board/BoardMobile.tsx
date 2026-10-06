@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { OrderCard } from './OrderCard'
 import { recordPayment } from '../orders/api'
+import { notifyPaymentReceived } from '../lib/autoNotify'
 import { formatBaht } from '../lib/money'
 import { Toast } from '../lib/Toast'
 import { isToday } from '../lib/dates'
@@ -70,6 +71,7 @@ export function BoardMobile({
       setError(error.message)
       return
     }
+    void notifyPaymentReceived(o.id, o.grand_total)
     onPaid()
   }
 
