@@ -80,3 +80,33 @@
     break-after: avoid;
   }
 }
+
+
+/* เกียรติบัตรทดสอบความรู้เบเกอรี่ (/test): A4 แนวนอน หน้าเดียว — ใช้ named page ให้ต่างจาก Invoice ที่เป็นแนวตั้ง */
+@page cert {
+  size: A4 landscape;
+  margin: 0;
+}
+@media print {
+  #cert-print-area,
+  #cert-print-area * {
+    visibility: visible;
+  }
+  .cert-frame,
+  .cert-frame > div {
+    transform: none !important;
+    width: auto !important;
+    height: auto !important;
+  }
+  #cert-print-area {
+    page: cert;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 297mm !important;
+    height: 209mm !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

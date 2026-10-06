@@ -1,15 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import * as htmlToImage from 'html-to-image'
+import { saveImage } from '../lib/saveImage'
 import { getPublicMenu } from '../lib/publicMenuApi'
 import { playAddSound, playPaymentSound } from '../lib/uiSound'
 import { productImageUrl } from '../products/ProductCard'
 import { AmbientGlow, ConfettiRain, CountUp, PageTexture, Reveal, SquiggleUnderline, burstSparkles } from './PublicSiteChrome'
 import { PASS_SCORE, QUIZ_LEVELS, TOTAL_QUESTIONS, rankFor, type QuizQuestion } from './quizData'
+import { answerKey, buildCritique } from './quizCritique'
+import { QuizCertificate, type CertificateData } from './QuizCertificate'
 
 const STORAGE_KEY = 'bakery-quiz-progress'
 
-type Progress = { passed: number; best: number[] }
-type Prepared = { q: string; options: string[]; correct: number; why: string }
+type Progress = {
+  passed: number
+  best: number[]
+  /** ผลตอบล่าสุดของแต่ละข้อ (key = "ด่าน-ข้อ") ใช้วิเคราะห์คำวิจารณ์รายหมวด */
+  answers?: Record<string, boolean>
+  firstName?: string
+  lastName?: string
+  certNo?: string
+  certDate?: string
+}
+type Prepared = { q: string; options: string[]; correct: number; why: string; key: string }
 
 function loadProgress(): Progress {
   try {
@@ -39,10 +52,10 @@ function shuffle<T>(arr: T[]): T[] {
   return a
 }
 
-function prepare(questions: QuizQuestion[]): Prepared[] {
-  return shuffle(questions).map((q) => {
+function prepare(questions: QuizQuestion[], levelIdx: number): Prepared[] {
+  return shuffle(questions.map((q, i) => ({ q, i }))).map(({ q, i }) => {
     const options = shuffle([q.a, ...q.wrong])
-    return { q: q.q, options, correct: options.indexOf(q.a), why: q.why }
+    return { q: q.q, options, correct: options.indexOf(q.a), why: q.why, key: answerKey(levelIdx, i) }
   })
 }
 
@@ -54,7 +67,11 @@ const LETTERS = ['ก', 'ข', 'ค', 'ง']
  */
 export function BakeryQuizPage() {
   const [progress, setProgress] = useState<Progress>(loadProgress)
-  const [screen, setScreen] = useState<'intro' | 'playing' | 'result'>('intro')
+  const [screen, setScreen] = useState<'intro' | 'playing' | 'result' | 'critique' | 'name' | 'certificate'>('intro')
+  const [runAnswers, setRunAnswers] = useState<Record<string, boolean>>({})
+  const [firstName, setFirstName] = useState(() => loadProgress().firstName ?? '')
+  const [lastName, setLastName] = useState(() => loadProgress().lastName ?? '')
+  const certRef = useRef<HTMLDivElement>(null)
   const [levelIdx, setLevelIdx] = useState(0)
   const [qs, setQs] = useState<Prepared[]>([])
   const [qi, setQi] = useState(0)
@@ -78,7 +95,8 @@ export function BakeryQuizPage() {
 
   const start = useCallback((idx: number) => {
     setLevelIdx(idx)
-    setQs(prepare(QUIZ_LEVELS[idx].questions))
+    setQs(prepare(QUIZ_LEVELS[idx].questions, idx))
+    setRunAnswers({})
     setQi(0)
     setPicked(null)
     setScore(0)
@@ -90,6 +108,7 @@ export function BakeryQuizPage() {
   function choose(i: number, el: HTMLElement | null) {
     if (picked !== null || !current) return
     setPicked(i)
+    setRunAnswers((r) => ({ ...r, [current.key]: i === current.correct }))
     if (i === current.correct) {
       setScore((s) => s + 1)
       playAddSound()
@@ -111,13 +130,13 @@ export function BakeryQuizPage() {
     best[levelIdx] = Math.max(best[levelIdx] ?? 0, finalScore)
     let passed = progress.passed
     if (finalScore >= PASS_SCORE && levelIdx === progress.passed) passed = progress.passed + 1
-    const updated = { passed, best }
+    const updated: Progress = { ...progress, passed, best, answers: { ...(progress.answers ?? {}), ...runAnswers } }
     setProgress(updated)
     saveProgress(updated)
     if (finalScore >= PASS_SCORE) playPaymentSound()
     setScreen('result')
     window.scrollTo({ top: 0 })
-  }, [picked, qi, qs.length, score, progress, levelIdx])
+  }, [picked, qi, qs.length, score, progress, levelIdx, runAnswers])
 
   // คีย์ลัดบนคอม: 1–4 เลือกตัวเลือก, Enter/Space ไปข้อต่อไป
   useEffect(() => {
@@ -149,6 +168,46 @@ export function BakeryQuizPage() {
     } catch {
       setShareMsg('แชร์ไม่สำเร็จ ลองใหม่อีกครั้งนะ')
     }
+  }
+
+  const critique = useMemo(() => buildCritique(progress.answers ?? {}), [progress.answers])
+  const fullName = `${firstName.trim()} ${lastName.trim()}`.trim()
+  const nameValid = firstName.trim().length >= 1 && lastName.trim().length >= 1
+
+  function issueCertificate() {
+    if (!nameValid) return
+    const now = new Date()
+    const certNo = progress.certNo ?? `BK-${now.getFullYear() + 543}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}-${Math.floor(1000 + Math.random() * 9000)}`
+    const updated: Progress = {
+      ...progress,
+      firstName: firstName.trim(),
+      lastName: lastName.trim(),
+      certNo,
+      certDate: progress.certDate ?? now.toISOString(),
+    }
+    setProgress(updated)
+    saveProgress(updated)
+    setScreen('certificate')
+    window.scrollTo({ top: 0 })
+  }
+
+  const certData: CertificateData = {
+    name: fullName,
+    rankName: rankFor(6).name,
+    rankIcon: rankFor(6).icon,
+    correct: critique.correct,
+    total: critique.total || TOTAL_QUESTIONS,
+    pct: critique.pct,
+    shopName: shop?.name ?? 'RYUKUNG BAKERY',
+    logoUrl: shop?.logo ?? null,
+    issuedAt: progress.certDate ? new Date(progress.certDate) : new Date(),
+    certNo: progress.certNo ?? '-',
+  }
+
+  async function saveCertificatePng() {
+    if (!certRef.current) return
+    const blob = await htmlToImage.toBlob(certRef.current, { pixelRatio: 2, backgroundColor: '#ffffff' })
+    if (blob) await saveImage(blob, `certificate-${fullName.replace(/\s+/g, '-')}.png`, 'เกียรติบัตร')
   }
 
   const progressPct = useMemo(() => (screen === 'playing' ? ((qi + (picked !== null ? 1 : 0)) / qs.length) * 100 : 0), [screen, qi, picked, qs.length])
@@ -186,6 +245,19 @@ export function BakeryQuizPage() {
               </div>
             </div>
 
+            {passedAll && (
+              <button
+                type="button"
+                onClick={() => setScreen('critique')}
+                className="btn-shimmer w-full flex items-center gap-3 rounded-3xl bg-gradient-to-r from-amber-500 to-amber-700 text-white p-4 text-left shadow-[0_14px_30px_-14px_rgb(146_82_12_/_0.9)] active:scale-[0.98]"
+              >
+                <span className="text-4xl" aria-hidden="true">📜</span>
+                <span className="flex-1">
+                  <span className="block font-display font-bold text-lg">ผ่านครบทุกระดับแล้ว!</span>
+                  <span className="block text-sm text-white/90">ดูคำวิจารณ์ผลของคุณ และรับเกียรติบัตร →</span>
+                </span>
+              </button>
+            )}
             <div className="space-y-3">
               {QUIZ_LEVELS.map((lv, i) => {
                 const unlocked = i <= progress.passed
@@ -314,6 +386,127 @@ export function BakeryQuizPage() {
           </div>
         )}
 
+        {screen === 'critique' && (
+          <div className="space-y-4 animate-form-in">
+            <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
+              <AmbientGlow />
+              <div className="relative z-10 space-y-1.5">
+                <p className="text-5xl animate-icon-pop" aria-hidden="true">📝</p>
+                <h2 className="text-2xl font-display font-bold">คำวิจารณ์ผลของคุณ</h2>
+                <p className="text-sm text-white/85">วิเคราะห์จากคำตอบทั้งหมดของคุณ แยกตามหมวดความรู้</p>
+              </div>
+            </div>
+
+            <div className="rounded-3xl bg-white border border-amber-200 p-5 shadow-[0_12px_28px_-16px_rgb(51_32_14_/_0.5)] space-y-3">
+              {critique.lines.map((line, i) => (
+                <p key={i} className="flex gap-2.5 text-[15px] leading-relaxed text-stone-800">
+                  <span className="mt-0.5 w-6 h-6 shrink-0 rounded-full bg-amber-100 text-amber-800 text-xs font-bold grid place-items-center">{i + 1}</span>
+                  <span>{line}</span>
+                </p>
+              ))}
+            </div>
+
+            <div className="rounded-3xl bg-white border border-stone-200 p-5 space-y-3 shadow-sm">
+              <p className="font-display font-semibold text-stone-900">คะแนนรายหมวดความรู้</p>
+              {critique.stats.map((s) => (
+                <div key={s.key}>
+                  <div className="flex items-center justify-between text-sm">
+                    <span>{s.icon} {s.name}</span>
+                    <span className="font-bold tabular-nums">{s.correct}/{s.total} · {s.pct}%</span>
+                  </div>
+                  <div className="mt-1 h-2.5 rounded-full bg-stone-100 overflow-hidden">
+                    <div
+                      className={'h-full rounded-full transition-all duration-1000 ' + (s.pct >= 80 ? 'bg-gradient-to-r from-green-400 to-emerald-600' : s.pct >= 60 ? 'bg-gradient-to-r from-amber-400 to-amber-600' : 'bg-gradient-to-r from-orange-400 to-red-500')}
+                      style={{ width: `${s.pct}%` }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button type="button" onClick={() => setScreen('name')} className="btn-shimmer w-full rounded-full bg-stone-900 text-white font-bold py-3.5 shadow-[0_12px_24px_-10px_rgb(0_0_0_/_0.6)] active:scale-95">
+              ถัดไป: กรอกชื่อรับเกียรติบัตร →
+            </button>
+          </div>
+        )}
+
+        {screen === 'name' && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault()
+              issueCertificate()
+            }}
+            className="space-y-4 animate-form-in"
+          >
+            <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
+              <AmbientGlow />
+              <div className="relative z-10 space-y-1.5">
+                <p className="text-5xl animate-icon-pop" aria-hidden="true">📜</p>
+                <h2 className="text-2xl font-display font-bold">ใบเกียรติบัตรของคุณ</h2>
+                <p className="text-sm text-white/85">กรอกชื่อและนามสกุลเพื่อพิมพ์ลงบนเกียรติบัตร</p>
+              </div>
+            </div>
+            <div className="rounded-3xl bg-white border border-amber-200 p-5 space-y-4 shadow-[0_12px_28px_-16px_rgb(51_32_14_/_0.5)]">
+              <div className="space-y-1">
+                <label htmlFor="quiz-first" className="text-sm font-medium text-stone-600">ชื่อ</label>
+                <input
+                  id="quiz-first"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value.slice(0, 30))}
+                  autoComplete="given-name"
+                  placeholder="เช่น สมหญิง"
+                  className="w-full rounded-2xl border-2 border-stone-200 bg-stone-50/60 px-4 py-3 text-lg focus:border-amber-600 focus:bg-white"
+                />
+              </div>
+              <div className="space-y-1">
+                <label htmlFor="quiz-last" className="text-sm font-medium text-stone-600">นามสกุล</label>
+                <input
+                  id="quiz-last"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value.slice(0, 30))}
+                  autoComplete="family-name"
+                  placeholder="เช่น ใจดี"
+                  className="w-full rounded-2xl border-2 border-stone-200 bg-stone-50/60 px-4 py-3 text-lg focus:border-amber-600 focus:bg-white"
+                />
+              </div>
+              <p className="text-xs text-stone-400">ชื่อนี้ใช้แสดงบนเกียรติบัตรเท่านั้น เก็บไว้ในเครื่องของคุณ ไม่ถูกส่งไปที่ร้าน</p>
+            </div>
+            <button
+              type="submit"
+              disabled={!nameValid}
+              className="btn-shimmer w-full rounded-full bg-stone-900 text-white font-bold py-3.5 shadow-[0_12px_24px_-10px_rgb(0_0_0_/_0.6)] active:scale-95 disabled:opacity-40"
+            >
+              🎓 ออกใบเกียรติบัตร
+            </button>
+          </form>
+        )}
+
+        {screen === 'certificate' && (
+          <div className="space-y-4 animate-form-in">
+            <div className="text-center space-y-1 no-print">
+              <h2 className="text-2xl font-display font-bold text-stone-900">🎉 ยินดีด้วยนะ {firstName.trim()}!</h2>
+              <p className="text-sm text-stone-500">นี่คือเกียรติบัตรของคุณ บันทึกเป็นรูปหรือพิมพ์เก็บไว้ได้เลย</p>
+            </div>
+            <div className="relative -mx-4 sm:mx-0">
+              <ConfettiRain pieces={30} />
+              <QuizCertificate ref={certRef} data={certData} />
+            </div>
+            <div className="grid gap-2.5 no-print">
+              <button type="button" onClick={() => void saveCertificatePng()} className="btn-shimmer w-full rounded-full bg-stone-900 text-white font-bold py-3.5 shadow-[0_12px_24px_-10px_rgb(0_0_0_/_0.6)] active:scale-95">
+                🖼️ บันทึกเป็นรูป
+              </button>
+              <button type="button" onClick={() => window.print()} className="w-full rounded-full bg-white border-2 border-stone-300 text-stone-800 font-semibold py-3 active:scale-95">
+                🖨️ พิมพ์ / บันทึกเป็น PDF (แนวนอน)
+              </button>
+              <button type="button" onClick={() => void handleShare()} className="w-full rounded-full bg-white border-2 border-amber-400 text-amber-900 font-semibold py-3 active:scale-95">
+                📣 แชร์ผลให้เพื่อน
+              </button>
+              {shareMsg && <p className="text-center text-sm text-green-700">{shareMsg}</p>}
+              <button type="button" onClick={() => setScreen('name')} className="text-sm text-stone-500 underline">แก้ไขชื่อบนเกียรติบัตร</button>
+            </div>
+          </div>
+        )}
+
         {screen === 'result' && (
           <div className="space-y-4 animate-form-in">
             <div className="relative overflow-hidden rounded-3xl bg-brand-shader text-white p-6 text-center shadow-[0_18px_36px_-16px_rgb(51_32_14_/_0.7)]">
@@ -358,7 +551,12 @@ export function BakeryQuizPage() {
               </button>
               {shareMsg && <p className="text-center text-sm text-green-700">{shareMsg}</p>}
               {passedAll && (
-                <Link to="/menu" className="block text-center w-full rounded-full bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-3.5 shadow-lg active:scale-95">
+                <button type="button" onClick={() => setScreen('critique')} className="btn-shimmer w-full rounded-full bg-gradient-to-r from-amber-500 to-amber-700 text-white font-bold py-3.5 shadow-lg active:scale-95">
+                  📜 ดูคำวิจารณ์ & รับเกียรติบัตร →
+                </button>
+              )}
+              {passedAll && (
+                <Link to="/menu" className="block text-center w-full rounded-full bg-white border-2 border-amber-400 text-amber-900 font-semibold py-3 active:scale-95">
                   🍪 ฉลองด้วยขนมอร่อยๆ จากร้านเรา
                 </Link>
               )}
