@@ -14,6 +14,7 @@ export function PageTexture() {
   return (
     <>
       <div className="scroll-progress" aria-hidden="true" />
+      <BackToTop />
       <div className="fixed inset-0 -z-10 bg-paper-texture overflow-hidden" aria-hidden="true">
         <div className="absolute inset-[-20%] opacity-60 bg-cream-shine animate-cream-shine" />
       </div>
@@ -378,8 +379,22 @@ export function PublicFooter({
           </button>
         </div>
 
-        {address && <p className="text-xs text-white/70">📍 {address}</p>}
+        {address && (
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mx-auto flex max-w-sm items-center gap-3 rounded-2xl bg-black/20 backdrop-blur border border-white/20 px-4 py-2.5 text-left text-xs text-white/90 transition-all duration-200 hover:bg-black/30 hover:-translate-y-0.5"
+          >
+            <span className="text-xl">📍</span>
+            <span className="min-w-0">
+              <span className="block text-[10px] tracking-widest text-white/60">ที่ตั้งร้าน · แตะเพื่อเปิดแผนที่</span>
+              <span className="block leading-snug">{address}</span>
+            </span>
+          </a>
+        )}
         <p className="text-xs text-white/60">สั่งซื้อออนไลน์ผ่านหน้านี้ได้ตลอด 24 ชั่วโมง</p>
+        <p className="text-[11px] text-white/50">ขอบคุณที่อุดหนุนเด็กตัวเล็กคนหนึ่งที่ตั้งใจทำขนม <span className="inline-block animate-heart-beat">🧡</span></p>
       </div>
     </footer>
   )
@@ -544,5 +559,67 @@ export function ConfettiRain({ pieces = 28 }: { pieces?: number }) {
         />
       ))}
     </div>
+  )
+}
+
+
+/** ปุ่มกลับขึ้นบนสุด — โผล่มุมซ้ายล่างเมื่อเลื่อนลงมาไกลแล้ว (มุมขวาล่างเป็นของตะกร้า/แชท) */
+export function BackToTop() {
+  const [show, setShow] = useState(false)
+  useEffect(() => {
+    function onScroll() {
+      setShow(window.scrollY > 700)
+    }
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+  return (
+    <button
+      type="button"
+      aria-label="กลับขึ้นบนสุด"
+      onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+      className={
+        'fixed bottom-5 left-4 z-30 w-11 h-11 rounded-full bg-white/90 backdrop-blur border-2 border-amber-300 text-stone-800 text-lg font-bold shadow-[0_10px_22px_-10px_rgb(51_32_14_/_0.6)] transition-all duration-300 active:scale-90 ' +
+        (show ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-6 pointer-events-none')
+      }
+    >
+      ↑
+    </button>
+  )
+}
+
+const HOW_STEPS: { icon: string; title: string; text: string }[] = [
+  { icon: '🛒', title: 'เลือกเมนู', text: 'เลือกขนมที่ชอบ ปรับจำนวน แล้วใส่ตะกร้า' },
+  { icon: '📝', title: 'กรอกข้อมูล & จ่ายเงิน', text: 'ใส่ชื่อ วันรับของ แล้วสแกน QR พร้อมเพย์' },
+  { icon: '🎁', title: 'รอรับขนมสดใหม่', text: 'ร้านอบตามที่สั่ง นัดรับเองหรือส่งขนส่ง ติดตามสถานะได้ตลอด' },
+]
+
+/** แถบ "สั่งง่ายใน 3 ขั้นตอน" ใต้แถบจุดขาย — การ์ด 3 ใบมีเลขขั้นสีทอง ไอคอนลอยเบาๆ เส้นประเชื่อมกัน โผล่ไล่ทีละใบตอนเลื่อนมาเห็น */
+export function HowItWorks() {
+  return (
+    <section className="max-w-5xl mx-auto px-4 mt-8" aria-label="สั่งง่ายใน 3 ขั้นตอน">
+      <Reveal className="text-center mb-5">
+        <h2 className="text-xl font-display font-bold text-stone-900">สั่งง่ายใน 3 ขั้นตอน</h2>
+        <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1 text-amber-700/50" />
+      </Reveal>
+      <div className="relative grid gap-4 sm:grid-cols-3">
+        <div className="pointer-events-none absolute left-[16.6%] right-[16.6%] top-[3.2rem] hidden sm:block border-t-2 border-dashed border-amber-400/60" aria-hidden="true" />
+        {HOW_STEPS.map((st, i) => (
+          <Reveal key={st.title} delay={i * 0.12}>
+            <div className="glow-card relative h-full rounded-3xl border border-amber-200/80 bg-white/90 px-4 pb-5 pt-9 text-center shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)] transition-all duration-300 hover:-translate-y-1">
+              <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 text-white font-display font-bold text-lg grid place-items-center ring-4 ring-amber-50 shadow-lg">
+                {i + 1}
+              </span>
+              <div className="mx-auto mb-2 w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 grid place-items-center text-4xl animate-float-slow" style={{ animationDelay: `${i * 0.5}s` }}>
+                {st.icon}
+              </div>
+              <p className="font-display font-semibold text-stone-900">{st.title}</p>
+              <p className="mt-1 text-sm text-stone-500 leading-relaxed">{st.text}</p>
+            </div>
+          </Reveal>
+        ))}
+      </div>
+    </section>
   )
 }

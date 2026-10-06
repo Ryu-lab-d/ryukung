@@ -19,6 +19,7 @@ import {
   SquiggleUnderline,
   WaveDivider,
   burstSparkles,
+  HowItWorks,
   CountUp,
   ConfettiRain,
   flyToCart,
@@ -1236,7 +1237,9 @@ export function CustomerOrderPage() {
       {/* สลับเนื้อหาด้วยแท็บล้วนๆ ไม่เปลี่ยนหน้าเว็บจริง (ไม่ remount ทั้งหน้า ไม่กระพริบ) key={tab} ทำให้เล่น
           อนิเมชัน crossfade ใหม่ทุกครั้งที่สลับแท็บ */}
       {tab === 'menu' ? (
-        <div key="menu" className="max-w-5xl mx-auto px-4 mt-6 space-y-6 animate-form-in">
+        <div key="menu" className="animate-form-in">
+        <HowItWorks />
+        <div className="max-w-5xl mx-auto px-4 mt-8 space-y-6">
           <Reveal as="section" id="menu-section" className="space-y-4 scroll-mt-24">
             <div className="text-center">
               <div className="flex items-center justify-center gap-3">
@@ -1359,6 +1362,7 @@ export function CustomerOrderPage() {
               {filtered.length === 0 && <p className="col-span-full text-center text-sm text-stone-400 py-8">ไม่พบสินค้า</p>}
             </div>
           </Reveal>
+        </div>
         </div>
       ) : (
         <div key="about" className="mt-6 animate-form-in">

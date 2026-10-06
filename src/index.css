@@ -1182,3 +1182,13 @@ a:focus-visible {
   .check-ring { display: none; }
   .line-flow { background: #22c55e; }
 }
+
+
+@keyframes heart-beat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.35); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.25); }
+}
+.animate-heart-beat { animation: heart-beat 1.6s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .animate-heart-beat { animation: none; } }
