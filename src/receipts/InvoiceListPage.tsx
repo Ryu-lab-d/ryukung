@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { PageHero } from '../layout/PageHero'
 import { formatBaht } from '../lib/money'
-import { INVOICE_RETENTION_DAYS, listInvoices, purgeExpiredInvoices, type InvoiceRow } from './invoiceApi'
+import { INVOICE_RETENTION_DAYS, listInvoices, normalizeOrderCode, purgeExpiredInvoices, type InvoiceRow } from './invoiceApi'
 
 type Row = Omit<InvoiceRow, 'snapshot'>
 
@@ -52,7 +52,7 @@ export function InvoiceListPage() {
 
   async function handleScan(e: FormEvent) {
     e.preventDefault()
-    const q = search.trim()
+    const q = normalizeOrderCode(search)
     if (!q) return
     const found = await load(q)
     const exact = found.filter((r) => r.order_no.toLowerCase() === q.toLowerCase())
@@ -80,7 +80,7 @@ export function InvoiceListPage() {
               ref={inputRef}
               autoFocus
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => setSearch(normalizeOrderCode(e.target.value))}
               placeholder="ยิงบาร์โค้ด หรือพิมพ์เลขออเดอร์ เช่น RYB-001296"
               autoCapitalize="characters"
               autoComplete="off"

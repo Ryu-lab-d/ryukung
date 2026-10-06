@@ -142,9 +142,17 @@ export async function purgeExpiredInvoices() {
   await supabase.rpc('purge_expired_invoices')
 }
 
-/** ค้นหาจากเลขออเดอร์ (ตัดช่องว่างและไม่สนตัวพิมพ์) — ว่าง = ทั้งหมด ใหม่สุดก่อน */
+/**
+ * ล้างเลขออเดอร์ที่ได้จากเครื่องสแกนบาร์โค้ด — เครื่องสแกนบางรุ่นส่งอักขระครอบหัวท้ายมาด้วย (เช่น "~RYB-001296^")
+ * จึงตัดทุกอย่างที่ไม่ใช่ตัวอักษร/ตัวเลข/ขีดกลางทิ้ง (รวมช่องว่างและอักขระควบคุม) แล้วแปลงเป็นตัวพิมพ์ใหญ่
+ */
+export function normalizeOrderCode(raw: string): string {
+  return raw.replace(/[^\p{L}\p{N}-]/gu, '').toUpperCase()
+}
+
+/** ค้นหาจากเลขออเดอร์ (ตัดอักขระพิเศษจากเครื่องสแกน ไม่สนตัวพิมพ์) — ว่าง = ทั้งหมด ใหม่สุดก่อน */
 export async function listInvoices(search: string) {
-  const q = search.trim().replace(/[%_,()]/g, '')
+  const q = normalizeOrderCode(search)
   let query = supabase
     .from('invoices')
     .select('id, order_id, order_no, invoice_no, customer_name, grand_total, payment_status, issued_at, updated_at')
