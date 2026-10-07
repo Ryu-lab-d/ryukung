@@ -36,6 +36,8 @@ import { WithdrawalsPage } from './withdrawals/WithdrawalsPage'
 import { NewWithdrawalPage } from './withdrawals/NewWithdrawalPage'
 import { WithdrawalDetailPage } from './withdrawals/WithdrawalDetailPage'
 import { WithdrawalSlipPage } from './withdrawals/WithdrawalSlipPage'
+import { LearnPage } from './learn/LearnPage'
+import { CoursesAdminPage } from './learn/CoursesAdminPage'
 import { ContentPlannerPage } from './content/ContentPlannerPage'
 import { ContentItemForm } from './content/ContentItemForm'
 import { ContentStatsPage } from './content/ContentStatsPage'
@@ -132,6 +134,7 @@ function AuthenticatedApp() {
             <Route path="/costing/:id/edit" element={<RequirePage page="costing"><CostRecipeForm /></RequirePage>} />
             <Route path="/withdrawals" element={<RequirePage page="withdrawals"><WithdrawalsPage /></RequirePage>} />
             <Route path="/withdrawals/new" element={<RequirePage page="withdrawals"><NewWithdrawalPage /></RequirePage>} />
+            <Route path="/courses" element={<OwnerOrManagerRoute><CoursesAdminPage /></OwnerOrManagerRoute>} />
             <Route path="/withdrawals/:id/slip" element={<RequirePage page="withdrawals"><WithdrawalSlipPage /></RequirePage>} />
             <Route path="/withdrawals/:id" element={<RequirePage page="withdrawals"><WithdrawalDetailPage /></RequirePage>} />
             <Route path="/content" element={<RequirePage page="content"><ContentPlannerPage /></RequirePage>} />
@@ -159,6 +162,8 @@ export default function App() {
           <Route path="/o/:token" element={<PublicOrderPage />} />
           <Route path="/inv/:token" element={<InvoicePublicPage />} />
           <Route path="/test" element={<BakeryQuizPage />} />
+          <Route path="/learn" element={<LearnPage />} />
+          <Route path="/lean" element={<Navigate to="/learn" replace />} />
           <Route path="/menu" element={<CustomerOrderPage />} />
           <Route path="/flood" element={<FloodPage />} />
           <Route path="/about" element={<Navigate to="/menu?tab=about" replace />} />

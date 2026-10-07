@@ -173,6 +173,7 @@ export function SettingsPage() {
           <div className="grid grid-cols-2 gap-2.5">
             {[
               ['/withdrawals', '📦', 'เบิกของ', 'bg-amber-50 border-amber-200'],
+              ['/courses', '🎓', 'คอร์สเรียน & รหัสเข้าเรียน', 'bg-emerald-50 border-emerald-200'],
               ['/expenses', '💸', 'รายจ่าย', 'bg-red-50 border-red-200'],
               ['/chatbot', '💬', 'แชทบอทน้องริว', 'bg-sky-50 border-sky-200'],
               ['/promo', '🎨', 'การ์ดโปรโมทร้าน', 'bg-violet-50 border-violet-200'],
