@@ -608,19 +608,22 @@ export function HowItWorks() {
         <h2 className="text-xl font-display font-bold text-stone-900">สั่งง่ายใน 3 ขั้นตอน</h2>
         <SquiggleUnderline className="w-20 h-2.5 mx-auto mt-1 text-amber-700/50" />
       </Reveal>
-      <div className="relative grid gap-4 sm:grid-cols-3">
+      <div className="relative grid gap-3.5 sm:gap-4 sm:grid-cols-3">
         <div className="pointer-events-none absolute left-[16.6%] right-[16.6%] top-[3.2rem] hidden sm:block border-t-2 border-dashed border-amber-400/60" aria-hidden="true" />
+        <div className="pointer-events-none absolute left-[2.15rem] top-8 bottom-8 w-0.5 sm:hidden bg-gradient-to-b from-amber-300 via-amber-500 to-amber-300 opacity-60" aria-hidden="true" />
         {HOW_STEPS.map((st, i) => (
           <Reveal key={st.title} delay={i * 0.12}>
-            <div className="glow-card relative h-full rounded-3xl border border-amber-200/80 bg-white/90 px-4 pb-5 pt-9 text-center shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)] transition-all duration-300 hover:-translate-y-1">
-              <span className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 text-white font-display font-bold text-lg grid place-items-center ring-4 ring-amber-50 shadow-lg">
+            <div className="glow-card relative h-full flex items-center gap-4 text-left sm:block sm:text-center rounded-3xl border border-amber-200/80 bg-white/90 px-4 py-3.5 sm:pb-5 sm:pt-9 shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)] transition-all duration-300 hover:-translate-y-1">
+              <span className="absolute -left-1.5 -top-1.5 sm:left-1/2 sm:top-0 sm:-translate-x-1/2 sm:-translate-y-1/2 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-700 text-white font-display font-bold text-base sm:text-lg grid place-items-center ring-4 ring-amber-50 shadow-lg">
                 {i + 1}
               </span>
-              <div className="mx-auto mb-2 w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 grid place-items-center text-4xl animate-float-slow" style={{ animationDelay: `${i * 0.5}s` }}>
+              <div className="shrink-0 sm:mx-auto sm:mb-2 w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-50 to-amber-100 border border-amber-200 grid place-items-center text-3xl sm:text-4xl animate-float-slow" style={{ animationDelay: `${i * 0.5}s` }}>
                 {st.icon}
               </div>
-              <p className="font-display font-semibold text-stone-900">{st.title}</p>
-              <p className="mt-1 text-sm text-stone-500 leading-relaxed">{st.text}</p>
+              <div className="min-w-0">
+                <p className="font-display font-semibold text-stone-900">{st.title}</p>
+                <p className="mt-0.5 sm:mt-1 text-sm text-stone-500 leading-relaxed">{st.text}</p>
+              </div>
             </div>
           </Reveal>
         ))}

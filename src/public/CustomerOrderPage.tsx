@@ -1239,7 +1239,18 @@ export function CustomerOrderPage() {
       {tab === 'menu' ? (
         <div key="menu" className="animate-form-in">
         <HowItWorks />
-        <Reveal className="max-w-5xl mx-auto px-4 mt-6">
+        <Reveal className="max-w-5xl mx-auto px-4 mt-6 grid gap-3 sm:grid-cols-2">
+          <Link
+            to="/learn"
+            className="glow-card group relative overflow-hidden flex items-center gap-4 rounded-3xl border border-amber-300 bg-gradient-to-r from-stone-900 via-stone-800 to-amber-900 p-4 text-white shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.7)] transition-all duration-300 hover:-translate-y-0.5"
+          >
+            <span className="w-14 h-14 shrink-0 rounded-2xl bg-gradient-to-br from-amber-300 to-amber-600 grid place-items-center text-3xl shadow-lg animate-float-slow" aria-hidden="true">🎓</span>
+            <span className="min-w-0 flex-1">
+              <span className="block font-display font-bold">เรียนทำเบเกอรี่กับริวกุ้ง</span>
+              <span className="block text-sm text-white/75">มีสูตรและวิธีทำทีละขั้น — ใส่รหัสที่ได้จากร้านเพื่อเข้าเรียน</span>
+            </span>
+            <span className="shrink-0 rounded-full bg-white text-stone-900 text-sm font-bold px-4 py-2 group-hover:scale-105 transition-transform">เข้าเรียน →</span>
+          </Link>
           <Link
             to="/test"
             className="glow-card group relative overflow-hidden flex items-center gap-4 rounded-3xl border border-amber-300 bg-gradient-to-r from-amber-50 via-white to-amber-50 p-4 shadow-[0_14px_30px_-18px_rgb(51_32_14_/_0.5)] transition-all duration-300 hover:-translate-y-0.5"
