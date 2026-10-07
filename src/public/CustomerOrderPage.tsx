@@ -7,6 +7,8 @@ import { addDays } from '../lib/dates'
 import { loadFormDraft, clearFormDraft, useFormDraft } from '../lib/formDraft'
 import { playAddSound, playPaymentSound } from '../lib/uiSound'
 import { PromptPayQR } from './PromptPayQR'
+import { PromoBanner, PromoBox } from './PromoParts'
+import { bestPromo, computeDiscount, getPublicPromotions, type PublicPromo } from '../lib/promoApi'
 import {
   AmbientGlow,
   CartFab,
@@ -425,7 +427,7 @@ function AddLineReminderPopup({ lineUrl, onClose }: { lineUrl: string | null; on
  * กันลูกค้ากดสั่งไปโดยไม่เคยเห็นรายการที่เลือกไว้ครบๆ เลยสักครั้ง (หน้าตะกร้าเดิมเห็นทีละชิ้นปนอยู่ในกริดสินค้า) */
 /** สรุปตะกร้าแบบอ่านอย่างเดียว (ไม่มีรูป/ปรับจำนวน ต่างจากการ์ดในหน้าทวนรายการ) ใช้ซ้ำในหน้ากรอกข้อมูล+หน้า
  * ชำระเงิน — ห่อ Reveal+เงาอุ่นในตัวเองเลย ไม่ต้องให้หน้าที่เรียกใช้มาห่อซ้ำเอง กันสไตล์เพี้ยนไปคนละแบบ */
-function CartSummaryList({ items, grandTotal, delay = 0 }: { items: CartItem[]; grandTotal: number; delay?: number }) {
+function CartSummaryList({ items, grandTotal, delay = 0, discount = 0, promoLabel }: { items: CartItem[]; grandTotal: number; delay?: number; discount?: number; promoLabel?: string }) {
   return (
     <Reveal delay={delay} className="bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28px_-14px_rgb(51_32_14_/_0.4)] p-5 space-y-2.5">
       <h2 className="text-sm font-display font-semibold text-stone-700">🧺 รายการที่สั่ง ({items.length})</h2>
@@ -439,8 +441,14 @@ function CartSummaryList({ items, grandTotal, delay = 0 }: { items: CartItem[]; 
           </div>
         ))}
       </div>
+      {discount > 0 && (
+        <div className="flex justify-between text-sm font-semibold text-green-700 border-t border-stone-100 pt-2.5">
+          <span>🎟️ ส่วนลด{promoLabel ? ` · ${promoLabel}` : ''}</span>
+          <span className="tabular-nums">−{formatBaht(discount)}</span>
+        </div>
+      )}
       <div className="flex justify-between text-sm font-semibold border-t border-stone-100 pt-2.5">
-        <span>ยอดรวม</span>
+        <span>{discount > 0 ? 'ยอดชำระ' : 'ยอดรวม'}</span>
         <span className="tabular-nums">{formatBaht(grandTotal)} บาท</span>
       </div>
     </Reveal>
@@ -471,6 +479,8 @@ export function CustomerOrderPage() {
   const [dateError, setDateError] = useState<string | null>(null)
   const [placeError, setPlaceError] = useState(false)
   const [zoomProduct, setZoomProduct] = useState<PublicMenu['products'][number] | null>(null)
+  const [promos, setPromos] = useState<PublicPromo[]>([])
+  const [codePromo, setCodePromo] = useState<PublicPromo | null>(null)
   const cartFabRef = useRef<HTMLButtonElement>(null)
 
   function setTab(next: SiteTab) {
@@ -482,6 +492,7 @@ export function CustomerOrderPage() {
 
   useEffect(() => {
     getPublicMenu().then(({ menu, error }) => setMenu(error ? null : menu))
+    void getPublicPromotions().then(setPromos)
   }, [])
 
   // โลโก้เต็มจอตอนเปิดหน้าครั้งแรก ค้างไว้สั้นๆ แล้วหดเล็กจางหายไป (ดู .animate-splash-shrink ใน index.css)
@@ -505,7 +516,15 @@ export function CustomerOrderPage() {
     return withImage ? productImageUrl(withImage.image_path!) : null
   }, [menu])
 
-  const grandTotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
+  const subtotal = items.reduce((sum, it) => sum + it.unit_price * it.qty, 0)
+  // ส่วนลด: โค้ดที่กรอก (ถ้ายังถึงขั้นต่ำ) ใช้แทนโปรอัตโนมัติที่ลดมากสุด — ตัวเลขนี้เป็นพรีวิว เซิร์ฟเวอร์คิดซ้ำตอนสั่งจริงเสมอ
+  const autoPromo = bestPromo(promos, subtotal)
+  const codeUsable = codePromo !== null && computeDiscount(codePromo, subtotal) > 0
+  const activePromo = codeUsable ? codePromo : autoPromo
+  const discount = computeDiscount(activePromo, subtotal)
+  const promoLabel = activePromo ? (codeUsable ? activePromo.code ?? activePromo.name : activePromo.name) : undefined
+  const nextAuto = promos.find((p) => Number(p.min_subtotal) > subtotal) ?? null
+  const grandTotal = subtotal - discount
   // นัดรับเองไม่ควรบังคับรอนานเท่าส่งขนส่ง (shipping_lead_days คือเวลาเตรียมของ+เผื่อขนส่งเฉพาะเคสส่งพัสดุ) —
   // ระบบเดิม (ก่อนแก้) ใช้ shipping_lead_days บังคับกับ "นัดรับเอง" ด้วย ทำให้ลูกค้ามารับหน้าร้านต้องรอนานเกินจำเป็น
   // ต่างจากฝั่งพนักงาน (Step3Fulfillment.tsx) ที่ใช้ lead time เฉพาะตอนส่งขนส่งเท่านั้น จึงปรับให้ตรงกัน
@@ -595,6 +614,7 @@ export function CustomerOrderPage() {
       shipAddressText: form.fulfillmentType === 'shipping' ? form.shipAddressText || null : null,
       note: form.note || null,
       items: items.map((it) => ({ product_id: it.product_id, qty: it.qty })),
+      promoCode: codeUsable ? codePromo!.code ?? null : null,
       turnstileToken: turnstileToken!,
     })
     if (submitError || !orderId || !publicToken) {
@@ -761,6 +781,10 @@ export function CustomerOrderPage() {
             </div>
           )}
 
+          {items.length > 0 && (
+            <PromoBox subtotal={subtotal} autoPromo={autoPromo} nextAuto={nextAuto} codePromo={codeUsable ? codePromo : null} onCodeChange={setCodePromo} />
+          )}
+
           <Reveal delay={0.08}>
             <button
               type="button"
@@ -793,7 +817,7 @@ export function CustomerOrderPage() {
           <CheckoutProgress current="checkout" />
 
           <CheckoutHero count={items.length} total={grandTotal} />
-          <OrderTicket items={items} grandTotal={grandTotal} />
+          <OrderTicket items={items} grandTotal={grandTotal} discount={discount} promoLabel={promoLabel} />
 
           <form id="checkout-form" onSubmit={handleCheckoutSubmit} className="space-y-4">
             <FormSection no={1} icon="👤" title="ข้อมูลผู้สั่งซื้อ" subtitle="ใช้ติดต่อและยืนยันตัวตนตอนติดตามออเดอร์" delay={0.04}>
@@ -1065,7 +1089,7 @@ export function CustomerOrderPage() {
             </p>
           </Reveal>
 
-          <CartSummaryList items={items} grandTotal={grandTotal} delay={0.12} />
+          <CartSummaryList items={items} grandTotal={grandTotal} delay={0.12} discount={discount} promoLabel={promoLabel} />
 
           <Reveal delay={0.18} className="space-y-3">
             <button
@@ -1238,6 +1262,7 @@ export function CustomerOrderPage() {
           อนิเมชัน crossfade ใหม่ทุกครั้งที่สลับแท็บ */}
       {tab === 'menu' ? (
         <div key="menu" className="animate-form-in">
+        <PromoBanner promos={promos} />
         <HowItWorks />
         <Reveal className="max-w-5xl mx-auto px-4 mt-6 grid gap-3 sm:grid-cols-2">
           <Link

@@ -70,6 +70,7 @@ Deno.serve(async (req: Request) => {
       p_ship_address_text: body.ship_address_text,
       p_note: body.note,
       p_items: body.items,
+      p_promo_code: typeof body.promo_code === 'string' && body.promo_code.trim() ? body.promo_code.trim() : null,
     })
 
     if (error) {

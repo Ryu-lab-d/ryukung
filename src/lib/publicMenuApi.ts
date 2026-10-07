@@ -42,6 +42,8 @@ export type SubmitCustomerOrderInput = {
   shipAddressText: string | null
   note: string | null
   items: { product_id: string; qty: number }[]
+  /** โค้ดส่วนลดที่ลูกค้ากรอก (เซิร์ฟเวอร์ตรวจและคิดส่วนลดซ้ำเสมอ) */
+  promoCode?: string | null
   /** ผลยืนยัน Cloudflare Turnstile จากฟอร์ม (ดู TurnstileWidget.tsx) — บังคับเสมอ ไม่งั้น Edge Function ปฏิเสธ */
   turnstileToken: string
 }
@@ -67,6 +69,7 @@ export async function submitCustomerOrder(
       ship_address_text: input.shipAddressText,
       note: input.note,
       items: input.items,
+      promo_code: input.promoCode ?? null,
       turnstile_token: input.turnstileToken,
     },
   })

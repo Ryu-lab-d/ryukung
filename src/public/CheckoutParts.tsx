@@ -55,7 +55,7 @@ export function StepHero({ icon, title, subtitle }: { icon: string; title: strin
 }
 
 /** สรุปรายการสั่งแบบ "ตั๋ว/ใบเสร็จ" — รูปสินค้ามีป้ายจำนวน เส้นประแบ่งตรงกลางพร้อมรอยปรุสองข้าง ยอดรวมตัวใหญ่ท้ายใบ */
-export function OrderTicket({ items, grandTotal, delay = 0 }: { items: TicketItem[]; grandTotal: number; delay?: number }) {
+export function OrderTicket({ items, grandTotal, delay = 0, discount = 0, promoLabel }: { items: TicketItem[]; grandTotal: number; delay?: number; discount?: number; promoLabel?: string }) {
   return (
     <Reveal
       delay={delay}
@@ -91,8 +91,14 @@ export function OrderTicket({ items, grandTotal, delay = 0 }: { items: TicketIte
         <span className="absolute -right-2.5 -top-2.5 w-5 h-5 rounded-full bg-stone-50" />
       </div>
 
+      {discount > 0 && (
+        <div className="px-5 pt-3 space-y-1 text-sm">
+          <p className="flex justify-between text-stone-500"><span>ยอดสินค้า</span><span className="tabular-nums">{formatBaht(grandTotal + discount)}</span></p>
+          <p className="flex justify-between font-semibold text-green-700"><span>🎟️ ส่วนลด{promoLabel ? ` · ${promoLabel}` : ''}</span><span className="tabular-nums">−{formatBaht(discount)}</span></p>
+        </div>
+      )}
       <div className="flex items-end justify-between px-5 pt-3.5 pb-5">
-        <span className="text-sm text-stone-500">ยอดรวม</span>
+        <span className="text-sm text-stone-500">{discount > 0 ? 'ยอดชำระ' : 'ยอดรวม'}</span>
         <span className="text-2xl font-bold tabular-nums text-stone-900">
           {formatBaht(grandTotal)} <span className="text-sm font-medium text-stone-500">บาท</span>
         </span>
