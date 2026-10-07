@@ -131,6 +131,12 @@ export function WithdrawalDetailPage() {
         >
           ← กลับหน้าเบิกของ
         </Link>
+        <Link
+          to={`/withdrawals/${withdrawal.id}/slip`}
+          className="ml-2 inline-flex items-center gap-1 rounded-full bg-stone-900 text-white text-sm font-semibold px-3.5 py-1.5 shadow-sm"
+        >
+          🧾 ใบเบิกของ (พิมพ์)
+        </Link>
 
         <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-[0_1px_2px_rgb(0_0_0_/_0.04),0_1px_8px_-2px_rgb(0_0_0_/_0.06)]">
           <h1 className="text-lg font-bold text-stone-900">

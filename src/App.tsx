@@ -35,6 +35,7 @@ import { CostRecipeForm } from './costing/CostRecipeForm'
 import { WithdrawalsPage } from './withdrawals/WithdrawalsPage'
 import { NewWithdrawalPage } from './withdrawals/NewWithdrawalPage'
 import { WithdrawalDetailPage } from './withdrawals/WithdrawalDetailPage'
+import { WithdrawalSlipPage } from './withdrawals/WithdrawalSlipPage'
 import { ContentPlannerPage } from './content/ContentPlannerPage'
 import { ContentItemForm } from './content/ContentItemForm'
 import { ContentStatsPage } from './content/ContentStatsPage'
@@ -131,6 +132,7 @@ function AuthenticatedApp() {
             <Route path="/costing/:id/edit" element={<RequirePage page="costing"><CostRecipeForm /></RequirePage>} />
             <Route path="/withdrawals" element={<RequirePage page="withdrawals"><WithdrawalsPage /></RequirePage>} />
             <Route path="/withdrawals/new" element={<RequirePage page="withdrawals"><NewWithdrawalPage /></RequirePage>} />
+            <Route path="/withdrawals/:id/slip" element={<RequirePage page="withdrawals"><WithdrawalSlipPage /></RequirePage>} />
             <Route path="/withdrawals/:id" element={<RequirePage page="withdrawals"><WithdrawalDetailPage /></RequirePage>} />
             <Route path="/content" element={<RequirePage page="content"><ContentPlannerPage /></RequirePage>} />
             <Route path="/content/new" element={<RequirePage page="content"><ContentItemForm /></RequirePage>} />
