@@ -9,7 +9,7 @@ import { PageHero } from '../layout/PageHero'
 import { OrderScanBar } from './OrderScanBar'
 
 export function OrderBoardPage() {
-  const { orders, loading, changeStatus, reload } = useOrderBoard()
+  const { orders, loading, changeStatus, reload, newOrders, dismissNew } = useOrderBoard()
   const [mobileTab, setMobileTab] = useState('to_bake')
   const [quick, setQuick] = useState<MobileQuickFilter>(null)
   const autoPicked = useRef(false)
@@ -44,6 +44,30 @@ export function OrderBoardPage() {
           <Link to="/orders/new" className="hidden lg:inline-flex">+ สร้างออเดอร์</Link>
         </PageHero>
       </div>
+      {newOrders.length > 0 && (
+        <div className="px-4 pt-3">
+          <div role="status" className="flex items-center gap-3 rounded-2xl bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-3 shadow-lg animate-form-in">
+            <span className="text-2xl animate-bounce" aria-hidden="true">🔔</span>
+            <p className="flex-1 min-w-0 text-sm font-semibold">
+              มีออเดอร์ใหม่จากลูกค้า {newOrders.length} รายการ
+              <span className="block text-xs font-normal text-white/90 truncate">
+                {newOrders.map((o) => `${o.order_no ?? ''} ${o.customer_name ?? ''}`.trim()).join(' · ')}
+              </span>
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setQuick(null)
+                setMobileTab('draft')
+                dismissNew()
+              }}
+              className="shrink-0 rounded-full bg-white text-amber-900 text-sm font-bold px-3.5 py-1.5"
+            >
+              ดูเลย
+            </button>
+          </div>
+        </div>
+      )}
       <div className="px-4 pt-3 lg:max-w-3xl">
         <OrderScanBar onChangeStatus={changeStatus} />
       </div>
