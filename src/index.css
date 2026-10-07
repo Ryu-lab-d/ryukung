@@ -1262,3 +1262,13 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .learn-bob, .learn-shake { animation: none; }
 }
+
+
+/* โหมดสอนคอร์ส (/courses/:id/present): สไลด์เลื่อนเข้าตามทิศที่กด */
+@keyframes present-right { from { opacity: 0; transform: translateX(6vw) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes present-left { from { opacity: 0; transform: translateX(-6vw) scale(0.97); } to { opacity: 1; transform: none; } }
+.present-in-right { animation: present-right 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+.present-in-left { animation: present-left 0.45s cubic-bezier(0.22, 1, 0.36, 1); }
+@media (prefers-reduced-motion: reduce) {
+  .present-in-right, .present-in-left { animation: none; }
+}

@@ -180,6 +180,9 @@ function CourseEditor({ course, lessons, open, onToggle, run }: { course: Course
           </div>
           <textarea className={INPUT} rows={2} placeholder="คำอธิบายคอร์ส" value={desc} onChange={(e) => setDesc(e.target.value)} aria-label="คำอธิบายคอร์ส" />
           <div className="flex flex-wrap gap-2">
+            <Link to={`/courses/${course.id}/present`} className="rounded-full bg-gradient-to-r from-amber-500 to-amber-700 text-white px-4 py-1.5 text-sm font-semibold shadow">
+              ▶ โหมดสอน (Present)
+            </Link>
             <button type="button" className={BTN} onClick={() => void save()}>💾 บันทึกคอร์ส</button>
             <button type="button" className={BTN} onClick={() => void run(supabase.from('courses').update({ is_published: !course.is_published }).eq('id', course.id))}>
               {course.is_published ? 'ปิดการสอน (ซ่อน)' : 'เปิดสอน'}

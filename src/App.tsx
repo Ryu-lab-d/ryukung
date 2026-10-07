@@ -38,6 +38,7 @@ import { WithdrawalDetailPage } from './withdrawals/WithdrawalDetailPage'
 import { WithdrawalSlipPage } from './withdrawals/WithdrawalSlipPage'
 import { LearnPage } from './learn/LearnPage'
 import { CoursesAdminPage } from './learn/CoursesAdminPage'
+import { CoursePresentPage } from './learn/CoursePresentPage'
 import { ContentPlannerPage } from './content/ContentPlannerPage'
 import { ContentItemForm } from './content/ContentItemForm'
 import { ContentStatsPage } from './content/ContentStatsPage'
@@ -134,6 +135,7 @@ function AuthenticatedApp() {
             <Route path="/costing/:id/edit" element={<RequirePage page="costing"><CostRecipeForm /></RequirePage>} />
             <Route path="/withdrawals" element={<RequirePage page="withdrawals"><WithdrawalsPage /></RequirePage>} />
             <Route path="/withdrawals/new" element={<RequirePage page="withdrawals"><NewWithdrawalPage /></RequirePage>} />
+            <Route path="/courses/:id/present" element={<OwnerOrManagerRoute><CoursePresentPage /></OwnerOrManagerRoute>} />
             <Route path="/courses" element={<OwnerOrManagerRoute><CoursesAdminPage /></OwnerOrManagerRoute>} />
             <Route path="/withdrawals/:id/slip" element={<RequirePage page="withdrawals"><WithdrawalSlipPage /></RequirePage>} />
             <Route path="/withdrawals/:id" element={<RequirePage page="withdrawals"><WithdrawalDetailPage /></RequirePage>} />
