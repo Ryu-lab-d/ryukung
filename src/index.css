@@ -1243,3 +1243,22 @@ a:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .quiz-next-glow, .quiz-star { animation: none; }
 }
+
+
+/* ===== หน้าเรียน (/learn) ===== */
+@keyframes learn-bob {
+  0%, 100% { transform: translateY(0) rotate(-4deg); }
+  50% { transform: translateY(-9px) rotate(4deg); }
+}
+.learn-bob { display: inline-block; animation: learn-bob 2.6s ease-in-out infinite; filter: drop-shadow(0 6px 6px rgb(0 0 0 / 0.3)); }
+@keyframes learn-shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+.learn-shake { animation: learn-shake 0.45s ease-in-out; }
+@media (prefers-reduced-motion: reduce) {
+  .learn-bob, .learn-shake { animation: none; }
+}
