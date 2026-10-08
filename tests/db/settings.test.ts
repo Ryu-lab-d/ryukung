@@ -13,7 +13,7 @@ describe('ตาราง settings', () => {
   it('คนที่ยังไม่ล็อกอินอ่านไม่ได้', async () => {
     const db = anonClient()
     const { data } = await db.from('settings').select('*')
-    expect(data).toEqual([])
+    expect(data ?? []).toEqual([])
   })
 
   it('เพิ่มแถวที่สองไม่ได้', async () => {

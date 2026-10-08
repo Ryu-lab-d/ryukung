@@ -250,9 +250,24 @@ const SYNC_FN: Record<string, (db: SupabaseClient, webhookUrl: string) => Promis
   summary: syncSummary,
 }
 
+/** เทียบสตริงแบบเวลาคงที่ กัน timing attack */
+function safeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
 Deno.serve(async (req: Request) => {
-  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type' }
+  const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'content-type, x-sync-secret' }
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+
+  // เรียกได้เฉพาะ trigger ในฐานข้อมูล (ถือความลับร่วม SHEETS_SYNC_SECRET) — คนนอกยิงมาเฉยๆ ถูกปฏิเสธ ไม่ดึงข้อมูลอะไรเลย
+  const expected = Deno.env.get('SHEETS_SYNC_SECRET') ?? ''
+  const given = req.headers.get('x-sync-secret') ?? ''
+  if (!expected || !safeEqual(given, expected)) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), { status: 401, headers: cors })
+  }
 
   try {
     const { table } = await req.json()

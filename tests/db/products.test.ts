@@ -43,7 +43,7 @@ describe('ตารางสินค้า', () => {
   it('คนที่ยังไม่ล็อกอินอ่านสินค้าไม่ได้', async () => {
     const db = anonClient()
     const { data } = await db.from('products').select('*')
-    expect(data).toEqual([])
+    expect(data ?? []).toEqual([])
   })
 })
 

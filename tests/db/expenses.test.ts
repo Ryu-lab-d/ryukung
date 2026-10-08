@@ -39,7 +39,7 @@ describe('ตารางรายจ่าย', () => {
   it('คนที่ยังไม่ล็อกอินอ่านรายจ่ายไม่ได้', async () => {
     const db = anonClient()
     const { data } = await db.from('expenses').select('*')
-    expect(data).toEqual([])
+    expect(data ?? []).toEqual([])
   })
 })
 

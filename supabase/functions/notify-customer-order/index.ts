@@ -27,13 +27,27 @@ Deno.serve(async (req: Request) => {
 
     const { data: order } = await admin
       .from('orders')
-      .select('id, grand_total, needed_date, fulfillment_type, note, customers(name, phone), order_items(product_name, qty)')
+      .select('id, grand_total, needed_date, fulfillment_type, note, owner_notified_at, customers(name, phone), order_items(product_name, qty)')
       .eq('id', order_id)
       .eq('order_source', 'customer')
+      .gte('created_at', new Date(Date.now() - 30 * 60 * 1000).toISOString())
       .maybeSingle()
 
     if (!order) {
       return new Response(JSON.stringify({ error: 'ไม่พบออเดอร์นี้' }), { status: 404, headers: cors })
+    }
+    // ส่งอีเมลแจ้งเจ้าของได้ครั้งเดียวต่อออเดอร์ — กันคนรู้ order_id ยิงซ้ำๆ จนอีเมลท่วม
+    if (order.owner_notified_at) {
+      return new Response(JSON.stringify({ ok: true, alreadyNotified: true }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
+    }
+    const { data: claimed } = await admin
+      .from('orders')
+      .update({ owner_notified_at: new Date().toISOString() })
+      .eq('id', order_id)
+      .is('owner_notified_at', null)
+      .select('id')
+    if (!claimed || claimed.length === 0) {
+      return new Response(JSON.stringify({ ok: true, alreadyNotified: true }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
     }
 
     const { data: settings } = await admin
