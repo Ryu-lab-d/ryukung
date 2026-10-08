@@ -42,6 +42,26 @@ Deno.serve(async (req: Request) => {
     if (!to || !subject || !html) {
       return new Response(JSON.stringify({ error: 'ข้อมูลไม่ครบ (to, subject, html)' }), { status: 400, headers: cors })
     }
+    if (typeof to !== 'string' || typeof subject !== 'string' || typeof html !== 'string' || to.length > 200 || subject.length > 300 || html.length > 200_000 || /[\r\n,;]/.test(to)) {
+      return new Response(JSON.stringify({ error: 'ข้อมูลไม่ถูกต้องหรือใหญ่เกินไป' }), { status: 400, headers: cors })
+    }
+
+    // กันบัญชีพนักงานที่ถูกขโมยถูกใช้ส่งสแปม: ส่งได้เฉพาะอีเมลของลูกค้าที่มีในระบบ หรืออีเมลรับแจ้งเตือนของร้านเอง
+    const target = to.trim().toLowerCase()
+    const [{ data: cust }, { data: shop }] = await Promise.all([
+      adminClient.from('customers').select('id').ilike('email', target).limit(1),
+      adminClient.from('settings').select('owner_notification_email').limit(1).maybeSingle(),
+    ])
+    const isOwnerMail = (shop?.owner_notification_email ?? '').trim().toLowerCase() === target
+    if (!isOwnerMail && (!cust || cust.length === 0)) {
+      return new Response(JSON.stringify({ error: 'ส่งอีเมลได้เฉพาะลูกค้าที่มีในระบบ' }), { status: 403, headers: cors })
+    }
+
+    // จำกัดจำนวนต่อพนักงานต่อวัน
+    const { data: allowed } = await adminClient.rpc('bump_chat_usage', { p_key: `email:${userData.user.id}`, p_limit: 200 })
+    if (allowed === false) {
+      return new Response(JSON.stringify({ error: 'ส่งอีเมลครบจำนวนต่อวันแล้ว' }), { status: 429, headers: cors })
+    }
 
     const smtpUser = Deno.env.get('SMTP_USER')!
     const smtpPass = Deno.env.get('SMTP_PASS')!

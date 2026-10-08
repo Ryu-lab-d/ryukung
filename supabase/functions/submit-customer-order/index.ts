@@ -28,6 +28,22 @@ Deno.serve(async (req: Request) => {
       })
     }
 
+    // ตรวจรูปแบบและขนาดข้อมูล — กันบอทยัดรายการ/จำนวน/ข้อความมหาศาล (ฐานข้อมูลมีเพดานซ้ำอีกชั้น)
+    const items = body.items
+    const uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    const tooLong = (v: unknown, n: number) => typeof v === 'string' && v.length > n
+    const badItems =
+      !Array.isArray(items) || items.length === 0 || items.length > 50 ||
+      items.some((it: { product_id?: unknown; qty?: unknown }) =>
+        typeof it?.product_id !== 'string' || !uuidRe.test(it.product_id) || !Number.isInteger(it.qty) || (it.qty as number) < 1 || (it.qty as number) > 999)
+    if (badItems || tooLong(body.customer_name, 200) || tooLong(body.customer_phone, 30) || tooLong(body.customer_email, 200) ||
+        tooLong(body.note, 1000) || tooLong(body.ship_address_text, 600) || tooLong(body.pickup_place, 300) || tooLong(body.promo_code, 64)) {
+      return new Response(JSON.stringify({ error: 'ข้อมูลคำสั่งซื้อไม่ถูกต้องหรือยาวเกินไป กรุณาตรวจสอบรายการและจำนวน' }), {
+        status: 400,
+        headers: { ...cors, 'Content-Type': 'application/json' },
+      })
+    }
+
     const turnstileToken = body.turnstile_token
     if (!turnstileToken || typeof turnstileToken !== 'string') {
       return new Response(JSON.stringify({ error: 'กรุณายืนยันตัวตนก่อนสั่งซื้อ (ไม่พบผลการยืนยัน)' }), {
