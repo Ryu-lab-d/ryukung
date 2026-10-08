@@ -142,3 +142,21 @@ describe('เทมเพลตอีเมลแจ้งลูกค้า', (
     expect(html).toContain('ข้อความทดสอบ')
   })
 })
+
+describe('กัน HTML injection ในอีเมล (ชื่อลูกค้าเป็นข้อมูลที่คนนอกกรอกได้)', () => {
+  const evil = '<a href="https://evil.example">ยืนยันโอนเงิน</a><script>alert(1)</script>'
+  it('ชื่อลูกค้า/รายการ/ร้านที่มี HTML ถูก escape ทุกแม่แบบ', () => {
+    const outs = [
+      newOrderNotificationEmail({ shopName: evil, orderNo: evil, customerName: evil, itemsSummary: evil, grandTotal: 1, neededDate: evil, fulfillmentLabel: evil, orderDetailUrl: 'javascript:alert(1)' }).html,
+      orderConfirmedEmail({ shopName: evil, orderNo: evil, customerName: evil, itemsSummary: evil, grandTotal: 1, neededDate: null, publicUrl: 'javascript:alert(1)' }).html,
+      customEmail({ shopName: evil, customerName: evil, bodyText: evil, infoRows: [{ label: evil, value: evil }], ctaUrl: 'data:text/html,x', ctaLabel: evil }).html,
+      paymentReminderEmail({ shopName: evil, orderNo: evil, customerName: evil, grandTotal: 1, paymentInstructions: evil, publicUrl: 'https://ok.example' }).html,
+    ]
+    for (const html of outs) {
+      expect(html).not.toContain('<script>')
+      expect(html).not.toContain('<a href="https://evil.example">')
+      expect(html).not.toContain('javascript:')
+      expect(html).not.toContain('data:text/html')
+    }
+  })
+})

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { AmbientGlow, ConfettiRain, PageTexture, Reveal, burstSparkles } from '../public/PublicSiteChrome'
+import { safeHttpUrl } from '../lib/safeUrl'
 import { openWithCode, parseIngredients, parseSteps, type LearnCourse, type LearnSession, type Lesson } from './learnApi'
 
 const KEY = 'learn-code'
@@ -308,8 +309,8 @@ function LessonCard({
               </div>
             )}
             {l.tips && <p className="rounded-2xl bg-amber-50 border border-amber-200 px-4 py-3 text-sm whitespace-pre-line">💡 {l.tips}</p>}
-            {l.video_url && (
-              <a href={l.video_url} target="_blank" rel="noreferrer" className="inline-block rounded-full bg-stone-900 text-white text-sm font-semibold px-4 py-2">
+            {safeHttpUrl(l.video_url) && (
+              <a href={safeHttpUrl(l.video_url)!} target="_blank" rel="noreferrer" className="inline-block rounded-full bg-stone-900 text-white text-sm font-semibold px-4 py-2">
                 ▶ ดูวิดีโอประกอบ
               </a>
             )}

@@ -10,6 +10,11 @@ function formatBaht(n: number): string {
  * จาก frontend หลัง submit_customer_order สำเร็จเท่านั้น (เหมือนที่ OrderFormPage.tsx ยิงอีเมลแบบ best-effort
  * หลัง confirmOrder สำเร็จ) รับแค่ order_id ไม่รับเนื้อหาอีเมลจากผู้เรียกเหมือน notify-payment-claim
  */
+
+/** กัน HTML injection ในอีเมลแจ้งเจ้าของร้าน — ชื่อลูกค้า/รายการเป็นข้อมูลที่คนนอกกรอกได้ */
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
 Deno.serve(async (req: Request) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -75,16 +80,16 @@ Deno.serve(async (req: Request) => {
       const html = `<div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; background:#fbf1e4; padding:32px 16px;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#3d2b1f;padding:24px;text-align:center;">
-      <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${settings.shop_name}</p>
+      <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${esc(settings.shop_name)}</p>
     </div>
     <div style="padding:28px 26px;font-size:15px;line-height:1.6;color:#514234;">
       <p>มีลูกค้าสั่งของเองจากหน้าเมนูออนไลน์ 🛎️ รอการตรวจสอบ/ยืนยันจากร้าน</p>
       <div style="background:#f7ede0;border-radius:12px;padding:14px 16px;margin:16px 0;">
-        <p style="margin:0 0 6px;"><strong>ลูกค้า:</strong> ${customer?.name ?? '-'} ${customer?.phone ? `(${customer.phone})` : ''}</p>
-        <p style="margin:0 0 6px;"><strong>รายการ:</strong> ${items}</p>
+        <p style="margin:0 0 6px;"><strong>ลูกค้า:</strong> ${esc(customer?.name ?? '-')} ${customer?.phone ? `(${esc(customer.phone)})` : ''}</p>
+        <p style="margin:0 0 6px;"><strong>รายการ:</strong> ${esc(items)}</p>
         <p style="margin:0 0 6px;"><strong>ยอดรวม:</strong> ${formatBaht(Number(order.grand_total))} บาท</p>
-        <p style="margin:0 0 6px;"><strong>วิธีรับของ:</strong> ${fulfillmentLabel[order.fulfillment_type] ?? order.fulfillment_type}</p>
-        <p style="margin:0;"><strong>วันที่ต้องการ:</strong> ${order.needed_date ?? '-'}</p>
+        <p style="margin:0 0 6px;"><strong>วิธีรับของ:</strong> ${esc(fulfillmentLabel[order.fulfillment_type] ?? order.fulfillment_type)}</p>
+        <p style="margin:0;"><strong>วันที่ต้องการ:</strong> ${esc(order.needed_date ?? '-')}</p>
       </div>
       <p>เข้าไปดู/ยืนยันได้ที่หน้า "ออเดอร์รอยืนยัน" ในระบบร้านค่ะ</p>
     </div>

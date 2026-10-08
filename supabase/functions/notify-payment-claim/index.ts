@@ -11,6 +11,11 @@ function formatBaht(n: number): string {
  * รับแค่ token ของออเดอร์เท่านั้น ไม่รับ to/subject/html จากผู้เรียกเหมือน send-customer-email เพื่อกันเอาไปส่ง
  * อีเมลอะไรก็ได้ — เนื้อหาอีเมลถูกกำหนดตายตัวในนี้ทั้งหมด ส่งได้แค่ไปที่อีเมลรับแจ้งเตือนที่ร้านตั้งไว้เท่านั้น
  */
+
+/** กัน HTML injection ในอีเมลแจ้งเจ้าของร้าน — ชื่อลูกค้า/รายการเป็นข้อมูลที่คนนอกกรอกได้ */
+const esc = (v: unknown): string =>
+  String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+
 Deno.serve(async (req: Request) => {
   const cors = {
     'Access-Control-Allow-Origin': '*',
@@ -76,13 +81,13 @@ Deno.serve(async (req: Request) => {
       const html = `<div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; background:#fbf1e4; padding:32px 16px;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#3d2b1f;padding:24px;text-align:center;">
-      <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${settings.shop_name}</p>
+      <p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${esc(settings.shop_name)}</p>
     </div>
     <div style="padding:28px 26px;font-size:15px;line-height:1.6;color:#514234;">
       <p>ลูกค้าแจ้งว่าชำระเงินแล้วค่ะ 💰 กรุณาตรวจสอบและอัปเดตสถานะในระบบ</p>
       <div style="background:#f7ede0;border-radius:12px;padding:14px 16px;margin:16px 0;">
-        <p style="margin:0 0 6px;"><strong>เลขที่ออเดอร์:</strong> ${order.order_no ?? '-'}</p>
-        <p style="margin:0 0 6px;"><strong>ลูกค้า:</strong> ${customerName}</p>
+        <p style="margin:0 0 6px;"><strong>เลขที่ออเดอร์:</strong> ${esc(order.order_no ?? '-')}</p>
+        <p style="margin:0 0 6px;"><strong>ลูกค้า:</strong> ${esc(customerName)}</p>
         <p style="margin:0 0 6px;"><strong>ยอดที่แจ้งว่าชำระ:</strong> ${formatBaht(balanceDue)} บาท</p>
         <p style="margin:0;"><strong>เวลาที่แจ้ง:</strong> ${thaiTime}</p>
       </div>

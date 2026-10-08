@@ -1,10 +1,25 @@
 import { formatBaht } from './money'
 
+/** กัน HTML injection: ข้อความที่ลูกค้า/พนักงานพิมพ์เองต้องผ่านตัวนี้ก่อนใส่ในอีเมลเสมอ (ชื่อลูกค้าเป็นข้อมูลที่คนนอกกรอกได้) */
+export function esc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+/** ลิงก์ในอีเมลรับเฉพาะ http(s) — กัน javascript:/data: */
+export function safeUrl(url: string | null | undefined): string {
+  return /^https?:\/\//i.test(url ?? '') ? esc(url) : '#'
+}
+
 function shell(shopName: string, bodyHtml: string, logoUrl?: string | null): string {
   const header = logoUrl
-    ? `<img src="${logoUrl}" alt="${shopName}" width="64" height="64" style="border-radius:50%;display:block;margin:0 auto 8px;object-fit:cover;" />
-       <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;">${shopName}</p>`
-    : `<p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${shopName}</p>`
+    ? `<img src="${safeUrl(logoUrl)}" alt="${esc(shopName)}" width="64" height="64" style="border-radius:50%;display:block;margin:0 auto 8px;object-fit:cover;" />
+       <p style="margin:0;font-size:18px;font-weight:700;color:#ffffff;">${esc(shopName)}</p>`
+    : `<p style="margin:0;font-size:20px;font-weight:700;color:#ffffff;">🥐 ${esc(shopName)}</p>`
   return `<div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; background:#fbf1e4; padding:32px 16px;">
   <div style="max-width:480px;margin:0 auto;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
     <div style="background:#3d2b1f;padding:24px;text-align:center;">
@@ -22,12 +37,12 @@ function shell(shopName: string, bodyHtml: string, logoUrl?: string | null): str
 
 function ctaButton(url: string, label: string): string {
   return `<div style="text-align:center;margin:20px 0 4px;">
-    <a href="${url}" style="display:inline-block;background:#3d2b1f;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:999px;">${label}</a>
+    <a href="${safeUrl(url)}" style="display:inline-block;background:#3d2b1f;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;padding:12px 28px;border-radius:999px;">${esc(label)}</a>
   </div>`
 }
 
 function infoBox(rows: { label: string; value: string }[]): string {
-  const inner = rows.map((r) => `<p style="margin:0 0 6px;"><strong>${r.label}:</strong> ${r.value}</p>`).join('')
+  const inner = rows.map((r) => `<p style="margin:0 0 6px;"><strong>${esc(r.label)}:</strong> ${esc(r.value)}</p>`).join('')
   return `<div style="background:#f7ede0;border-radius:12px;padding:14px 16px;margin:16px 0;">${inner}</div>`
 }
 
@@ -60,8 +75,8 @@ export function orderConfirmedEmail(params: {
     subject: `✅ ยืนยันรับออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
-       <p>ขอบคุณที่ไว้วางใจสั่งซื้อกับ ${shopName} นะคะ ตอนนี้ทางร้านได้รับออเดอร์ของท่านเรียบร้อยแล้วค่ะ โดยในลำดับถัดไป ทางร้านจะทยอยแจ้งความคืบหน้าของสถานะออเดอร์ให้ท่านทราบเป็นระยะๆ ผ่านทางอีเมลฉบับนี้ค่ะ</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
+       <p>ขอบคุณที่ไว้วางใจสั่งซื้อกับ ${esc(shopName)} นะคะ ตอนนี้ทางร้านได้รับออเดอร์ของท่านเรียบร้อยแล้วค่ะ โดยในลำดับถัดไป ทางร้านจะทยอยแจ้งความคืบหน้าของสถานะออเดอร์ให้ท่านทราบเป็นระยะๆ ผ่านทางอีเมลฉบับนี้ค่ะ</p>
        <p>รบกวนกรุณาชำระเงินตามยอดด้านล่างนี้ ผ่านลิงก์ติดตามออเดอร์ที่แนบไว้ให้ด้านล่างได้เลยนะคะ</p>
        ${infoBox(rows)}
        ${ctaButton(publicUrl, 'ดูรายละเอียด & ชำระเงิน')}
@@ -90,7 +105,7 @@ export function paymentReceivedEmail(params: {
     subject: `💰 ได้รับชำระเงินแล้ว ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
        <p>ร้านได้รับการชำระเงินของคุณเรียบร้อยแล้วค่ะ ขอบคุณมากนะคะ</p>
        ${infoBox(rows)}
        ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}
@@ -146,13 +161,13 @@ export function paymentReminderEmail(params: {
     subject: `⏰ แจ้งเตือนชำระเงิน ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
        <p>ร้านยังไม่ได้รับการชำระเงินสำหรับออเดอร์นี้เลยค่ะ รบกวนโอนเงินตามยอดด้านล่าง แล้วแจ้งกลับมาที่ร้านได้เลยนะคะ</p>
        ${infoBox([
          { label: 'เลขที่ออเดอร์', value: orderNo },
          { label: 'ยอดที่ต้องชำระ', value: `${formatBaht(grandTotal)} บาท` },
        ])}
-       ${paymentInstructions ? `<p style="white-space:pre-line;">${paymentInstructions}</p>` : ''}
+       ${paymentInstructions ? `<p style="white-space:pre-line;">${esc(paymentInstructions)}</p>` : ''}
        ${ctaButton(publicUrl, 'ดูรายละเอียดออเดอร์')}
        ${customerFooterNote()}`,
       logoUrl
@@ -177,8 +192,8 @@ export function customEmail(params: {
   return {
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
-       <p style="white-space:pre-line;">${bodyText}</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
+       <p style="white-space:pre-line;">${esc(bodyText)}</p>
        ${infoRows.length > 0 ? infoBox(infoRows) : ''}
        ${ctaUrl && ctaLabel ? ctaButton(ctaUrl, ctaLabel) : ''}
        ${customerFooterNote()}`,
@@ -204,9 +219,9 @@ export function orderStatusEmail(params: {
     subject: `${emoji} ${headline} ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
-       <p style="font-size:18px;font-weight:700;color:#3d2b1f;margin:8px 0;">${emoji} ${headline}</p>
-       <p>${message}</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
+       <p style="font-size:18px;font-weight:700;color:#3d2b1f;margin:8px 0;">${esc(emoji)} ${esc(headline)}</p>
+       <p>${esc(message)}</p>
        ${infoBox([{ label: 'เลขที่ออเดอร์', value: orderNo }])}
        ${ctaButton(publicUrl, 'ติดตามสถานะออเดอร์')}
        ${customerFooterNote()}`,
@@ -230,7 +245,7 @@ export function invoiceLinkEmail(params: {
     subject: `📄 Invoice ${invoiceNo} ออเดอร์ ${orderNo} — ${shopName}`,
     html: shell(
       shopName,
-      `<p>ถึงคุณ${customerName}</p>
+      `<p>ถึงคุณ${esc(customerName)}</p>
        <p>ทางร้านส่ง Invoice ของออเดอร์นี้มาให้ค่ะ เปิดดู พิมพ์ หรือบันทึกเป็น PDF ได้จากปุ่มด้านล่าง</p>
        ${infoBox([
          { label: 'เลขที่ Invoice', value: invoiceNo },

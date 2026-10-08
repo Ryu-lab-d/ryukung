@@ -3,8 +3,8 @@ import { supabase } from '../lib/supabase'
 import { notifyStatusChanged } from '../lib/autoNotify'
 import { playPaymentSound } from '../lib/uiSound'
 
-/** ถ้าไม่มี realtime/ตกหล่น กระดานก็ยังรีเฟรชเองทุกกี่ ms ตอนหน้าจอเปิดอยู่ */
-const POLL_MS = 20000
+/** กระดานรีเฟรชเองทุกกี่ ms ตอนหน้าจอเปิดอยู่ (ไม่ใช้ realtime เพราะ anon ฟังเหตุการณ์ได้ — ดู migration 20261008400000) */
+const POLL_MS = 12000
 
 export type BoardOrder = {
   id: string
@@ -79,15 +79,8 @@ export function useOrderBoard() {
 
   useEffect(() => { void load() }, [load])
 
-  // อัปเดตกระดานเองโดยไม่ต้องกดรีเฟรช: realtime ของตาราง orders (ดีเลย์สั้นๆ รวมหลายเหตุการณ์) + ดึงซ้ำทุก 20 วิ + ตอนกลับมาเปิดแท็บ
+  // อัปเดตกระดานเองโดยไม่ต้องกดรีเฟรช: ดึงซ้ำทุก 12 วิ + ทันทีที่กลับมาเปิดแท็บ/หน้าต่าง
   useEffect(() => {
-    let timer: ReturnType<typeof setTimeout> | undefined
-    const refresh = () => {
-      clearTimeout(timer)
-      timer = setTimeout(() => void load(true), 700)
-    }
-    const channel = supabase.channel?.('orders-board')
-    channel?.on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, refresh).subscribe()
     const poll = setInterval(() => {
       if (document.visibilityState === 'visible') void load(true)
     }, POLL_MS)
@@ -97,11 +90,9 @@ export function useOrderBoard() {
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('focus', onVisible)
     return () => {
-      clearTimeout(timer)
       clearInterval(poll)
       document.removeEventListener('visibilitychange', onVisible)
       window.removeEventListener('focus', onVisible)
-      if (channel) void supabase.removeChannel(channel)
     }
   }, [load])
 

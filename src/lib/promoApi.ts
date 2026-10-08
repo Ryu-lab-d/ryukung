@@ -62,7 +62,7 @@ export async function checkPromoCode(code: string): Promise<{ promo: PublicPromo
 /** สร้างโค้ดสุ่มอ่านง่ายสำหรับหน้าจัดการโปรโมชั่น เช่น RYU-7K3Q9 */
 export function generatePromoCode(): string {
   const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-  const bytes = new Uint8Array(5)
+  const bytes = new Uint8Array(8)
   crypto.getRandomValues(bytes)
   return 'RYU-' + Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
 }

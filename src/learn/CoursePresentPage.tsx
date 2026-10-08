@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { AmbientGlow } from '../public/PublicSiteChrome'
+import { safeHttpUrl } from '../lib/safeUrl'
 import { parseIngredients, parseSteps, type CourseRow, type LessonRow } from './learnApi'
 
 export type Slide =
@@ -23,7 +24,7 @@ export function buildSlides(course: Pick<CourseRow, 'title' | 'emoji' | 'descrip
     const steps = parseSteps(l.steps)
     steps.forEach((text, k) => out.push({ kind: 'step', lesson: l.title, n: k + 1, total: steps.length, text }))
     if (l.tips) out.push({ kind: 'tips', lesson: l.title, text: l.tips })
-    if (l.video_url) out.push({ kind: 'video', lesson: l.title, url: l.video_url })
+    if (safeHttpUrl(l.video_url)) out.push({ kind: 'video', lesson: l.title, url: safeHttpUrl(l.video_url)! })
   })
   out.push({ kind: 'end', title: course.title })
   return out

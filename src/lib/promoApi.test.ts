@@ -30,7 +30,7 @@ describe('bestPromo / promoSummary / generatePromoCode', () => {
     expect(promoSummary(p({ value: 10, max_discount: 50, min_subtotal: 300 }))).toBe('ลด 10% (สูงสุด 50 บาท) เมื่อซื้อครบ 300 บาท')
     expect(promoSummary(p({ kind: 'amount', value: 20 }))).toBe('ลด 20 บาท')
   })
-  it('โค้ดสุ่มรูปแบบ RYU-XXXXX', () => {
-    expect(generatePromoCode()).toMatch(/^RYU-[A-Z2-9]{5}$/)
+  it('โค้ดสุ่มรูปแบบ RYU-XXXXXXXX', () => {
+    expect(generatePromoCode()).toMatch(/^RYU-[A-Z2-9]{8}$/)
   })
 })
