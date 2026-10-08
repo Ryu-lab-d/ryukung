@@ -289,6 +289,6 @@ Deno.serve(async (req: Request) => {
   } catch (err) {
     // ตั้งใจไม่ throw ให้ trigger ฝั่ง DB เห็นว่า fail — sync พลาดแค่รอบเดียวไม่ควรกระทบธุรกรรมจริงเด็ดขาด
     console.error(err)
-    return new Response(JSON.stringify({ ok: false, error: String(err) }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
+    return new Response(JSON.stringify({ ok: false, error: 'sync_failed' }), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
   }
 })

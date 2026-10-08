@@ -24,15 +24,17 @@ describe('red team — เดารหัส', () => {
     expect(blocked).toBeGreaterThan(0)
   })
 
-  it('เดารหัสเข้าเรียนผิดรัวๆ ถูกบล็อก', async () => {
-    const db = anonClient()
-    let nulls = 0
-    for (let i = 0; i < 36; i++) {
-      const r = await db.rpc('learn_open', { p_code: 'COOK-GUESS' + i })
-      expect(r.error).toBeNull()
-      if (r.data === null) nulls++
+  it('เดารหัสเข้าเรียนผิดรัวๆ ไม่ทำให้นักเรียนตัวจริงเข้าไม่ได้ (ไม่มีการล็อกทั้งระบบ)', async () => {
+    const admin = adminClient()
+    const code = await admin.from('course_access_codes').insert({ code: 'COOK-RTREALAA', student_name: 'redteam' }).select().single()
+    try {
+      const db = anonClient()
+      for (let i = 0; i < 40; i++) expect((await db.rpc('learn_open', { p_code: 'COOK-GUESS' + i })).data).toBeNull()
+      const real = await db.rpc('learn_open', { p_code: 'COOK-RTREALAA' })
+      expect(real.data?.student_name).toBe('redteam')
+    } finally {
+      await admin.from('course_access_codes').delete().eq('id', code.data!.id)
     }
-    expect(nulls).toBe(36)
   })
 })
 

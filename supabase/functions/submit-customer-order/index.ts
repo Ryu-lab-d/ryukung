@@ -98,6 +98,8 @@ Deno.serve(async (req: Request) => {
 
     return new Response(JSON.stringify(data), { status: 200, headers: { ...cors, 'Content-Type': 'application/json' } })
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: cors })
+    // ไม่ส่งรายละเอียดข้อผิดพลาดภายในกลับไปให้ผู้เรียก (กันรั่วโครงสร้าง/ข้อความระบบ) — เก็บไว้ใน log ฝั่งเซิร์ฟเวอร์แทน
+    console.error('submit-customer-order error:', err instanceof Error ? err.message : String(err))
+    return new Response(JSON.stringify({ error: 'เกิดข้อผิดพลาดภายในระบบ กรุณาลองใหม่อีกครั้ง' }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } })
   }
 })
