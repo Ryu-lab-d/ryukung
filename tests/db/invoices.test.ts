@@ -91,23 +91,46 @@ describe('Invoice: เลขต่อเนื่อง + ลิงก์สา�
     expect((await anonClient().rpc('next_invoice_no')).error).not.toBeNull()
   })
 
-  it('get_public_invoice: ใช้โทเคนเปิดดูได้ แต่เกิน 30 วัน/โทเคนสั้น/โทเคนผิด ไม่คืนอะไร', async () => {
+  it('get_public_invoice: ต้องยืนยันตัวตนถึงเปิดดูได้ และเกิน 30 วัน/โทเคนสั้น/โทเคนผิด ไม่คืนอะไร', async () => {
     const admin = adminClient()
     const token = 'test-token-' + Math.random().toString(36).slice(2) + 'abcdefghijkl'
     const row = await admin
       .from('invoices')
-      .insert({ order_no: 'PUB-TEST-1', invoice_no: 'INV-PUBTEST', snapshot: { order: { public_token: token }, shop: { name: 'X' } } })
+      .insert({
+        order_no: 'PUB-TEST-1', invoice_no: 'INV-PUBTEST',
+        snapshot: { order: { public_token: token }, shop: { name: 'X' }, customer: { name: 'ลูกค้าทดสอบ', phone: '0812223333', email: 'secret-inv@example.com' } },
+      })
       .select()
       .single()
     created.invoices.push(row.data!.id)
     const anon = anonClient()
-    const ok = await anon.rpc('get_public_invoice', { p_token: token })
-    expect(ok.error).toBeNull()
-    expect(ok.data.invoice_no).toBe('INV-PUBTEST')
-    expect((await anon.rpc('get_public_invoice', { p_token: 'short' })).data).toBeNull()
-    expect((await anon.rpc('get_public_invoice', { p_token: token + 'x' })).data).toBeNull()
+
+    // ไม่ยืนยัน/ยืนยันผิด: ได้แค่หน้าล็อก ข้อมูลลูกค้าไม่หลุด
+    for (const v of [undefined, 'ผิด', '0800000000']) {
+      const r = await anon.rpc('get_public_invoice', { p_token: token, ...(v ? { p_verify: v } : {}) })
+      expect(r.data.locked).toBe(true)
+      expect(JSON.stringify(r.data)).not.toMatch(/ลูกค้าทดสอบ|0812223333|secret-inv/)
+    }
+    // ยืนยันถูก (ชื่อ หรือ เบอร์): เปิดได้
+    for (const v of ['ลูกค้าทดสอบ', '081-222-3333']) {
+      const ok = await anon.rpc('get_public_invoice', { p_token: token, p_verify: v })
+      expect(ok.error).toBeNull()
+      expect(ok.data.invoice_no).toBe('INV-PUBTEST')
+      expect(ok.data.snapshot.customer.name).toBe('ลูกค้าทดสอบ')
+    }
+    expect((await anon.rpc('get_public_invoice', { p_token: 'short', p_verify: 'x' })).data).toBeNull()
+    expect((await anon.rpc('get_public_invoice', { p_token: token + 'x', p_verify: 'ลูกค้าทดสอบ' })).data).toBeNull()
+    // ฟังก์ชันตรวจภายในเรียกจากภายนอกไม่ได้
+    expect((await anon.rpc('verify_invoice_token', { p_token: token, p_verify: 'x' })).error).not.toBeNull()
+
+    // เดาผิดเกิน 10 ครั้ง/ชั่วโมง → ล็อก แม้เดาถูกทีหลัง
+    for (let i = 0; i < 12; i++) await anon.rpc('get_public_invoice', { p_token: token, p_verify: 'เดา' + i })
+    const locked = await anon.rpc('get_public_invoice', { p_token: token, p_verify: 'ลูกค้าทดสอบ' })
+    expect(locked.data.locked).toBe(true)
+    expect(locked.data.reason).toBe('locked_out')
+    await admin.from('chat_usage').delete().like('usage_key', 'inv-fail:%')
 
     await admin.from('invoices').update({ issued_at: new Date(Date.now() - 31 * 86400000).toISOString() }).eq('id', row.data!.id)
-    expect((await anon.rpc('get_public_invoice', { p_token: token })).data).toBeNull()
+    expect((await anon.rpc('get_public_invoice', { p_token: token, p_verify: 'ลูกค้าทดสอบ' })).data).toBeNull()
   })
 })

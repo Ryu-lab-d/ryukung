@@ -194,8 +194,17 @@ export async function emailInvoiceToCustomer(invoice: InvoiceRow): Promise<strin
   return error ? 'ส่งอีเมลไม่สำเร็จ: ' + error : `ส่ง Invoice ไปที่ ${s.customer.email} แล้ว`
 }
 
-/** ดึง Invoice ด้วยโทเคนสาธารณะ (ไม่ต้องล็อกอิน) — ไม่พบ/ครบ 30 วัน = null */
-export async function fetchPublicInvoice(token: string) {
-  const { data } = await supabase.rpc('get_public_invoice', { p_token: token })
-  return (data as { invoice_no: string; issued_at: string; snapshot: InvoiceSnapshot } | null) ?? null
+export type PublicInvoiceResult = {
+  /** true = ยังไม่ยืนยันตัวตน (เซิร์ฟเวอร์ไม่ส่งข้อมูลลูกค้า) */
+  locked?: boolean
+  reason?: 'wrong' | 'locked_out' | 'no_identity' | 'not_found'
+  invoice_no: string
+  issued_at?: string
+  snapshot?: InvoiceSnapshot
+}
+
+/** ดึง Invoice ด้วยโทเคนสาธารณะ (ไม่ต้องล็อกอิน) — ไม่ส่ง verify = ได้แค่หน้าล็อก ส่งชื่อ/เบอร์ที่ตรงถึงได้เอกสารเต็ม ไม่พบ/ครบ 30 วัน = null */
+export async function fetchPublicInvoice(token: string, verify?: string): Promise<PublicInvoiceResult | null> {
+  const { data } = await supabase.rpc('get_public_invoice', { p_token: token, p_verify: verify ?? null })
+  return (data as PublicInvoiceResult | null) ?? null
 }

@@ -40,6 +40,17 @@ describe('audit log', () => {
   })
 })
 
+describe('audit ข้อมูลลูกค้า', () => {
+  it('แก้/ลบข้อมูลลูกค้า ถูกบันทึกว่าใครทำ', async () => {
+    const db = await signedInClient()
+    const c = await db.from('customers').insert({ name: 'ทดสอบ-audit-ลูกค้า', phone: '089-1112223' }).select().single()
+    await db.from('customers').update({ phone: '089-9998887' }).eq('id', c.data!.id)
+    await db.from('customers').delete().eq('id', c.data!.id)
+    const log = await db.from('audit_log').select('action').eq('table_name', 'customers').eq('row_id', c.data!.id).order('id')
+    expect(log.data!.map((r) => r.action)).toEqual(['UPDATE', 'DELETE'])
+  })
+})
+
 describe('เพดานขนาดข้อมูล', () => {
   it('จำนวนสินค้าต่อรายการเกิน 10000 ถูกปฏิเสธ', async () => {
     const admin = adminClient()

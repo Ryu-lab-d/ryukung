@@ -23,6 +23,8 @@ export const TABLE_LABEL: Record<string, string> = {
   orders: 'ออเดอร์',
   invoices: 'Invoice',
   stock_withdrawals: 'เบิกของ',
+  customers: 'ข้อมูลลูกค้า',
+  customer_addresses: 'ที่อยู่ลูกค้า',
 }
 const ACTION_LABEL = { INSERT: 'เพิ่ม', UPDATE: 'แก้ไข', DELETE: 'ลบ' }
 const ACTION_TONE = { INSERT: 'bg-green-100 text-green-800', UPDATE: 'bg-amber-100 text-amber-800', DELETE: 'bg-red-100 text-red-700' }

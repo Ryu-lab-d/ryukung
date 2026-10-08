@@ -246,7 +246,7 @@ export function invoiceLinkEmail(params: {
     html: shell(
       shopName,
       `<p>ถึงคุณ${esc(customerName)}</p>
-       <p>ทางร้านส่ง Invoice ของออเดอร์นี้มาให้ค่ะ เปิดดู พิมพ์ หรือบันทึกเป็น PDF ได้จากปุ่มด้านล่าง</p>
+       <p>ทางร้านส่ง Invoice ของออเดอร์นี้มาให้ค่ะ เปิดดู พิมพ์ หรือบันทึกเป็น PDF ได้จากปุ่มด้านล่าง (เพื่อปกป้องข้อมูลของคุณ ระบบจะให้กรอกชื่อหรือเบอร์โทรที่ใช้สั่งซื้อก่อนเปิดดู)</p>
        ${infoBox([
          { label: 'เลขที่ Invoice', value: invoiceNo },
          { label: 'เลขที่ออเดอร์', value: orderNo },
