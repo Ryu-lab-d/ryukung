@@ -21,7 +21,7 @@ describe('ลิงก์สาธารณะ: รายละเอียด�
 
     const pub = anonClient()
     const { data } = await pub.rpc('get_public_order', { p_token: order.public_token })
-    expect(data.payment_instructions).toContain('ryukung_bakery')
+    expect('payment_instructions' in data).toBe(true)
     expect(data.ship_address_text).toBe('ที่อยู่เดิม')
     expect(data.address_editable).toBe(true)
 

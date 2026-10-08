@@ -66,7 +66,7 @@ describe('วงจรชีวิตออเดอร์แบบครบว�
     // ลิงก์สาธารณะต้องเห็นยอดถูกต้องและไม่มีต้นทุนหลุดออกไป
     const pub = await db.rpc('get_public_order', { p_token: order.public_token })
     expect(Number(pub.data.grand_total)).toBe(200)
-    expect(JSON.stringify(pub.data)).not.toContain('40')
+    expect(JSON.stringify(pub.data)).not.toMatch(/unit_cost|items_cost_total|"cost"/)
 
     await purgeOrder(order.id)
     await db.from('customers').delete().eq('id', customer.data!.id)

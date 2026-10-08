@@ -191,3 +191,72 @@ describe('red team — พนักงานธรรมดา (role=staff) พ�
     }
   })
 })
+
+describe('red team — โกงการสั่งซื้อ', () => {
+  const baseBody = {
+    customer_name: 'redteam', customer_phone: '0812345678', customer_email: 'redteam@example.com', fulfillment_type: 'pickup',
+    pickup_place: 'x', pickup_time: null, ship_recipient_name: null, ship_recipient_phone: null, ship_address_text: null, note: null,
+  }
+  const call = async (body: Record<string, unknown>) => {
+    const { data, error } = await anonClient().functions.invoke('submit-customer-order', { body })
+    const ctx = await (error as { context?: Response } | null)?.context?.json?.().catch(() => null)
+    return { status: (error as { context?: Response } | null)?.context?.status ?? 200, msg: String(ctx?.error ?? data?.error ?? '') }
+  }
+
+  it('ข้ามการยืนยัน Turnstile (token ปลอม) ไม่ได้ → 403', async () => {
+    const r = await call({ ...baseBody, needed_date: '2099-01-01', items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }], turnstile_token: 'fake-token' })
+    expect(r.status).toBe(403)
+    expect(r.msg).toContain('ยืนยันตัวตนไม่สำเร็จ')
+  })
+
+  it('สั่งย้อนหลัง/วันนี้ไม่ได้ (ตรวจที่เซิร์ฟเวอร์)', async () => {
+    const r = await call({ ...baseBody, needed_date: '2020-01-01', items: [{ product_id: '00000000-0000-0000-0000-000000000000', qty: 1 }], turnstile_token: 'x' })
+    expect(r.status).toBe(400)
+  })
+
+  it('แอบส่งราคา/ต้นทุน/ส่วนลดมาเอง → ถูกเมินทั้งหมด ราคาเอาจากฐานข้อมูลเสมอ', async () => {
+    const admin = adminClient()
+    const prod = await admin.from('products').insert({ name: 'redteam-ราคา', price: 100, cost: 30 }).select().single()
+    const r = await admin.rpc('submit_customer_order', {
+      p_customer_name: 'redteam', p_customer_phone: '081-999-0000', p_customer_email: 'rt@example.com', p_fulfillment_type: 'pickup',
+      p_needed_date: '2099-01-01', p_pickup_place: 'x', p_pickup_time: null, p_ship_recipient_name: null, p_ship_recipient_phone: null,
+      p_ship_address_text: null, p_note: null,
+      p_items: [{ product_id: prod.data!.id, qty: 2, unit_price: 0.01, unit_cost: 0, line_total: 0, discount: 999 }],
+    })
+    expect(r.error).toBeNull()
+    expect(Number(r.data.grand_total)).toBe(200)
+    await admin.from('orders').delete().eq('id', r.data.order_id)
+    await admin.from('products').delete().eq('id', prod.data!.id)
+    await admin.from('customers').delete().eq('phone', '081-999-0000')
+  })
+
+  it('ใช้โค้ดสิทธิ์ครั้งเดียวพร้อมกัน 6 คำสั่ง → สำเร็จได้แค่ 1', async () => {
+    const admin = adminClient()
+    const prod = await admin.from('products').insert({ name: 'redteam-race', price: 100, cost: 30 }).select().single()
+    const promo = await admin.from('promotions').insert({ name: 'redteam-once', code: 'RTONCE99', kind: 'amount', value: 10, usage_limit: 1 }).select().single()
+    const orderIds: string[] = []
+    const results = await Promise.all(
+      Array.from({ length: 6 }, (_, i) =>
+        admin.rpc('submit_customer_order', {
+          p_customer_name: 'redteam', p_customer_phone: `081-888-000${i}`, p_customer_email: 'rt@example.com', p_fulfillment_type: 'pickup',
+          p_needed_date: '2099-01-01', p_pickup_place: 'x', p_pickup_time: null, p_ship_recipient_name: null, p_ship_recipient_phone: null,
+          p_ship_address_text: null, p_note: null, p_items: [{ product_id: prod.data!.id, qty: 1 }], p_promo_code: 'RTONCE99',
+        })
+      )
+    )
+    for (const r of results) if (r.data?.order_id) orderIds.push(r.data.order_id)
+    expect(results.filter((r) => !r.error).length).toBe(1)
+    const used = await admin.from('promotions').select('used_count').eq('id', promo.data!.id).single()
+    expect(used.data!.used_count).toBe(1)
+    await admin.from('orders').delete().in('id', orderIds)
+    await admin.from('promotions').delete().eq('id', promo.data!.id)
+    await admin.from('products').delete().eq('id', prod.data!.id)
+    await admin.from('customers').delete().like('phone', '081-888-000%')
+  })
+
+  it('โปรลดเกิน 100% หรือติดลบ สร้างไม่ได้', async () => {
+    const admin = adminClient()
+    expect((await admin.from('promotions').insert({ name: 'x', kind: 'percent', value: 150 })).error).not.toBeNull()
+    expect((await admin.from('promotions').insert({ name: 'x', kind: 'amount', value: -5 })).error).not.toBeNull()
+  })
+})
