@@ -133,7 +133,7 @@ describe('red team — คนสมัครบัญชีเองแต่ไ
       expect(shop.data!.shop_name).not.toBe('HACKED')
       // ฟังก์ชันหลังบ้าน: ถูกปฏิเสธ
       for (const [fn, args] of [
-        ['next_order_no', {}], ['create_pos_sale', { p_items: [], p_payment_method: 'cash' }],
+        ['emergency_revoke_sessions', {}], ['next_order_no', {}], ['create_pos_sale', { p_items: [], p_payment_method: 'cash' }],
         ['purge_expired_invoices', {}], ['next_invoice_no', {}], ['next_receipt_no', {}], ['adjust_ingredient_stock', { p_ingredient_id: '00000000-0000-0000-0000-000000000000', p_qty_delta: 1, p_note: 'x' }],
       ] as [string, Record<string, unknown>][]) {
         expect((await attacker.rpc(fn, args)).error, fn).not.toBeNull()

@@ -39,6 +39,7 @@ import { WithdrawalSlipPage } from './withdrawals/WithdrawalSlipPage'
 import { LearnPage } from './learn/LearnPage'
 import { PromotionsPage } from './promotions/PromotionsPage'
 import { AuditLogPage } from './security/AuditLogPage'
+import { BackupPage } from './backup/BackupPage'
 import { CoursesAdminPage } from './learn/CoursesAdminPage'
 import { CoursePresentPage } from './learn/CoursePresentPage'
 import { ContentPlannerPage } from './content/ContentPlannerPage'
@@ -137,6 +138,7 @@ function AuthenticatedApp() {
             <Route path="/costing/:id/edit" element={<RequirePage page="costing"><CostRecipeForm /></RequirePage>} />
             <Route path="/withdrawals" element={<RequirePage page="withdrawals"><WithdrawalsPage /></RequirePage>} />
             <Route path="/withdrawals/new" element={<RequirePage page="withdrawals"><NewWithdrawalPage /></RequirePage>} />
+            <Route path="/backup" element={<OwnerOrManagerRoute><BackupPage /></OwnerOrManagerRoute>} />
             <Route path="/audit" element={<OwnerOrManagerRoute><AuditLogPage /></OwnerOrManagerRoute>} />
             <Route path="/promotions" element={<OwnerOrManagerRoute><PromotionsPage /></OwnerOrManagerRoute>} />
             <Route path="/courses/:id/present" element={<OwnerOrManagerRoute><CoursePresentPage /></OwnerOrManagerRoute>} />
