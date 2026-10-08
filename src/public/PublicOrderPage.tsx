@@ -29,6 +29,9 @@ const CARD = 'bg-white rounded-3xl border border-stone-200/70 shadow-[0_10px_28p
 
 // type นี้ตั้งใจไม่มีฟิลด์ต้นทุนอยู่เลย ตรงกับสิ่งที่ get_public_order คืนมาจริง
 type PublicOrderView = {
+  /** หน้าล็อก: เซิร์ฟเวอร์ยังไม่ยืนยันตัวตน จึงมีแค่เลขออเดอร์+ข้อมูลร้าน (ไม่มีข้อมูลส่วนตัว) */
+  locked?: boolean
+  reason?: 'wrong' | 'locked_out' | 'no_identity' | 'not_found'
   shop_name: string
   logo_path: string | null
   payment_instructions: string | null
@@ -92,24 +95,6 @@ function workStagesFor(fulfillmentType: string, pending: boolean) {
 
 const FULFILLMENT_LABELS: Record<string, string> = {
   pickup: 'นัดรับเอง', shipping: 'ส่งไปรษณีย์/ขนส่ง', rider: 'ไรเดอร์ในเมือง', self_deliver: 'ร้านไปส่งเอง',
-}
-
-/**
- * เทียบชื่อแบบทนต่อสิ่งที่คีย์บอร์ดมือถือทำโดยที่ผู้ใช้ไม่รู้ตัว — ตัวพิมพ์ใหญ่/เล็กที่ iOS/Android
- * auto-capitalize ให้อัตโนมัติ, ช่องว่างซ้อนที่ระบบคำแนะนำคำแทรกให้, หรืออักขระ Unicode ที่ต่างรูปแบบ
- * แต่หน้าตาเหมือนกันทุกประการ (NFC normalize) — ยังคงเข้มงวดเรื่องตัวสะกดจริงเหมือนเดิม แค่ไม่ให้พฤติกรรม
- * ของแป้นพิมพ์แต่ละเครื่องมาตัดสินผลแทนตัวสะกดจริงของผู้ใช้
- */
-function normalizeName(value: string): string {
-  return value.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
-}
-
-/** เทียบเบอร์โทรทนรูปแบบที่ต่างกัน — ตัดอักขระที่ไม่ใช่ตัวเลขทิ้งหมด (ช่องว่าง/ขีด/วงเล็บ) แล้วแปลงเบอร์
- * รูปแบบ +66/66 นำหน้าให้เป็น 0 นำหน้าแบบไทยปกติ จะได้เทียบตรงกับที่ผู้ใช้กรอกแบบ 0812345678 ได้ */
-function normalizePhone(value: string): string {
-  const digits = value.replace(/\D/g, '')
-  if (digits.startsWith('66') && digits.length === 11) return '0' + digits.slice(2)
-  return digits
 }
 
 /** ไอคอน+ข้อความสั้นๆ ของแต่ละขั้นสถานะ ใช้ในการ์ดสถานะสดด้านบนสุดของหน้า (ข้อความอิงชื่อขั้นจริงเท่านั้น ไม่เพิ่มข้อมูลใหม่) */
@@ -419,11 +404,13 @@ function StatusTimeline({
 
 function AddressEditForm({
   token,
+  verify,
   order,
   onSaved,
   onCancel,
 }: {
   token: string
+  verify: string
   order: PublicOrderView
   onSaved: () => void
   onCancel: () => void
@@ -443,6 +430,7 @@ function AddressEditForm({
       p_recipient_name: recipientName.trim() || null,
       p_recipient_phone: recipientPhone.trim() || null,
       p_address_text: addressText.trim(),
+      p_verify: verify,
     })
     setBusy(false)
     if (error || !data) {
@@ -1018,6 +1006,8 @@ export function PublicOrderPage() {
   const nameDraftKey = token ? `public-order-name:${token}` : null
   const [order, setOrder] = useState<PublicOrderView | null | undefined>(undefined)
   const [customerName, setCustomerName] = useState<string | null>(null)
+  // ชื่อ/เบอร์ที่ผ่านการตรวจที่เซิร์ฟเวอร์แล้ว — ใช้ยืนยันซ้ำทุกครั้งที่ดึงข้อมูลใหม่/แก้ที่อยู่/แจ้งชำระเงิน
+  const verifiedRef = useRef<string | null>(null)
   const [nameInput, setNameInput] = useState(() => (nameDraftKey ? loadFormDraft<string>(nameDraftKey) : null) ?? '')
   const [revealing, setRevealing] = useState(false)
   const [shake, setShake] = useState(false)
@@ -1035,13 +1025,14 @@ export function PublicOrderPage() {
   const [howToPopupDismissed, setHowToPopupDismissed] = useState(false)
   const [manualHowTo, setManualHowTo] = useState(false)
   const [failCount, setFailCount] = useState(0)
+  const [verifying, setVerifying] = useState(false)
   const [showContactPopup, setShowContactPopup] = useState(false)
 
   useFormDraft(nameDraftKey, nameInput)
 
   const fetchOrder = useCallback(() => {
     if (!token) return
-    supabase.rpc('get_public_order', { p_token: token }).then(({ data }) => {
+    supabase.rpc('get_public_order', { p_token: token, p_verify: verifiedRef.current }).then(({ data }) => {
       setOrder((data as PublicOrderView | null) ?? null)
     })
   }, [token])
@@ -1056,53 +1047,52 @@ export function PublicOrderPage() {
   async function handleClaimPayment() {
     if (!token) return
     setClaiming(true)
-    const { error } = await claimPayment(token)
+    const { error } = await claimPayment(token, verifiedRef.current ?? '')
     setClaiming(false)
     if (error) { setClaimError(error); return }
     fetchOrder()
   }
 
-  function handleConfirmName(e: FormEvent) {
+  async function handleConfirmName(e: FormEvent) {
     e.preventDefault()
     const typed = nameInput.trim()
-    if (!typed || order === undefined) return
+    if (!typed || order === undefined || verifying) return
 
     if (order === null) {
-      // token ผิดตั้งแต่ต้น ไม่มีออเดอร์ให้เทียบชื่อเลย ปล่อยผ่านไปโชว์หน้า "ไม่พบออเดอร์" ตามจริง
-      // ไม่มีข้อมูลอะไรให้หลุดอยู่แล้วเพราะ order เป็น null
+      // token ผิดตั้งแต่ต้น ไม่มีออเดอร์ให้เทียบเลย ปล่อยไปโชว์หน้า "ไม่พบออเดอร์" ตามจริง (ไม่มีข้อมูลอะไรให้หลุดอยู่แล้ว)
       setCustomerName(typed)
       setRevealing(true)
       clearFormDraft(nameDraftKey)
       return
     }
 
-    if (!order.customer_name && !order.customer_phone) {
-      // มีออเดอร์จริง แต่ไม่มีทั้งชื่อและเบอร์ผูกไว้เลย — ไม่มีอะไรให้เทียบ ต้องกันไว้ ห้ามปล่อยผ่านให้ใครพิมพ์อะไรก็เข้าได้
+    // ตรวจชื่อ/เบอร์ที่ "เซิร์ฟเวอร์" — เซิร์ฟเวอร์ไม่ส่งข้อมูลส่วนตัวมาเลยจนกว่าจะตรง (เดิมเทียบในเบราว์เซอร์ ซึ่งข้ามได้)
+    setVerifying(true)
+    const { data } = await supabase.rpc('get_public_order', { p_token: token, p_verify: typed })
+    setVerifying(false)
+    const res = data as PublicOrderView | null
+
+    if (res && !res.locked) {
+      verifiedRef.current = typed
+      setOrder(res)
+      setCustomerName(typed)
+      setRevealing(true)
+      clearFormDraft(nameDraftKey)
+      return
+    }
+
+    if (res?.reason === 'no_identity') {
+      // มีออเดอร์จริง แต่ไม่มีชื่อ/เบอร์ผูกไว้เลย — ไม่มีอะไรให้ตรวจ ต้องกันไว้ ห้ามปล่อยให้ใครพิมพ์อะไรก็เข้าได้
       setNoNameOnFile(true)
       return
     }
 
-    // ยอมรับได้ทั้งชื่อหรือเบอร์โทร — ต้องตรงกับที่บันทึกไว้จริงอย่างใดอย่างหนึ่ง กันคนอื่นเดาสุ่มๆ แล้วเข้าดู
-    // ออเดอร์คนอื่นได้ เทียบชื่อแบบ normalize แล้ว (ดูฟังก์ชัน normalizeName ด้านบน) ไม่ใช่เทียบสตริงดิบ เพราะ
-    // แป้นพิมพ์มือถือมักแก้ตัวอักษรแรกเป็นตัวใหญ่หรือแทรกช่องว่างเกินให้เองโดยผู้ใช้ไม่รู้ตัว
-    const nameMatches = !!order.customer_name && normalizeName(typed) === normalizeName(order.customer_name)
-    const typedDigits = normalizePhone(typed)
-    const phoneMatches =
-      !!order.customer_phone && typedDigits.length >= 9 && typedDigits === normalizePhone(order.customer_phone)
-
-    if (!nameMatches && !phoneMatches) {
-      setShake(true)
-      setTimeout(() => setShake(false), 400)
-      setNameError(true)
-      const nextFailCount = failCount + 1
-      setFailCount(nextFailCount)
-      if (nextFailCount >= 2) setShowContactPopup(true)
-      return
-    }
-
-    setCustomerName(typed)
-    setRevealing(true)
-    clearFormDraft(nameDraftKey)
+    setShake(true)
+    setTimeout(() => setShake(false), 400)
+    setNameError(true)
+    const nextFailCount = failCount + 1
+    setFailCount(nextFailCount)
+    if (nextFailCount >= 2 || res?.reason === 'locked_out') setShowContactPopup(true)
   }
 
   // ออเดอร์นี้มีจริง แต่ไม่มีทั้งชื่อและเบอร์ลูกค้าผูกไว้ในระบบเลย ไม่มีทางตรวจสอบตัวตนได้ ต้องหยุดตรงนี้เสมอ ไม่ปล่อยให้ใครพิมพ์อะไรก็เข้าได้
@@ -1161,15 +1151,15 @@ export function PublicOrderPage() {
               className="w-full rounded-2xl border-2 border-stone-200 bg-stone-50/60 px-3 py-3 text-center transition-all focus:outline-none focus:border-amber-500 focus:bg-white focus:ring-4 focus:ring-amber-300/30"
             />
             {nameError && (
-              <InlineError message="ชื่อ/เบอร์ไม่ตรงกับที่แจ้งไว้ กรุณาลองใหม่ให้ตรงกับที่คุยในแชท" className="justify-center" />
+              <InlineError message={order?.reason === 'locked_out' ? 'ลองหลายครั้งเกินไป กรุณารอ 1 ชั่วโมงหรือติดต่อร้าน' : 'ชื่อ/เบอร์ไม่ตรงกับที่แจ้งไว้ กรุณาลองใหม่ให้ตรงกับที่คุยในแชท'} className="justify-center" />
             )}
           </div>
           <button
             type="submit"
-            disabled={!nameInput.trim() || order === undefined}
+            disabled={!nameInput.trim() || order === undefined || verifying}
             className="btn-shimmer w-full rounded-full bg-gradient-to-r from-stone-800 to-stone-900 text-white py-3 font-semibold shadow-[0_10px_20px_-10px_rgb(51_32_14_/_0.8)] transition-all active:scale-95 disabled:opacity-40 disabled:shadow-none"
           >
-            {order === undefined ? 'กำลังโหลดข้อมูล...' : 'ดูรายละเอียดออเดอร์'}
+            {order === undefined ? 'กำลังโหลดข้อมูล...' : verifying ? 'กำลังตรวจสอบ...' : 'ดูรายละเอียดออเดอร์'}
           </button>
         </form>
 
@@ -1476,6 +1466,7 @@ export function PublicOrderPage() {
       {showAddressEdit && token && (
         <AddressEditForm
           token={token}
+          verify={verifiedRef.current ?? ''}
           order={order}
           onCancel={() => setShowAddressEdit(false)}
           onSaved={() => {

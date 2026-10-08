@@ -54,7 +54,9 @@ describe('red team — ยัดข้อมูลเกินขนาด', () 
 
   it('update_public_order_address: token มั่ว → false และข้อมูลยาวเกิน → ปฏิเสธ', async () => {
     const db = anonClient()
-    expect((await db.rpc('update_public_order_address', { p_token: 'x'.repeat(30), p_recipient_name: 'a', p_recipient_phone: '1', p_address_text: 'x' })).data).toBe(false)
+    const bogus = await db.rpc('update_public_order_address', { p_token: 'x'.repeat(30), p_recipient_name: 'a', p_recipient_phone: '1', p_address_text: 'x' })
+    expect(bogus.data === false || bogus.error !== null).toBe(true)
+    expect(bogus.data).not.toBe(true)
     const big = await db.rpc('update_public_order_address', { p_token: 'x'.repeat(30), p_recipient_name: 'a', p_recipient_phone: '1', p_address_text: 'x'.repeat(700) })
     expect(big.error).not.toBeNull()
   })

@@ -56,6 +56,30 @@ const baseOrder = {
   items: [{ product_name: 'คุกกี้', unit_price: 40, qty: 2, line_total: 80, note: null }],
 }
 
+/**
+ * จำลองเซิร์ฟเวอร์จริงของ get_public_order: ไม่ส่ง p_verify = หน้าล็อก (ไม่มีข้อมูลส่วนตัว) ส่งชื่อ/เบอร์ที่ตรง = ข้อมูลเต็ม ไม่ตรง = ล็อก
+ * (การตรวจตัวตนอยู่ที่เซิร์ฟเวอร์ ไม่ใช่ในเบราว์เซอร์ — ดู migration 20261009300000_track_server_side_verify.sql)
+ */
+function mockServer(order: Record<string, unknown>) {
+  const norm = (v: string) => v.normalize('NFC').trim().replace(/\s+/g, ' ').toLowerCase()
+  const digits = (v: string) => {
+    const d = v.replace(/\D/g, '')
+    return d.startsWith('66') && d.length === 11 ? '0' + d.slice(2) : d
+  }
+  rpc.mockImplementation(async (fn: string, args: { p_verify?: string | null }) => {
+    if (fn !== 'get_public_order') return { data: null }
+    const stub = { locked: true, order_no: order.order_no, shop_name: order.shop_name, logo_path: null, line_url: order.line_url ?? null }
+    if (args?.p_verify == null) return { data: stub }
+    const name = order.customer_name as string | null
+    const phone = order.customer_phone as string | null
+    if (!name && !phone) return { data: { ...stub, reason: 'no_identity' } }
+    const ok =
+      (!!name && norm(args.p_verify) === norm(name)) ||
+      (!!phone && digits(args.p_verify).length >= 9 && digits(args.p_verify) === digits(phone))
+    return { data: ok ? order : { ...stub, reason: 'wrong' } }
+  })
+}
+
 function renderPage(token = 'abc') {
   render(
     <MemoryRouter initialEntries={[`/o/${token}`]}>
@@ -66,14 +90,14 @@ function renderPage(token = 'abc') {
 
 describe('การยืนยันชื่อในหน้าสรุปออเดอร์สำหรับลูกค้า', () => {
   it('โหลดออเดอร์เสร็จแล้ว เห็นเลขออเดอร์บนหน้ากรอกชื่อ/เบอร์ ก่อนยืนยันตัวตนด้วย', async () => {
-    rpc.mockResolvedValue({ data: baseOrder })
+    mockServer(baseOrder)
     renderPage()
     await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     expect(await screen.findByText(`ออเดอร์ ${baseOrder.order_no}`)).toBeInTheDocument()
   })
 
   it('ชื่อผิดจริงๆ เข้าไม่ได้ และมีข้อความเตือน', async () => {
-    rpc.mockResolvedValue({ data: baseOrder })
+    mockServer(baseOrder)
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, 'คนละคนกันเลย')
@@ -85,7 +109,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('พิมพ์ตัวพิมพ์เล็ก/ใหญ่ต่างกัน (เหมือน autocapitalize บนมือถือ) ยังถือว่าถูก เข้าได้ปกติ', async () => {
-    rpc.mockResolvedValue({ data: baseOrder })
+    mockServer(baseOrder)
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     // ชื่อจริงคือ "Somchai ใจดี" — พิมพ์เป็น "somchai ใจดี" (s ตัวเล็ก) จำลองผลจาก autocapitalize ที่ต่างเครื่องต่างกัน
@@ -97,7 +121,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('ออเดอร์ที่ไม่มีทั้งชื่อและเบอร์ลูกค้าผูกไว้เลย ปิดกั้นเสมอไม่ว่าจะพิมพ์อะไร', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, customer_name: null, customer_phone: null } })
+    mockServer({ ...baseOrder, customer_name: null, customer_phone: null })
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, 'อะไรก็ได้')
@@ -108,7 +132,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('ไม่มีชื่อผูกไว้ แต่มีเบอร์ กรอกเบอร์ให้ตรงแล้วเข้าได้ปกติ (ไม่ติดหน้าปิดกั้น)', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, customer_name: null, customer_phone: '0812345678' } })
+    mockServer({ ...baseOrder, customer_name: null, customer_phone: '0812345678' })
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, '0812345678')
@@ -118,7 +142,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('กรอกเบอร์โทรตรงกับที่บันทึกไว้ (ชื่อไม่ตรงก็ผ่านได้เพราะยืนยันด้วยเบอร์แทน)', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, customer_phone: '0812345678' } })
+    mockServer({ ...baseOrder, customer_phone: '0812345678' })
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, '0812345678')
@@ -128,7 +152,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('กรอกเบอร์รูปแบบ +66 ขีด/เว้นวรรค ยังเทียบตรงกับเบอร์ที่บันทึกแบบ 0 นำหน้าได้', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, customer_phone: '0812345678' } })
+    mockServer({ ...baseOrder, customer_phone: '0812345678' })
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     await userEvent.type(input, '+66 81-234-5678')
@@ -138,7 +162,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
   })
 
   it('กรอกผิด 2 ครั้งติด ขึ้นป็อปอัพแนะนำติดต่อพนักงานผ่านไลน์ ปิดแล้วยังกรอกต่อได้ปกติ', async () => {
-    rpc.mockResolvedValue({ data: { ...baseOrder, line_url: 'https://lin.ee/yscT9fJ' } })
+    mockServer({ ...baseOrder, line_url: 'https://lin.ee/yscT9fJ' })
     renderPage()
     const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
     const submitButton = await screen.findByRole('button', { name: 'ดูรายละเอียดออเดอร์' })
@@ -162,7 +186,7 @@ describe('การยืนยันชื่อในหน้าสรุป�
 })
 
 async function openOrder(order: typeof baseOrder) {
-  rpc.mockResolvedValue({ data: order })
+  mockServer(order)
   renderPage()
   const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)
@@ -243,10 +267,10 @@ describe('ปุ่มยืนยันการชำระเงิน', () =
     await userEvent.click(screen.getByRole('button', { name: /ดูวิธีชำระเงิน/ }))
     const claimButton = await screen.findByRole('button', { name: /ยืนยันการชำระเงิน/ })
 
-    rpc.mockResolvedValue({ data: { ...baseOrder, payment_claimed_at: '2026-08-09T10:00:00Z' } })
+    mockServer({ ...baseOrder, payment_claimed_at: '2026-08-09T10:00:00Z' })
     await userEvent.click(claimButton)
 
-    expect(functionsInvoke).toHaveBeenCalledWith('notify-payment-claim', { body: { token: 'abc' } })
+    expect(functionsInvoke).toHaveBeenCalledWith('notify-payment-claim', { body: { token: 'abc', verify: 'Somchai ใจดี' } })
     expect(await screen.findByText(/แจ้งการชำระเงินแล้ว/)).toBeInTheDocument()
   })
 
@@ -355,7 +379,7 @@ describe('ปุ่มเพิ่มลงปฏิทินและแชร�
  * ยังไม่ชำระเงิน (ต่างจาก openOrder ปกติ) เพื่อทดสอบป็อปอัพเตือนยังไม่ชำระเงินนี้เอง
  */
 async function openOrderKeepPopup(order: typeof baseOrder) {
-  rpc.mockResolvedValue({ data: order })
+  mockServer(order)
   renderPage()
   const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)
@@ -428,7 +452,7 @@ describe('ป็อปอัพเตือนยังไม่ชำระเ�
 
 /** เปิดออเดอร์แบบดิบๆ ไม่ปิดป็อปอัพไหนเลย เพื่อทดสอบป็อปอัพแนะนำร้านที่ขึ้นก่อนป็อปอัพอื่นทั้งหมด */
 async function openOrderKeepAllPopups(order: typeof baseOrder) {
-  rpc.mockResolvedValue({ data: order })
+  mockServer(order)
   renderPage()
   const input = await screen.findByPlaceholderText('ชื่อผู้สั่งซื้อ หรือเบอร์โทรศัพท์')
   await userEvent.type(input, order.customer_name!)

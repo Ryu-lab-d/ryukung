@@ -24,7 +24,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
 
   try {
-    const { token } = await req.json()
+    const { token, verify } = await req.json()
     if (!token || typeof token !== 'string' || token.length < 20) {
       return new Response(JSON.stringify({ error: 'token ไม่ถูกต้อง' }), { status: 400, headers: cors })
     }
@@ -32,6 +32,12 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const admin = createClient(supabaseUrl, serviceKey)
+
+    // ต้องยืนยันตัวตน (ชื่อ/เบอร์) ที่เซิร์ฟเวอร์ก่อน — ไม่งั้นใครได้ลิงก์ไปก็แจ้งชำระเงินแทนลูกค้าได้
+    const { data: idStatus } = await admin.rpc('verify_order_token', { p_token: token, p_verify: typeof verify === 'string' ? verify : '' })
+    if (idStatus !== 'ok') {
+      return new Response(JSON.stringify({ error: 'ยืนยันตัวตนไม่สำเร็จ' }), { status: 403, headers: { ...cors, 'Content-Type': 'application/json' } })
+    }
 
     const { data: order } = await admin
       .from('orders')
